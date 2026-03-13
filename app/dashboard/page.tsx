@@ -215,6 +215,19 @@ export default function DashboardPage() {
           </div>
 
           <AdvisorPanel message={advisorMessage} loading={isAdvisorLoading} />
+
+          {/* Quick link to Financial Report */}
+          <Link
+            href="/learn"
+            className="glass-card rounded-3xl p-4 flex items-center gap-3 border border-emerald-500/15 hover:border-emerald-500/30 transition group"
+          >
+            <span className="text-2xl">📊</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white">Financial Report</p>
+              <p className="text-xs text-slate-400">50/30/20 rule · badges · tips</p>
+            </div>
+            <span className="text-slate-500 group-hover:text-white transition text-sm">→</span>
+          </Link>
         </div>
       </div>
     </main>
