@@ -92,7 +92,7 @@ export function CityScene() {
         <directionalLight
           position={sunPosition}
           intensity={isNight ? 0.8 : 1.3}
-          color={isNight ? "#c8d6ff" : "#fff7d9"}
+          color={isNight ? "#1a2138" : "#fff7d9"}
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
