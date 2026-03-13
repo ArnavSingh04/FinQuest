@@ -15,12 +15,14 @@ interface GameStore {
   advisorMessage: string;
   isAdvisorLoading: boolean;
   monthlyIncome: number;
+  cityName: string;
   addTransaction: (t: Omit<Transaction, "id" | "created_at">) => Transaction[];
   clearAll: () => void;
   loadFromStorage: () => void;
   setAdvisorMessage: (msg: string) => void;
   setAdvisorLoading: (loading: boolean) => void;
   setMonthlyIncome: (income: number) => void;
+  setCityName: (name: string) => void;
 }
 
 function persist(key: string, value: unknown) {
@@ -36,6 +38,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   advisorMessage: "Log a transaction and your city will come to life.",
   isAdvisorLoading: false,
   monthlyIncome: 0,
+  cityName: "My City",
 
   addTransaction: (incoming) => {
     const tx: Transaction = {
@@ -71,11 +74,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   loadFromStorage: () => {
     if (typeof window === "undefined") return;
     try {
-      const txRaw     = localStorage.getItem("fq-transactions");
-      const pRaw      = localStorage.getItem("fq-proportions");
-      const csRaw     = localStorage.getItem("fq-city-state");
-      const msgRaw    = localStorage.getItem("fq-advisor");
-      const incomeRaw = localStorage.getItem("fq-income");
+      const txRaw      = localStorage.getItem("fq-transactions");
+      const pRaw       = localStorage.getItem("fq-proportions");
+      const csRaw      = localStorage.getItem("fq-city-state");
+      const msgRaw     = localStorage.getItem("fq-advisor");
+      const incomeRaw  = localStorage.getItem("fq-income");
+      const nameRaw    = localStorage.getItem("fq-city-name");
 
       const updates: Partial<GameStore> = {};
       if (txRaw)     updates.transactions   = JSON.parse(txRaw);
@@ -83,6 +87,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (csRaw)     updates.cityState      = JSON.parse(csRaw);
       if (msgRaw)    updates.advisorMessage = msgRaw;
       if (incomeRaw) updates.monthlyIncome  = JSON.parse(incomeRaw);
+      if (nameRaw)   updates.cityName       = nameRaw;
       set(updates);
     } catch {
       // ignore corrupt storage
@@ -95,6 +100,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   setAdvisorLoading: (loading) => set({ isAdvisorLoading: loading }),
+
+  setCityName: (name) => {
+    if (typeof window !== "undefined") localStorage.setItem("fq-city-name", name);
+    set({ cityName: name });
+  },
 
   setMonthlyIncome: (income) => {
     persist("fq-income", income);

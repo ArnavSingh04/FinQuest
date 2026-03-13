@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { CityScene } from "@/components/city/CityScene";
 import { SpendingForm } from "@/components/spending/SpendingForm";
 import { useGameStore } from "@/store/useGameStore";
+import { encodeCityShare } from "@/lib/cityShare";
 import type { Proportions } from "@/types";
 
 const LEGEND = [
@@ -32,12 +33,20 @@ async function fetchAdvisorMessage(proportions: Proportions): Promise<string> {
 }
 
 export default function CityPage() {
-  const { cityState, advisorMessage, isAdvisorLoading, loadFromStorage, setAdvisorMessage, setAdvisorLoading } =
+  const { cityState, proportions, advisorMessage, isAdvisorLoading, cityName, loadFromStorage, setAdvisorMessage, setAdvisorLoading } =
     useGameStore();
+  const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    loadFromStorage();
-  }, [loadFromStorage]);
+  useEffect(() => { loadFromStorage(); }, [loadFromStorage]);
+
+  function handleShare() {
+    const code = encodeCityShare({ name: cityName, props: proportions, city: cityState });
+    const url = `${window.location.origin}/city/view?c=${code}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }
 
   async function handleSubmitted(proportions: Proportions) {
     setAdvisorLoading(true);
@@ -63,12 +72,24 @@ export default function CityPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-400">FinQuest</p>
           <h1 className="mt-1 text-2xl font-bold text-white sm:text-3xl">Your 3D City</h1>
         </div>
-        <Link
-          href="/dashboard"
-          className="shrink-0 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-        >
-          Dashboard →
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={handleShare}
+            className={`shrink-0 rounded-2xl border px-4 py-2 text-sm font-medium transition ${
+              copied
+                ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
+                : "border-white/10 bg-white/5 text-white hover:bg-white/10"
+            }`}
+          >
+            {copied ? "✓ Copied!" : "🔗 Share City"}
+          </button>
+          <Link
+            href="/dashboard"
+            className="shrink-0 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+          >
+            Dashboard →
+          </Link>
+        </div>
       </header>
 
       <div className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr]">

@@ -5,6 +5,15 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 import { useGameStore } from "@/store/useGameStore";
+import { useCityStateOverride } from "@/contexts/CityStateContext";
+
+// ─── Unified city state hook (respects shared-city context override) ──────────
+function useActiveCityState() {
+  const override = useCityStateOverride();
+  const storeCity = useGameStore((s) => s.cityState);
+  const storeProps = useGameStore((s) => s.proportions);
+  return override ?? { cityState: storeCity, proportions: storeProps };
+}
 
 // ─── Lerp scale hook ──────────────────────────────────────────────────────────
 function useLerpScale(target: number, speed = 2.5) {
@@ -83,7 +92,8 @@ function WindowGrid({
 const APT_COLORS = ["#475569", "#52525b", "#44403c", "#3f3f46", "#404040"] as const;
 
 function Apartment({ x, z, idx }: { x: number; z: number; idx: number }) {
-  const count = useGameStore((s) => s.cityState.apartmentCount);
+  const { cityState } = useActiveCityState();
+  const count = cityState.apartmentCount;
   const visible = idx < count;
   const baseH = 1.2 + (idx % 4) * 0.5;
   const topH  = baseH * 0.5;
@@ -169,7 +179,8 @@ const REST_PALETTE = [
 ] as const;
 
 function Restaurant({ x, z, idx }: { x: number; z: number; idx: number }) {
-  const count = useGameStore((s) => s.cityState.restaurantCount);
+  const { cityState } = useActiveCityState();
+  const count = cityState.restaurantCount;
   const visible = idx < count;
   const h = 0.65 + (idx % 3) * 0.25;
   const ref = useLerpScale(visible ? 1 : 0.01, 3);
@@ -206,7 +217,8 @@ function Restaurant({ x, z, idx }: { x: number; z: number; idx: number }) {
 
 // ─── Bank Tower ───────────────────────────────────────────────────────────────
 function BankTower({ x, z }: { x: number; z: number }) {
-  const height = useGameStore((s) => s.cityState.bankHeight);
+  const { cityState } = useActiveCityState();
+  const height = cityState.bankHeight;
   const mainRef  = useLerpScale(height, 2);
   const crownRef = useLerpScale(height * 0.18, 2);
 
@@ -259,7 +271,8 @@ function BankTower({ x, z }: { x: number; z: number }) {
 
 // ─── Investment Tower ─────────────────────────────────────────────────────────
 function InvestmentTower({ x, z }: { x: number; z: number }) {
-  const h = useGameStore((s) => s.cityState.towerHeight);
+  const { cityState } = useActiveCityState();
+  const h = cityState.towerHeight;
   const mainRef  = useLerpScale(h, 2);
   const tipRef   = useLerpScale(h * 0.25, 2);
 
@@ -386,7 +399,8 @@ function PollutionCloud({ x, y, z, opacity }: { x: number; y: number; z: number;
 
 // ─── Rain ─────────────────────────────────────────────────────────────────────
 function Rain() {
-  const weather = useGameStore((s) => s.cityState.weather);
+  const { cityState } = useActiveCityState();
+  const weather = cityState.weather;
   const ref = useRef<THREE.Points>(null);
   const COUNT = 600;
   const positions = useMemo(() => {
@@ -431,7 +445,8 @@ function Rain() {
 
 // ─── Embers / sparks (thriving) ───────────────────────────────────────────────
 function Embers() {
-  const weather = useGameStore((s) => s.cityState.weather);
+  const { cityState } = useActiveCityState();
+  const weather = cityState.weather;
   const ref = useRef<THREE.Points>(null);
   const COUNT = 120;
   const positions = useMemo(() => {
@@ -469,6 +484,7 @@ function Embers() {
 
 // ─── Stars ────────────────────────────────────────────────────────────────────
 function Stars() {
+  const { cityState } = useActiveCityState();
   const positions = useMemo(() => {
     const arr = new Float32Array(300 * 3);
     for (let i = 0; i < 300; i++) {
@@ -479,7 +495,7 @@ function Stars() {
     return arr;
   }, []);
 
-  const weather = useGameStore((s) => s.cityState.weather);
+  const weather = cityState.weather;
   const opacity = weather === "thriving" ? 1.0 : weather === "clear" ? 0.75 : weather === "overcast" ? 0.15 : 0;
 
   return (
@@ -532,7 +548,8 @@ function Bench({ x, z }: { x: number; z: number }) {
 
 // ─── Lightning bolt (storm/destruction) ───────────────────────────────────────
 function Lightning() {
-  const weather = useGameStore((s) => s.cityState.weather);
+  const { cityState } = useActiveCityState();
+  const weather = cityState.weather;
   const ref = useRef<THREE.Mesh>(null);
   const timerRef = useRef(0);
   const visRef = useRef(false);
@@ -565,7 +582,8 @@ function Lightning() {
 
 // ─── Main city export ──────────────────────────────────────────────────────────
 export function CityGenerator() {
-  const treats = useGameStore((s) => s.proportions.treats);
+  const { proportions } = useActiveCityState();
+  const treats = proportions.treats;
   const cloudCount = Math.min(6, Math.floor(treats * 14));
 
   const aptPositions: [number, number][] = [

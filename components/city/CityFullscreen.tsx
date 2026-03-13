@@ -7,6 +7,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 
 import { useGameStore } from "@/store/useGameStore";
+import { CityStateContext, useCityStateOverride } from "@/contexts/CityStateContext";
 import { CityGenerator } from "./CityGenerator";
 
 // Re-export the core scene internals so both normal and fullscreen can share them
@@ -26,8 +27,14 @@ const CAMERA_PRESETS = [
   { label: "Finance",     icon: "🏦", pos: [6, 5, 4]    as [number,number,number], target: [4, 2, -1] as [number,number,number] },
 ];
 
+function useWeather() {
+  const override = useCityStateOverride();
+  const storeWeather = useGameStore((s) => s.cityState.weather);
+  return override ? override.cityState.weather : storeWeather;
+}
+
 function Lights() {
-  const weather = useGameStore((s) => s.cityState.weather);
+  const weather = useWeather();
   const ambRef  = useRef<THREE.AmbientLight>(null);
   const dirRef  = useRef<THREE.DirectionalLight>(null);
   const hemiRef = useRef<THREE.HemisphereLight>(null);
@@ -54,7 +61,7 @@ function Lights() {
 }
 
 function SceneFog() {
-  const weather = useGameStore((s) => s.cityState.weather);
+  const weather = useWeather();
   const { scene } = useThree();
   const fogRef = useRef<THREE.Fog>(new THREE.Fog(WEATHER_CFG[weather].fog, 18, 42));
   useFrame((_, dt) => {
@@ -65,7 +72,7 @@ function SceneFog() {
 }
 
 function SkyBackground() {
-  const weather = useGameStore((s) => s.cityState.weather);
+  const weather = useWeather();
   const ref = useRef<THREE.Color>(new THREE.Color(WEATHER_CFG[weather].bg));
   const { scene } = useThree();
   useFrame((_, dt) => {
@@ -146,10 +153,11 @@ export function SceneContents({ preset }: { preset: typeof CAMERA_PRESETS[number
 interface CityCanvasProps {
   className?: string;
   preset?: typeof CAMERA_PRESETS[number] | null;
+  override?: import("@/contexts/CityStateContext").CityStateOverride | null;
 }
 
-export function CityCanvas({ className = "", preset = null }: CityCanvasProps) {
-  return (
+export function CityCanvas({ className = "", preset = null, override = null }: CityCanvasProps) {
+  const canvas = (
     <Canvas
       shadows
       className={className}
@@ -158,6 +166,11 @@ export function CityCanvas({ className = "", preset = null }: CityCanvasProps) {
       <SceneContents preset={preset} />
     </Canvas>
   );
+
+  if (override) {
+    return <CityStateContext.Provider value={override}>{canvas}</CityStateContext.Provider>;
+  }
+  return canvas;
 }
 
 export { CAMERA_PRESETS };
