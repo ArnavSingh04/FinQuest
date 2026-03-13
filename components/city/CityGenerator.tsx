@@ -580,11 +580,115 @@ function Lightning() {
   );
 }
 
+// ─── Car ──────────────────────────────────────────────────────────────────────
+const CAR_COLORS = ["#dc2626", "#2563eb", "#16a34a", "#ca8a04", "#7c3aed", "#0891b2"] as const;
+
+function Car({ idx, lane, direction }: { idx: number; lane: "h" | "v"; direction: 1 | -1 }) {
+  const { cityState } = useActiveCityState();
+  const ref = useRef<THREE.Group>(null);
+  const speed = (0.8 + (idx % 3) * 0.4) * direction * (0.4 + cityState.healthScore / 120);
+  const offset = (idx * 3.7) % 28 - 14;
+
+  useFrame((_, dt) => {
+    if (!ref.current) return;
+    if (lane === "h") {
+      ref.current.position.x += dt * speed;
+      if (ref.current.position.x > 16) ref.current.position.x = -16;
+      if (ref.current.position.x < -16) ref.current.position.x = 16;
+    } else {
+      ref.current.position.z += dt * speed;
+      if (ref.current.position.z > 16) ref.current.position.z = -16;
+      if (ref.current.position.z < -16) ref.current.position.z = 16;
+    }
+  });
+
+  const color = CAR_COLORS[idx % CAR_COLORS.length];
+  const initialPos: [number, number, number] = lane === "h"
+    ? [offset, 0.14, 0.3 + (direction > 0 ? -0.22 : 0.22)]
+    : [-0.4 + (direction > 0 ? -0.22 : 0.22), 0.14, offset];
+  const rotY = lane === "h" ? (direction > 0 ? 0 : Math.PI) : (direction > 0 ? Math.PI / 2 : -Math.PI / 2);
+
+  return (
+    <group ref={ref} position={initialPos} rotation={[0, rotY, 0]}>
+      {/* Body */}
+      <mesh position={[0, 0.085, 0]} castShadow>
+        <boxGeometry args={[0.55, 0.17, 0.28]} />
+        <meshStandardMaterial color={color} roughness={0.3} metalness={0.5} emissive={color} emissiveIntensity={0.2} />
+      </mesh>
+      {/* Cabin */}
+      <mesh position={[0, 0.21, 0]}>
+        <boxGeometry args={[0.3, 0.13, 0.24]} />
+        <meshStandardMaterial color={color} roughness={0.25} metalness={0.4} />
+      </mesh>
+      {/* Windshield */}
+      <mesh position={[0.15, 0.22, 0]}>
+        <boxGeometry args={[0.02, 0.1, 0.2]} />
+        <meshStandardMaterial color="#bfdbfe" transparent opacity={0.6} emissive="#bfdbfe" emissiveIntensity={0.3} />
+      </mesh>
+      {/* Headlights */}
+      <mesh position={[0.28, 0.1, 0.08]}>
+        <sphereGeometry args={[0.03, 6, 6]} />
+        <meshStandardMaterial color="#fef3c7" emissive="#fef08a" emissiveIntensity={3} />
+      </mesh>
+      <mesh position={[0.28, 0.1, -0.08]}>
+        <sphereGeometry args={[0.03, 6, 6]} />
+        <meshStandardMaterial color="#fef3c7" emissive="#fef08a" emissiveIntensity={3} />
+      </mesh>
+      {/* Wheels */}
+      {[[-0.18, -0.1], [-0.18, 0.1], [0.18, -0.1], [0.18, 0.1]].map(([wx, wz], i) => (
+        <mesh key={i} position={[wx, -0.02, wz as number]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.065, 0.065, 0.05, 8]} />
+          <meshStandardMaterial color="#1f2937" roughness={0.9} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// ─── Pedestrian ───────────────────────────────────────────────────────────────
+function Pedestrian({ idx }: { idx: number }) {
+  const { cityState } = useActiveCityState();
+  const ref = useRef<THREE.Group>(null);
+  const speed = (0.3 + (idx % 4) * 0.12) * (idx % 2 === 0 ? 1 : -1) * (0.5 + cityState.healthScore / 150);
+  const lane = idx % 3;
+  const zPos = lane === 0 ? -0.52 : lane === 1 ? 0.98 : -0.52;
+
+  useFrame((_, dt) => {
+    if (!ref.current) return;
+    ref.current.position.x += dt * speed;
+    if (ref.current.position.x > 10) ref.current.position.x = -10;
+    if (ref.current.position.x < -10) ref.current.position.x = 10;
+    // Bob up and down slightly while walking
+    ref.current.position.y = 0.1 + Math.abs(Math.sin(ref.current.position.x * 8)) * 0.02;
+  });
+
+  const PERSON_COLORS = ["#f97316","#22d3ee","#f472b6","#a3e635","#fb923c","#818cf8"];
+  const color = PERSON_COLORS[idx % PERSON_COLORS.length];
+  const startX = (idx * 2.1) % 20 - 10;
+
+  return (
+    <group ref={ref} position={[startX, 0.1, zPos]}>
+      {/* Body */}
+      <mesh position={[0, 0.12, 0]}>
+        <capsuleGeometry args={[0.04, 0.14, 4, 6]} />
+        <meshStandardMaterial color={color} roughness={0.8} />
+      </mesh>
+      {/* Head */}
+      <mesh position={[0, 0.28, 0]}>
+        <sphereGeometry args={[0.05, 6, 6]} />
+        <meshStandardMaterial color="#fde68a" roughness={0.9} />
+      </mesh>
+    </group>
+  );
+}
+
 // ─── Main city export ──────────────────────────────────────────────────────────
 export function CityGenerator() {
-  const { proportions } = useActiveCityState();
+  const { proportions, cityState } = useActiveCityState();
   const treats = proportions.treats;
   const cloudCount = Math.min(6, Math.floor(treats * 14));
+  const carCount = Math.max(1, Math.min(6, cityState.population));
+  const pedCount = Math.max(2, Math.min(10, cityState.population * 2));
 
   const aptPositions: [number, number][] = [
     [-5.5, -3.2], [-4.2, -3.2], [-2.9, -3.2], [-1.6, -3.2],
@@ -651,6 +755,19 @@ export function CityGenerator() {
           z={3 - i * 0.6}
           opacity={0.2 + treats * 0.55}
         />
+      ))}
+
+      {/* ── Traffic ── */}
+      {Array.from({ length: carCount }, (_, i) => (
+        <Car key={`car-h-${i}`} idx={i} lane="h" direction={i % 2 === 0 ? 1 : -1} />
+      ))}
+      {Array.from({ length: Math.floor(carCount / 2) }, (_, i) => (
+        <Car key={`car-v-${i}`} idx={i + 10} lane="v" direction={i % 2 === 0 ? 1 : -1} />
+      ))}
+
+      {/* ── Pedestrians ── */}
+      {Array.from({ length: pedCount }, (_, i) => (
+        <Pedestrian key={`ped-${i}`} idx={i} />
       ))}
 
       {/* ── Weather FX ── */}
