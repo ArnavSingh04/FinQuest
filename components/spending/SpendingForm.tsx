@@ -71,6 +71,7 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
   const increaseHeightMultiplier = useCityStore(
     (state) => state.increaseHeightMultiplier,
   );
+  const setSkyMode = useCityStore((state) => state.setSkyMode);
   const [selectedRangeIndex, setSelectedRangeIndex] = useState(0);
   const [category, setCategory] = useState<TransactionCategory>("Need");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -182,7 +183,14 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
               <button
                 key={item}
                 type="button"
-                onClick={() => setCategory(item)}
+                onClick={() => {
+                  setCategory(item);
+                  if (item === "Want") {
+                    setSkyMode("night");
+                  } else {
+                    setSkyMode("day");
+                  }
+                }}
                 className={`rounded-2xl border px-4 py-3 text-sm font-medium transition ${
                   isActive
                     ? "border-sky-400 bg-sky-500/20 text-sky-100"

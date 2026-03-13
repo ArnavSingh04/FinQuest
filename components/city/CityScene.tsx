@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { ContactShadows, OrbitControls, Sky } from "@react-three/drei";
+import { ContactShadows, OrbitControls, Sky, Stars } from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
 import type { Group } from "three";
 
@@ -12,6 +12,7 @@ export function CityScene() {
   const cityMetrics = useCityStore((state) => state.cityMetrics);
   const heightMultiplier = useCityStore((state) => state.heightMultiplier);
   const needsBoostVersion = useCityStore((state) => state.needsBoostVersion);
+  const skyMode = useCityStore((state) => state.skyMode);
   const [hammerActive, setHammerActive] = useState(false);
   const boostRef = useRef(needsBoostVersion);
   const hammerTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -40,6 +41,27 @@ export function CityScene() {
   }, [needsBoostVersion]);
 
   const hammerBaseHeight = 1.6 + (heightMultiplier - 1) * 2.2;
+  const isNight = skyMode === "night";
+  const backgroundColor = isNight ? "#01040d" : "#91cdee";
+  const skyProps = isNight
+    ? {
+        turbidity: 1.2,
+        rayleigh: 0.15,
+        mieCoefficient: 0.002,
+        mieDirectionalG: 0.84,
+        distance: 360,
+        inclination: 0.05,
+        azimuth: -0.4,
+      }
+    : {
+        turbidity: 6,
+        rayleigh: 1.7,
+        mieCoefficient: 0.015,
+        mieDirectionalG: 0.7,
+        distance: 450,
+        inclination: 0.45,
+        azimuth: 0.3,
+      };
 
   return (
     <div className="glass-card h-[520px] overflow-hidden rounded-[2rem]">
@@ -48,25 +70,29 @@ export function CityScene() {
         shadows
         className="h-full w-full"
       >
-        <color attach="background" args={["#91cdee"]} />
-        <Sky
-          sunPosition={sunPosition}
-          turbidity={6}
-          rayleigh={1.7}
-          mieCoefficient={0.015}
-          mieDirectionalG={0.7}
-          distance={450}
-          inclination={0.45}
-          azimuth={0.3}
-        />
+        <color attach="background" args={[backgroundColor]} />
+        <Sky sunPosition={sunPosition} {...skyProps} />
+        {isNight && (
+          <Stars
+            radius={160}
+            depth={70}
+            count={6000}
+            factor={7}
+            saturation={0}
+            fade
+            speed={0.2}
+          />
+        )}
 
-        <ambientLight intensity={0.85} />
-        <hemisphereLight args={["#ffffff", "#b4f1c1", 0.9]} />
+        <ambientLight intensity={isNight ? 0.35 : 0.85} />
+        <hemisphereLight
+          args={isNight ? ["#273a5f51", "#01040d", 0.5] : ["#ffffff", "#b4f1c1", 0.9]}
+        />
 
         <directionalLight
           position={sunPosition}
-          intensity={1.3}
-          color="#fff7d9"
+          intensity={isNight ? 0.8 : 1.3}
+          color={isNight ? "#c8d6ff" : "#fff7d9"}
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
