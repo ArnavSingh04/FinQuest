@@ -1,0 +1,9 @@
+{
+  "name": "FinQuest",
+  "short_name": "FinQuest",
+  "description": "Learn finance by watching your spending shape a 3D city.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07111f",
+  "theme_color": "#07111f"
+}
