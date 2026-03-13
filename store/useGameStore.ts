@@ -14,11 +14,13 @@ interface GameStore {
   cityState: CityState;
   advisorMessage: string;
   isAdvisorLoading: boolean;
+  monthlyIncome: number;
   addTransaction: (t: Omit<Transaction, "id" | "created_at">) => Transaction[];
   clearAll: () => void;
   loadFromStorage: () => void;
   setAdvisorMessage: (msg: string) => void;
   setAdvisorLoading: (loading: boolean) => void;
+  setMonthlyIncome: (income: number) => void;
 }
 
 function persist(key: string, value: unknown) {
@@ -33,6 +35,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   cityState: defaultCityState,
   advisorMessage: "Log a transaction and your city will come to life.",
   isAdvisorLoading: false,
+  monthlyIncome: 0,
 
   addTransaction: (incoming) => {
     const tx: Transaction = {
@@ -42,7 +45,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     };
     const newTxs = [...get().transactions, tx];
     const proportions = calculateProportions(newTxs);
-    const cityState = generateCityState(proportions);
+    const totalSpend = newTxs.reduce((s, t) => s + t.amount, 0);
+    const cityState = generateCityState(proportions, get().monthlyIncome, totalSpend);
 
     persist("fq-transactions", newTxs);
     persist("fq-proportions", proportions);
@@ -67,16 +71,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
   loadFromStorage: () => {
     if (typeof window === "undefined") return;
     try {
-      const txRaw  = localStorage.getItem("fq-transactions");
-      const pRaw   = localStorage.getItem("fq-proportions");
-      const csRaw  = localStorage.getItem("fq-city-state");
-      const msgRaw = localStorage.getItem("fq-advisor");
+      const txRaw     = localStorage.getItem("fq-transactions");
+      const pRaw      = localStorage.getItem("fq-proportions");
+      const csRaw     = localStorage.getItem("fq-city-state");
+      const msgRaw    = localStorage.getItem("fq-advisor");
+      const incomeRaw = localStorage.getItem("fq-income");
 
       const updates: Partial<GameStore> = {};
-      if (txRaw)  updates.transactions   = JSON.parse(txRaw);
-      if (pRaw)   updates.proportions    = JSON.parse(pRaw);
-      if (csRaw)  updates.cityState      = JSON.parse(csRaw);
-      if (msgRaw) updates.advisorMessage = msgRaw;
+      if (txRaw)     updates.transactions   = JSON.parse(txRaw);
+      if (pRaw)      updates.proportions    = JSON.parse(pRaw);
+      if (csRaw)     updates.cityState      = JSON.parse(csRaw);
+      if (msgRaw)    updates.advisorMessage = msgRaw;
+      if (incomeRaw) updates.monthlyIncome  = JSON.parse(incomeRaw);
       set(updates);
     } catch {
       // ignore corrupt storage
@@ -89,4 +95,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   setAdvisorLoading: (loading) => set({ isAdvisorLoading: loading }),
+
+  setMonthlyIncome: (income) => {
+    persist("fq-income", income);
+    // Recalculate city state with new income
+    const { transactions, proportions } = get();
+    const totalSpend = transactions.reduce((s, t) => s + t.amount, 0);
+    const cityState = generateCityState(proportions, income, totalSpend);
+    persist("fq-city-state", cityState);
+    set({ monthlyIncome: income, cityState });
+  },
 }));

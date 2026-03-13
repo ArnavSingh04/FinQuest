@@ -1,5 +1,5 @@
 export type TransactionCategory = "Need" | "Want" | "Treat" | "Invest";
-export type WeatherType = "clear" | "overcast" | "rain" | "storm";
+export type WeatherType = "thriving" | "clear" | "overcast" | "rain" | "storm" | "destruction";
 
 export interface Transaction {
   id?: string;
@@ -24,6 +24,7 @@ export interface CityState {
   weather: WeatherType;
   population: number;       // 0–10
   healthScore: number;      // 0–100
+  budgetUsed: number;       // 0–1+ (fraction of monthly income spent)
 }
 
 export interface AdvisorResponse {

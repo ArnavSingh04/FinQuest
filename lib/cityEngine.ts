@@ -7,26 +7,31 @@ export const mapNeedsToApartments = (pct: number) => Math.max(2, Math.floor(pct 
 export const mapInvestToTower = (pct: number) => 0.5 + (pct / 20) * 4;
 
 export function mapHealthToWeather(score: number): WeatherType {
-  if (score > 75) return "clear";
-  if (score > 50) return "overcast";
-  if (score > 30) return "rain";
-  return "storm";
+  if (score >= 88) return "thriving";
+  if (score >= 70) return "clear";
+  if (score >= 50) return "overcast";
+  if (score >= 30) return "rain";
+  if (score >= 15) return "storm";
+  return "destruction";
 }
 
-export function calculateHealthScore(p: Proportions): number {
-  // Reward needs + investments, penalise heavy treats
-  const needsScore  = Math.min(50, p.needs * 100) * 0.4;       // up to 20
-  const investScore = Math.min(40, p.investments * 100) * 0.8;  // up to 32
+export function calculateHealthScore(p: Proportions, budgetUsed = 0): number {
+  // Reward needs + investments, penalise heavy treats and overspending
+  const needsScore   = Math.min(50, p.needs * 100) * 0.4;       // up to 20
+  const investScore  = Math.min(40, p.investments * 100) * 0.8;  // up to 32
   const treatPenalty = p.treats * 100 * 0.5;
+  // Budget penalty: 0 if within budget, up to -25 if double over budget
+  const budgetPenalty = budgetUsed > 1 ? Math.min(25, (budgetUsed - 1) * 50) : 0;
   const baseline = 20;
-  return Math.max(0, Math.min(100, baseline + needsScore + investScore - treatPenalty));
+  return Math.max(0, Math.min(100, baseline + needsScore + investScore - treatPenalty - budgetPenalty));
 }
 
-export function generateCityState(proportions: Proportions): CityState {
-  const needsPct   = proportions.needs * 100;
-  const wantsPct   = proportions.wants * 100;
-  const investPct  = proportions.investments * 100;
-  const healthScore = calculateHealthScore(proportions);
+export function generateCityState(proportions: Proportions, monthlyIncome = 0, totalSpend = 0): CityState {
+  const needsPct    = proportions.needs * 100;
+  const wantsPct    = proportions.wants * 100;
+  const investPct   = proportions.investments * 100;
+  const budgetUsed  = monthlyIncome > 0 ? totalSpend / monthlyIncome : 0;
+  const healthScore = calculateHealthScore(proportions, budgetUsed);
 
   return {
     bankHeight:      mapInvestToBank(investPct),
@@ -36,6 +41,7 @@ export function generateCityState(proportions: Proportions): CityState {
     weather:         mapHealthToWeather(healthScore),
     population:      Math.floor(healthScore / 10),
     healthScore:     Math.round(healthScore),
+    budgetUsed,
   };
 }
 
@@ -47,4 +53,5 @@ export const defaultCityState: CityState = {
   weather: "overcast",
   population: 5,
   healthScore: 50,
+  budgetUsed: 0,
 };

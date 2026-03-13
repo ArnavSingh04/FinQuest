@@ -17,7 +17,7 @@ const LEGEND = [
 ];
 
 const WEATHER_EMOJI: Record<string, string> = {
-  clear: "☀️", overcast: "⛅", rain: "🌧", storm: "⛈",
+  thriving: "✨", clear: "☀️", overcast: "⛅", rain: "🌧", storm: "⛈", destruction: "💥",
 };
 
 async function fetchAdvisorMessage(proportions: Proportions): Promise<string> {

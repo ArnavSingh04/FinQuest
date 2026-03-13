@@ -9,10 +9,12 @@ import { useGameStore } from "@/store/useGameStore";
 import { CityGenerator } from "./CityGenerator";
 
 const WEATHER = {
-  clear:    { bg: "#090f1f", fog: "#090f1f", ambient: 0.75, dir: 2.1, dirColor: "#fff5e0", hemiSky: "#1e40af", hemiGround: "#14532d" },
-  overcast: { bg: "#111827", fog: "#111827", ambient: 0.5,  dir: 0.8, dirColor: "#c8d8e8", hemiSky: "#374151", hemiGround: "#1a2e1a" },
-  rain:     { bg: "#0c1422", fog: "#0c1422", ambient: 0.3,  dir: 0.45, dirColor: "#8899aa", hemiSky: "#1e2a3a", hemiGround: "#111a11" },
-  storm:    { bg: "#070c14", fog: "#070c14", ambient: 0.18, dir: 0.2,  dirColor: "#606878", hemiSky: "#111827", hemiGround: "#0a0f0a" },
+  thriving:    { bg: "#060e1c", fog: "#060e1c", ambient: 1.0,  dir: 2.8, dirColor: "#fff7d6", hemiSky: "#2563eb", hemiGround: "#166534" },
+  clear:       { bg: "#090f1f", fog: "#090f1f", ambient: 0.75, dir: 2.1, dirColor: "#fff5e0", hemiSky: "#1e40af", hemiGround: "#14532d" },
+  overcast:    { bg: "#111827", fog: "#111827", ambient: 0.5,  dir: 0.8, dirColor: "#c8d8e8", hemiSky: "#374151", hemiGround: "#1a2e1a" },
+  rain:        { bg: "#0c1422", fog: "#0c1422", ambient: 0.3,  dir: 0.45, dirColor: "#8899aa", hemiSky: "#1e2a3a", hemiGround: "#111a11" },
+  storm:       { bg: "#070c14", fog: "#070c14", ambient: 0.18, dir: 0.2,  dirColor: "#606878", hemiSky: "#111827", hemiGround: "#0a0f0a" },
+  destruction: { bg: "#0f0404", fog: "#1a0505", ambient: 0.12, dir: 0.15, dirColor: "#ff4422", hemiSky: "#3b0a0a", hemiGround: "#0a0505" },
 } as const;
 
 function Lights() {

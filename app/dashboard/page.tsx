@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { BudgetCard } from "@/components/budget/BudgetCard";
 import { SpendingForm } from "@/components/spending/SpendingForm";
 import { useGameStore } from "@/store/useGameStore";
 import type { Proportions, TransactionCategory } from "@/types";
@@ -50,9 +51,11 @@ function HealthRing({ score }: { score: number }) {
     score > 30 ? "bg-amber-400" : "bg-red-400";
 
   const weatherLabel =
-    score > 75 ? "☀️ Thriving" :
-    score > 50 ? "⛅ Stable" :
-    score > 30 ? "🌧 At risk" : "⛈ Critical";
+    score >= 88 ? "✨ Thriving" :
+    score >= 70 ? "☀️ Clear" :
+    score >= 50 ? "⛅ Stable" :
+    score >= 30 ? "🌧 At risk" :
+    score >= 15 ? "⛈ Storm" : "💥 Critical";
 
   return (
     <div className="glass-card rounded-3xl p-5">
@@ -178,6 +181,7 @@ export default function DashboardPage() {
         {/* Left */}
         <div className="flex flex-col gap-5">
           <SpendingForm onSubmitted={handleSubmitted} />
+          <BudgetCard />
           <RecentTransactions />
         </div>
 
