@@ -6,19 +6,27 @@ import Link from "next/link";
 import { CityScene } from "@/components/city/CityScene";
 import { SpendingForm } from "@/components/spending/SpendingForm";
 import { useCityStore } from "@/store/useCityStore";
+import { useWorldStore } from "@/store/useWorldStore";
 import type { CityMetrics } from "@/types";
 
 export default function CityPage() {
   const cityMetrics = useCityStore((state) => state.cityMetrics);
   const setCityMetrics = useCityStore((state) => state.setCityMetrics);
 
+  const initWorld = useWorldStore((state) => state.init);
+  const updateMyMetrics = useWorldStore((state) => state.updateMyMetrics);
+
   useEffect(() => {
+    initWorld();
+
     const savedMetrics = localStorage.getItem("finquest-city-metrics");
 
     if (savedMetrics) {
-      setCityMetrics(JSON.parse(savedMetrics) as CityMetrics);
+      const parsed = JSON.parse(savedMetrics) as CityMetrics;
+      setCityMetrics(parsed);
+      updateMyMetrics(parsed);
     }
-  }, [setCityMetrics]);
+  }, [initWorld, setCityMetrics, updateMyMetrics]);
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-md px-5 py-6 sm:max-w-6xl">

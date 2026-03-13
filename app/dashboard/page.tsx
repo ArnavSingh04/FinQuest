@@ -5,7 +5,9 @@ import Link from "next/link";
 
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { SpendingForm } from "@/components/spending/SpendingForm";
+import { WorldPanel } from "@/components/world/WorldPanel";
 import { useCityStore } from "@/store/useCityStore";
+import { useWorldStore } from "@/store/useWorldStore";
 import type {
   CityMetrics,
   SpendingRatios,
@@ -43,6 +45,8 @@ function formatPercent(value: number) {
 export default function DashboardPage() {
   const cityMetrics = useCityStore((state) => state.cityMetrics);
   const setCityMetrics = useCityStore((state) => state.setCityMetrics);
+  const initWorld = useWorldStore((state) => state.init);
+  const updateMyMetrics = useWorldStore((state) => state.updateMyMetrics);
 
   const [ratios, setRatios] = useState<SpendingRatios>(emptyRatios);
   const [insight, setInsight] = useState(
@@ -51,6 +55,8 @@ export default function DashboardPage() {
   const [isInsightLoading, setIsInsightLoading] = useState(false);
 
   useEffect(() => {
+    initWorld();
+
     const savedRatios = localStorage.getItem("finquest-ratios");
     const savedMetrics = localStorage.getItem("finquest-city-metrics");
     const savedInsight = localStorage.getItem("finquest-insight");
@@ -60,17 +66,20 @@ export default function DashboardPage() {
     }
 
     if (savedMetrics) {
-      setCityMetrics(JSON.parse(savedMetrics) as CityMetrics);
+      const parsed = JSON.parse(savedMetrics) as CityMetrics;
+      setCityMetrics(parsed);
+      updateMyMetrics(parsed);
     }
 
     if (savedInsight) {
       setInsight(savedInsight);
     }
-  }, [setCityMetrics]);
+  }, [initWorld, setCityMetrics, updateMyMetrics]);
 
   async function handleTransactionProcessed(payload: TransactionApiResponse) {
     setRatios(payload.ratios);
     setCityMetrics(payload.cityMetrics);
+    updateMyMetrics(payload.cityMetrics);
     setIsInsightLoading(true);
 
     try {
@@ -162,6 +171,8 @@ export default function DashboardPage() {
           accent="from-emerald-400/30 to-cyan-400/10"
         />
       </section>
+
+      <WorldPanel />
 
       <section className="glass-card mt-6 rounded-[2rem] p-5 sm:p-6">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
