@@ -1,43 +1,12 @@
 "use client";
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { ContactShadows, OrbitControls, Sky } from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
 import type { Group } from "three";
-import * as THREE from "three";
 
 import { useCityStore } from "@/store/useCityStore";
 import { CityGenerator } from "./CityGenerator";
-
-function DynamicFog() {
-  const { camera, scene } = useThree();
-
-  useFrame(() => {
-    const distance = camera.position.length();
-
-    const minDistance = 55;
-    const maxDistance = 60;
-
-    const t = THREE.MathUtils.clamp(
-      (distance - minDistance) / (maxDistance - minDistance),
-      0,
-      1
-    );
-
-    const near = THREE.MathUtils.lerp(32, 24, t);
-    const far = THREE.MathUtils.lerp(70, 46, t);
-
-    if (!(scene.fog instanceof THREE.Fog)) {
-      scene.fog = new THREE.Fog("#91cdee", near, far);
-    } else {
-      scene.fog.color.set("#91cdee");
-      scene.fog.near = near;
-      scene.fog.far = far;
-    }
-  });
-
-  return null;
-}
 
 export function CityScene() {
   const cityMetrics = useCityStore((state) => state.cityMetrics);
@@ -80,8 +49,6 @@ export function CityScene() {
         className="h-full w-full"
       >
         <color attach="background" args={["#91cdee"]} />
-        <fog attach="fog" args={["#91cdee", 12, 56]} />
-
         <Sky
           sunPosition={sunPosition}
           turbidity={6}
@@ -112,7 +79,7 @@ export function CityScene() {
           color="#a2c9ff"
         />
 
-        <DynamicFog />
+      
 
         <CityGenerator metrics={cityMetrics} />
 
