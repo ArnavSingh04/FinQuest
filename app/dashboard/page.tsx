@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { BudgetCard } from "@/components/budget/BudgetCard";
+import { SpendingDonut } from "@/components/charts/SpendingDonut";
+import { WeeklySummary } from "@/components/charts/WeeklySummary";
 import { SpendingForm } from "@/components/spending/SpendingForm";
 import { useGameStore } from "@/store/useGameStore";
 import { getCityTier, getStreak } from "@/lib/cityLevel";
@@ -195,16 +197,8 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-5">
           <HealthRing score={cityState.healthScore} />
 
-          {/* Breakdown bars */}
-          <div className="glass-card rounded-3xl p-5">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-400">Spending Mix</p>
-            <div className="flex flex-col gap-4">
-              <CategoryBar id="needs"       label="🏠 Needs"   pct={proportions.needs * 100} />
-              <CategoryBar id="wants"       label="🍕 Wants"   pct={proportions.wants * 100} />
-              <CategoryBar id="treats"      label="🛍️ Treats"  pct={proportions.treats * 100} />
-              <CategoryBar id="investments" label="📈 Invest"  pct={proportions.investments * 100} />
-            </div>
-          </div>
+          <SpendingDonut />
+          <WeeklySummary />
 
           {/* City snapshot */}
           <div className="grid grid-cols-3 gap-3">
