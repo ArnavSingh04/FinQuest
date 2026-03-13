@@ -1,18 +1,50 @@
-import type { CityMetrics, SpendingRatios } from "@/types";
+import type { CityState, Proportions, WeatherType } from "@/types";
 
-function ratioToMetric(ratio: number, minimum = 10) {
-  return Math.min(100, Math.round(ratio * 100) + minimum);
+// Pure mapping functions — proportions in %, city values out
+export const mapInvestToBank = (pct: number) => 1 + (pct / 30) * 7;
+export const mapWantsToRestaurants = (pct: number) => Math.max(1, Math.floor(pct / 8));
+export const mapNeedsToApartments = (pct: number) => Math.max(2, Math.floor(pct / 10));
+export const mapInvestToTower = (pct: number) => 0.5 + (pct / 20) * 4;
+
+export function mapHealthToWeather(score: number): WeatherType {
+  if (score > 75) return "clear";
+  if (score > 50) return "overcast";
+  if (score > 30) return "rain";
+  return "storm";
 }
 
-export function generateCityMetrics(ratios: SpendingRatios): CityMetrics {
+export function calculateHealthScore(p: Proportions): number {
+  // Reward needs + investments, penalise heavy treats
+  const needsScore  = Math.min(50, p.needs * 100) * 0.4;       // up to 20
+  const investScore = Math.min(40, p.investments * 100) * 0.8;  // up to 32
+  const treatPenalty = p.treats * 100 * 0.5;
+  const baseline = 20;
+  return Math.max(0, Math.min(100, baseline + needsScore + investScore - treatPenalty));
+}
+
+export function generateCityState(proportions: Proportions): CityState {
+  const needsPct   = proportions.needs * 100;
+  const wantsPct   = proportions.wants * 100;
+  const investPct  = proportions.investments * 100;
+  const healthScore = calculateHealthScore(proportions);
+
   return {
-    // Needs spending keeps the city functional, so it becomes the housing baseline.
-    housing: ratioToMetric(ratios.needs_ratio, 20),
-    // Wants spending adds fun and visual energy to the city.
-    entertainment: ratioToMetric(ratios.wants_ratio, 12),
-    // Treat-heavy habits increase pollution in this simple MVP model.
-    pollution: ratioToMetric(ratios.treat_ratio, 8),
-    // Investment spending drives long-term growth and taller buildings.
-    growth: ratioToMetric(ratios.invest_ratio, 15),
+    bankHeight:      mapInvestToBank(investPct),
+    restaurantCount: mapWantsToRestaurants(wantsPct),
+    apartmentCount:  mapNeedsToApartments(needsPct),
+    towerHeight:     mapInvestToTower(investPct),
+    weather:         mapHealthToWeather(healthScore),
+    population:      Math.floor(healthScore / 10),
+    healthScore:     Math.round(healthScore),
   };
 }
+
+export const defaultCityState: CityState = {
+  bankHeight: 1.5,
+  restaurantCount: 2,
+  apartmentCount: 3,
+  towerHeight: 1,
+  weather: "overcast",
+  population: 5,
+  healthScore: 50,
+};

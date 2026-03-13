@@ -1,33 +1,31 @@
 export type TransactionCategory = "Need" | "Want" | "Treat" | "Invest";
+export type WeatherType = "clear" | "overcast" | "rain" | "storm";
 
 export interface Transaction {
   id?: string;
   amount: number;
   category: TransactionCategory;
+  merchant?: string;
   created_at?: string;
 }
 
-export interface SpendingRatios {
-  needs_ratio: number;
-  wants_ratio: number;
-  treat_ratio: number;
-  invest_ratio: number;
+export interface Proportions {
+  needs: number;       // 0–1
+  wants: number;       // 0–1
+  treats: number;      // 0–1
+  investments: number; // 0–1
 }
 
-export interface CityMetrics {
-  housing: number;
-  entertainment: number;
-  pollution: number;
-  growth: number;
+export interface CityState {
+  bankHeight: number;       // 1–8, driven by investments %
+  restaurantCount: number;  // 1–6, driven by wants %
+  apartmentCount: number;   // 2–8, driven by needs %
+  towerHeight: number;      // 0.5–5, driven by investments %
+  weather: WeatherType;
+  population: number;       // 0–10
+  healthScore: number;      // 0–100
 }
 
-export interface TransactionApiResponse {
-  cityMetrics: CityMetrics;
-  ratios: SpendingRatios;
-  transactions: Transaction[];
-  mode: "supabase" | "local-fallback";
-}
-
-export interface InsightApiResponse {
-  insight: string;
+export interface AdvisorResponse {
+  message: string;
 }
