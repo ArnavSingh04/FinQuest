@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { CityHeader } from "@/components/city/CityHeader";
 import { CityScene } from "@/components/city/CityScene";
 import { SpendingForm } from "@/components/spending/SpendingForm";
 import { useGameStore } from "@/store/useGameStore";
 import { encodeCityShare } from "@/lib/cityShare";
+import { getCityTier } from "@/lib/cityLevel";
 import type { Proportions } from "@/types";
 
 const LEGEND = [
@@ -60,18 +62,12 @@ export default function CityPage() {
     }
   }
 
-  const healthLabel =
-    cityState.healthScore > 75 ? "Thriving" :
-    cityState.healthScore > 50 ? "Stable" :
-    cityState.healthScore > 30 ? "At risk" : "Critical";
+  const tier = getCityTier(cityState.healthScore);
 
   return (
     <main className="page-with-nav mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
       <header className="mb-5 flex items-center justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-400">FinQuest</p>
-          <h1 className="mt-1 text-2xl font-bold text-white sm:text-3xl">Your 3D City</h1>
-        </div>
+        <CityHeader />
         <div className="flex gap-2">
           <button
             onClick={handleShare}
@@ -100,15 +96,15 @@ export default function CityPage() {
           {/* Stats strip */}
           <div className="grid grid-cols-4 gap-2.5">
             {[
-              { label: "Health", value: cityState.healthScore, sub: healthLabel },
+              { label: "Health", value: cityState.healthScore, sub: tier.name, subColor: tier.color },
               { label: "Weather", value: WEATHER_EMOJI[cityState.weather] ?? cityState.weather, sub: cityState.weather, capitalize: true },
               { label: "Population", value: `${cityState.population * 100}k`, sub: "residents" },
               { label: "Restaurants", value: String(cityState.restaurantCount), sub: "open" },
-            ].map(({ label, value, sub, capitalize }) => (
+            ].map(({ label, value, sub, capitalize, subColor }) => (
               <div key={label} className="glass-card rounded-2xl p-3 text-center">
                 <p className="text-[11px] text-slate-500">{label}</p>
                 <p className={`mt-0.5 text-base font-bold text-white ${capitalize ? "capitalize" : ""}`}>{value}</p>
-                <p className={`text-[10px] capitalize text-slate-500`}>{sub}</p>
+                <p className={`text-[10px] capitalize ${subColor ?? "text-slate-500"}`}>{sub}</p>
               </div>
             ))}
           </div>

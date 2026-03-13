@@ -6,6 +6,7 @@ import Link from "next/link";
 import { BudgetCard } from "@/components/budget/BudgetCard";
 import { SpendingForm } from "@/components/spending/SpendingForm";
 import { useGameStore } from "@/store/useGameStore";
+import { getCityTier, getStreak } from "@/lib/cityLevel";
 import type { Proportions, TransactionCategory } from "@/types";
 
 // ── Category bar ──────────────────────────────────────────────────────────────
@@ -38,17 +39,17 @@ function CategoryBar({ id, label, pct }: { id: string; label: string; pct: numbe
   );
 }
 
-// ── Health ring (simple progress arc in CSS) ──────────────────────────────────
+// ── Health ring ───────────────────────────────────────────────────────────────
 function HealthRing({ score }: { score: number }) {
-  const color =
-    score > 75 ? "text-emerald-400" :
-    score > 50 ? "text-sky-400" :
-    score > 30 ? "text-amber-400" : "text-red-400";
+  const transactions = useGameStore((s) => s.transactions);
+  const tier = getCityTier(score);
+  const streak = getStreak(transactions);
 
   const barColor =
-    score > 75 ? "bg-emerald-400" :
-    score > 50 ? "bg-sky-400" :
-    score > 30 ? "bg-amber-400" : "bg-red-400";
+    score >= 88 ? "bg-emerald-400" :
+    score >= 70 ? "bg-sky-400" :
+    score >= 50 ? "bg-amber-400" :
+    score >= 30 ? "bg-orange-500" : "bg-red-500";
 
   const weatherLabel =
     score >= 88 ? "✨ Thriving" :
@@ -63,16 +64,21 @@ function HealthRing({ score }: { score: number }) {
         <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">City Health</span>
         <span className="text-xs font-semibold text-slate-400">{weatherLabel}</span>
       </div>
-      <div className="flex items-end gap-3">
-        <span className={`text-5xl font-black ${color}`}>{score}</span>
+      <div className="flex items-end gap-3 mb-3">
+        <span className={`text-5xl font-black ${tier.color}`}>{score}</span>
         <span className="text-slate-500 text-sm pb-1">/ 100</span>
+        <div className="ml-auto flex flex-col items-end gap-1">
+          <span className={`text-xs font-bold ${tier.color}`}>{tier.icon} {tier.name}</span>
+          {streak > 0 && <span className="text-xs text-amber-400">🔥 {streak}d streak</span>}
+        </div>
       </div>
-      <div className="mt-3 h-2.5 w-full rounded-full bg-slate-800 overflow-hidden">
+      <div className="h-2.5 w-full rounded-full bg-slate-800 overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-700 ${barColor}`}
           style={{ width: `${score}%` }}
         />
       </div>
+      <p className="mt-2 text-[11px] text-slate-500">{tier.desc}</p>
     </div>
   );
 }
