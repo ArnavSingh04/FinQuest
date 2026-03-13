@@ -580,6 +580,162 @@ function Lightning() {
   );
 }
 
+// ─── School building (appears when needs ≥ 40%) ──────────────────────────────
+function School({ x, z }: { x: number; z: number }) {
+  const { cityState } = useActiveCityState();
+  const visible = cityState.apartmentCount >= 4; // proxy for needs ≥ 40%
+  const target = visible ? 1 : 0.01;
+  const bodyRef = useLerpScale(target);
+  const towerRef = useLerpScale(target, 1.8);
+
+  return (
+    <group position={[x, 0, z]}>
+      {/* Main building body */}
+      <mesh ref={bodyRef} position={[0, 0.55, 0]} castShadow receiveShadow>
+        <boxGeometry args={[1.4, 1.1, 1.0]} />
+        <meshStandardMaterial color="#4ade80" roughness={0.6} metalness={0.05} emissive="#166534" emissiveIntensity={0.3} />
+      </mesh>
+      {/* Clock tower */}
+      <mesh ref={towerRef} position={[0, 1.4, 0]} castShadow>
+        <boxGeometry args={[0.38, 0.8, 0.38]} />
+        <meshStandardMaterial color="#22c55e" roughness={0.55} emissive="#14532d" emissiveIntensity={0.4} />
+      </mesh>
+      {/* Clock face */}
+      <mesh position={[0, 1.58, 0.21]}>
+        <cylinderGeometry args={[0.12, 0.12, 0.02, 12]} />
+        <meshStandardMaterial color="#fef9c3" emissive="#fef08a" emissiveIntensity={1.5} />
+      </mesh>
+      {/* Roof peak */}
+      <mesh position={[0, 1.85, 0]}>
+        <coneGeometry args={[0.22, 0.35, 4]} />
+        <meshStandardMaterial color="#15803d" roughness={0.7} />
+      </mesh>
+      {/* Windows */}
+      <WindowGrid cols={3} rows={2} width={1.3} height={0.85} depth={0.51} facingZ baseY={0.12} winColor="#bfdbfe" winEmissive="#dbeafe" winIntensity={0.8} />
+      {/* Flag pole */}
+      <mesh position={[0.75, 1.6, 0]}>
+        <cylinderGeometry args={[0.014, 0.014, 0.9, 5]} />
+        <meshStandardMaterial color="#9ca3af" metalness={0.8} roughness={0.2} />
+      </mesh>
+      <mesh position={[0.9, 1.95, 0]}>
+        <boxGeometry args={[0.28, 0.14, 0.02]} />
+        <meshStandardMaterial color="#ef4444" emissive="#dc2626" emissiveIntensity={0.8} />
+      </mesh>
+    </group>
+  );
+}
+
+// ─── Hospital (appears when invest ≥ 15%) ─────────────────────────────────────
+function Hospital({ x, z }: { x: number; z: number }) {
+  const { cityState } = useActiveCityState();
+  const visible = cityState.towerHeight >= 1.5; // proxy for invest ≥ 15%
+  const target = visible ? 1 : 0.01;
+  const bodyRef = useLerpScale(target);
+
+  return (
+    <group position={[x, 0, z]}>
+      <mesh ref={bodyRef} position={[0, 0.65, 0]} castShadow receiveShadow>
+        <boxGeometry args={[1.2, 1.3, 1.0]} />
+        <meshStandardMaterial color="#f0f9ff" roughness={0.5} metalness={0.1} emissive="#e0f2fe" emissiveIntensity={0.2} />
+      </mesh>
+      {/* Red cross sign */}
+      <mesh position={[0, 0.82, 0.52]}>
+        <boxGeometry args={[0.32, 0.09, 0.025]} />
+        <meshStandardMaterial color="#ef4444" emissive="#dc2626" emissiveIntensity={2} />
+      </mesh>
+      <mesh position={[0, 0.82, 0.52]}>
+        <boxGeometry args={[0.09, 0.32, 0.025]} />
+        <meshStandardMaterial color="#ef4444" emissive="#dc2626" emissiveIntensity={2} />
+      </mesh>
+      {/* Windows */}
+      <WindowGrid cols={3} rows={3} width={1.1} height={1.1} depth={0.51} facingZ baseY={0.1} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={1.0} />
+      {/* Rooftop helipad */}
+      <mesh position={[0, 1.32, 0]}>
+        <cylinderGeometry args={[0.35, 0.35, 0.04, 12]} />
+        <meshStandardMaterial color="#fbbf24" emissive="#d97706" emissiveIntensity={0.6} />
+      </mesh>
+      <mesh position={[0, 1.35, 0]}>
+        <cylinderGeometry args={[0.28, 0.28, 0.02, 12]} />
+        <meshStandardMaterial color="#f59e0b" emissive="#f59e0b" emissiveIntensity={1} />
+      </mesh>
+      {/* Entrance canopy */}
+      <mesh position={[0, 0.18, 0.55]}>
+        <boxGeometry args={[0.7, 0.06, 0.3]} />
+        <meshStandardMaterial color="#bae6fd" transparent opacity={0.7} />
+      </mesh>
+    </group>
+  );
+}
+
+// ─── Park fountain ────────────────────────────────────────────────────────────
+function Fountain({ x, z }: { x: number; z: number }) {
+  const ref = useRef<THREE.Mesh>(null);
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      (ref.current.material as THREE.MeshStandardMaterial).emissiveIntensity =
+        0.8 + Math.sin(clock.elapsedTime * 2) * 0.3;
+    }
+  });
+
+  return (
+    <group position={[x, 0, z]}>
+      {/* Basin */}
+      <mesh position={[0, 0.06, 0]}>
+        <cylinderGeometry args={[0.55, 0.6, 0.12, 12]} />
+        <meshStandardMaterial color="#475569" roughness={0.7} />
+      </mesh>
+      {/* Inner water */}
+      <mesh position={[0, 0.1, 0]}>
+        <cylinderGeometry args={[0.45, 0.45, 0.04, 12]} />
+        <meshStandardMaterial color="#38bdf8" transparent opacity={0.7} emissive="#0ea5e9" emissiveIntensity={0.8} />
+      </mesh>
+      {/* Centre pillar */}
+      <mesh position={[0, 0.3, 0]}>
+        <cylinderGeometry args={[0.06, 0.09, 0.44, 8]} />
+        <meshStandardMaterial color="#94a3b8" roughness={0.6} metalness={0.4} />
+      </mesh>
+      {/* Top tier */}
+      <mesh position={[0, 0.55, 0]}>
+        <cylinderGeometry args={[0.22, 0.22, 0.06, 10]} />
+        <meshStandardMaterial color="#64748b" roughness={0.6} />
+      </mesh>
+      {/* Water jet (animated) */}
+      <mesh ref={ref} position={[0, 0.72, 0]}>
+        <sphereGeometry args={[0.06, 8, 8]} />
+        <meshStandardMaterial color="#7dd3fc" transparent opacity={0.85} emissive="#38bdf8" emissiveIntensity={0.8} />
+      </mesh>
+      <pointLight position={[x, 0.55, z]} intensity={2.5} color="#38bdf8" distance={3.5} decay={2} />
+    </group>
+  );
+}
+
+// ─── Bridge over road intersection ───────────────────────────────────────────
+function Bridge() {
+  return (
+    <group position={[-0.4, 0, 0.3]}>
+      {/* Deck */}
+      <mesh position={[0, 0.38, 0]} receiveShadow castShadow>
+        <boxGeometry args={[0.7, 0.08, 1.8]} />
+        <meshStandardMaterial color="#374151" roughness={0.8} />
+      </mesh>
+      {/* Railings */}
+      {[-0.3, 0.3].map((rx) => (
+        <mesh key={rx} position={[rx, 0.46, 0]}>
+          <boxGeometry args={[0.04, 0.1, 1.8]} />
+          <meshStandardMaterial color="#4b5563" roughness={0.9} />
+        </mesh>
+      ))}
+      {/* Support pillars */}
+      {[-0.7, 0.7].map((rz) => (
+        <mesh key={rz} position={[0, 0.19, rz]} castShadow>
+          <cylinderGeometry args={[0.07, 0.09, 0.38, 8]} />
+          <meshStandardMaterial color="#374151" roughness={0.8} metalness={0.3} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 // ─── Car ──────────────────────────────────────────────────────────────────────
 const CAR_COLORS = ["#dc2626", "#2563eb", "#16a34a", "#ca8a04", "#7c3aed", "#0891b2"] as const;
 
@@ -728,6 +884,16 @@ export function CityGenerator() {
       {/* ── Financial district ── */}
       <BankTower x={3.5} z={-2.5} />
       <InvestmentTower x={5.2} z={0.4} />
+
+      {/* ── Community buildings ── */}
+      <School x={-7.0} z={-2.2} />
+      <Hospital x={-7.0} z={0.8} />
+
+      {/* ── Park features ── */}
+      <Fountain x={-1.0} z={2.5} />
+
+      {/* ── Bridge ── */}
+      <Bridge />
 
       {/* ── Trees ── */}
       <Tree x={-0.6} z={-3.0} scale={1.1} />

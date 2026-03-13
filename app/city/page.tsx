@@ -12,11 +12,14 @@ import { getCityTier } from "@/lib/cityLevel";
 import type { Proportions } from "@/types";
 
 const LEGEND = [
-  { icon: "🏠", label: "Apartments", desc: "Grow with Needs spending", color: "text-sky-300" },
-  { icon: "🍕", label: "Restaurants", desc: "Grow with Wants spending", color: "text-orange-300" },
-  { icon: "🏦", label: "Bank tower", desc: "Rises with Investments", color: "text-blue-300" },
-  { icon: "💹", label: "Hex tower", desc: "Scales with Investments", color: "text-emerald-300" },
-  { icon: "☁️", label: "Smog clouds", desc: "Appear with Treat overspend", color: "text-pink-300" },
+  { icon: "🏠", label: "Apartments",  desc: "Grow with Needs spending",      color: "text-sky-300"     },
+  { icon: "🍕", label: "Restaurants", desc: "Grow with Wants spending",      color: "text-orange-300"  },
+  { icon: "🏦", label: "Bank tower",  desc: "Rises with Investments",        color: "text-blue-300"    },
+  { icon: "💹", label: "Hex tower",   desc: "Scales with Investments",       color: "text-emerald-300" },
+  { icon: "🏫", label: "School",      desc: "Unlocks at Needs ≥ 40%",        color: "text-green-300"   },
+  { icon: "🏥", label: "Hospital",    desc: "Unlocks at Invest ≥ 15%",       color: "text-white"       },
+  { icon: "⛲", label: "Fountain",    desc: "Park centrepiece — always here", color: "text-sky-300"     },
+  { icon: "☁️", label: "Smog clouds", desc: "Appear with Treat overspend",   color: "text-pink-300"    },
 ];
 
 const WEATHER_EMOJI: Record<string, string> = {
