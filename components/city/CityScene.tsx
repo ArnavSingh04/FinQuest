@@ -1,9 +1,41 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, OrbitControls, Sky } from "@react-three/drei";
+import * as THREE from "three";
+
 import { useCityStore } from "@/store/useCityStore";
 import { CityGenerator } from "./CityGenerator";
+
+function DynamicFog() {
+  const { camera, scene } = useThree();
+
+  useFrame(() => {
+    const distance = camera.position.length();
+
+    const minDistance = 19;
+    const maxDistance = 60;
+
+    const t = THREE.MathUtils.clamp(
+      (distance - minDistance) / (maxDistance - minDistance),
+      0,
+      1
+    );
+
+    const near = THREE.MathUtils.lerp(32, 24, t);
+    const far = THREE.MathUtils.lerp(70, 46, t);
+
+    if (!(scene.fog instanceof THREE.Fog)) {
+      scene.fog = new THREE.Fog("#bfe9ff", near, far);
+    } else {
+      scene.fog.color.set("#bfe9ff");
+      scene.fog.near = near;
+      scene.fog.far = far;
+    }
+  });
+
+  return null;
+}
 
 export function CityScene() {
   const cityMetrics = useCityStore((state) => state.cityMetrics);
@@ -45,7 +77,7 @@ export function CityScene() {
           color="#d6f0ff"
         />
 
-        
+        <DynamicFog />
 
         <CityGenerator metrics={cityMetrics} />
 
@@ -61,6 +93,8 @@ export function CityScene() {
           enablePan={false}
           maxPolarAngle={Math.PI / 2.15}
           minPolarAngle={Math.PI / 4.4}
+          minDistance={12}
+          maxDistance={80}
         />
       </Canvas>
     </div>
