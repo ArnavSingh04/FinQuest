@@ -1,25 +1,15 @@
 import { NextResponse } from "next/server";
 
-import { generateInsightFromRatios } from "@/lib/aiInsights";
-import type { InsightApiResponse, SpendingRatios } from "@/types";
+import { generateInsight } from "@/lib/aiInsights";
+import type { Proportions } from "@/types";
 
 export async function POST(request: Request) {
   try {
-    const ratios = (await request.json()) as SpendingRatios;
-    const insight = await generateInsightFromRatios(ratios);
-
-    return NextResponse.json<InsightApiResponse>({
-      insight,
-    });
+    const proportions = (await request.json()) as Proportions;
+    const insight = await generateInsight(proportions);
+    return NextResponse.json({ insight });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unable to generate insight.";
-
-    return NextResponse.json(
-      {
-        error: message,
-      },
-      { status: 500 },
-    );
+    const message = error instanceof Error ? error.message : "Unable to generate insight.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

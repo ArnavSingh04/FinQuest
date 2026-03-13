@@ -1,20 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { generateCityMetrics } from "@/lib/cityEngine";
-import { calculateSpendingRatios } from "@/lib/financeEngine";
+import { generateCityState } from "@/lib/cityEngine";
+import { calculateProportions } from "@/lib/financeEngine";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
-import type {
-  Transaction,
-  TransactionApiResponse,
-  TransactionCategory,
-} from "@/types";
+import type { Transaction, TransactionCategory } from "@/types";
 
-const validCategories: TransactionCategory[] = [
-  "Need",
-  "Want",
-  "Treat",
-  "Invest",
-];
+const validCategories: TransactionCategory[] = ["Need", "Want", "Treat", "Invest"];
 
 export async function POST(request: Request) {
   try {
@@ -24,65 +15,32 @@ export async function POST(request: Request) {
 
     if (!amount || amount <= 0 || !category || !validCategories.includes(category)) {
       return NextResponse.json(
-        {
-          error: "Please send a positive amount and a valid category.",
-        },
+        { error: "Please send a positive amount and a valid category." },
         { status: 400 },
       );
     }
 
-    let transactions: Transaction[] = [
-      {
-        amount,
-        category,
-        created_at: new Date().toISOString(),
-      },
-    ];
-    let mode: TransactionApiResponse["mode"] = "local-fallback";
+    let transactions: Transaction[] = [{ amount, category, created_at: new Date().toISOString() }];
 
     if (hasSupabaseEnv) {
-      const insertResult = await supabase
-        .from("transactions")
-        .insert({
-          amount,
-          category,
-        });
-
-      if (insertResult.error) {
-        throw insertResult.error;
-      }
+      const insertResult = await supabase.from("transactions").insert({ amount, category });
+      if (insertResult.error) throw insertResult.error;
 
       const fetchResult = await supabase
         .from("transactions")
         .select("id, amount, category, created_at")
         .order("created_at", { ascending: false });
-
-      if (fetchResult.error) {
-        throw fetchResult.error;
-      }
+      if (fetchResult.error) throw fetchResult.error;
 
       transactions = (fetchResult.data ?? []) as Transaction[];
-      mode = "supabase";
     }
 
-    const ratios = calculateSpendingRatios(transactions);
-    const cityMetrics = generateCityMetrics(ratios);
+    const proportions = calculateProportions(transactions);
+    const cityState = generateCityState(proportions);
 
-    return NextResponse.json<TransactionApiResponse>({
-      cityMetrics,
-      ratios,
-      transactions,
-      mode,
-    });
+    return NextResponse.json({ cityState, proportions, transactions });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to process transaction.";
-
-    return NextResponse.json(
-      {
-        error: message,
-      },
-      { status: 500 },
-    );
+    const message = error instanceof Error ? error.message : "Failed to process transaction.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
