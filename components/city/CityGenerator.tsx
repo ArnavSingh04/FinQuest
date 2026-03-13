@@ -271,6 +271,36 @@ function Park({ x, z, w, d }: { x: number; z: number; w: number; d: number }) {
   );
 }
 
+// ─── Pavement / sidewalk strip ────────────────────────────────────────────────
+function Pavement({ x, z, w, d }: { x: number; z: number; w: number; d: number }) {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.006, z]} receiveShadow>
+      <planeGeometry args={[w, d]} />
+      <meshStandardMaterial color="#374151" roughness={0.85} />
+    </mesh>
+  );
+}
+
+// ─── Bench ────────────────────────────────────────────────────────────────────
+function Bench({ x, z }: { x: number; z: number }) {
+  return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, 0.22, 0]}>
+        <boxGeometry args={[0.5, 0.06, 0.16]} />
+        <meshStandardMaterial color="#78350f" roughness={0.9} />
+      </mesh>
+      <mesh position={[-0.2, 0.12, 0]}>
+        <boxGeometry args={[0.04, 0.24, 0.14]} />
+        <meshStandardMaterial color="#92400e" roughness={0.9} />
+      </mesh>
+      <mesh position={[0.2, 0.12, 0]}>
+        <boxGeometry args={[0.04, 0.24, 0.14]} />
+        <meshStandardMaterial color="#92400e" roughness={0.9} />
+      </mesh>
+    </group>
+  );
+}
+
 // ─── Main city export ──────────────────────────────────────────────────────────
 export function CityGenerator() {
   const treats = useGameStore((s) => s.proportions.treats);
@@ -292,6 +322,16 @@ export function CityGenerator() {
       {/* ── Parks ── */}
       <Park x={-3.5} z={-2.5} w={6.5} d={3.5} />
       <Park x={-1}   z={2.2}  w={9}   d={2.2} />
+
+      {/* ── Pavements ── */}
+      <Pavement x={-3.0} z={-0.45} w={8}  d={0.55} />
+      <Pavement x={-3.0} z={1.05}  w={8}  d={0.55} />
+      <Pavement x={3.6}  z={-1.2}  w={0.55} d={5} />
+
+      {/* ── Benches ── */}
+      <Bench x={-1.8} z={-0.6} />
+      <Bench x={1.2}  z={-0.6} />
+      <Bench x={-4.0} z={1.2}  />
 
       {/* ── Apartments ── */}
       {aptPositions.map(([x, z], i) => (
