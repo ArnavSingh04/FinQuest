@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { useCityStore } from "@/store/useCityStore";
 import type {
@@ -10,20 +10,70 @@ import type {
 
 const categories: TransactionCategory[] = ["Need", "Want", "Treat", "Invest"];
 
+interface RangeOption {
+  label: string;
+  value: number;
+  boost: number;
+  message: string;
+}
+
+const rangeOptions: RangeOption[] = [
+  {
+    label: "Less than $10",
+    value: 7,
+    boost: 0.4,
+    message: "Great restraint—towers grew 40% as a result.",
+  },
+  {
+    label: "$10 - $15",
+    value: 12.5,
+    boost: 0.25,
+    message: "Good job keeping needs modest—tower height +25%.",
+  },
+  {
+    label: "$15 - $25",
+    value: 20,
+    boost: 0.15,
+    message: "Nice job prioritizing needs—towers +15%, keep riding the momentum.",
+  },
+  {
+    label: "$25 - $35",
+    value: 30,
+    boost: 0.1,
+    message:
+      "Tower height +10%, but stay mindful—the city still prizes balance over wants.",
+  },
+  {
+    label: "$35 - $50",
+    value: 42,
+    boost: 0.1,
+    message:
+      "Needs spending is climbing—heights +10%, so keep curbing wants before they spike.",
+  },
+  {
+    label: "More than $50",
+    value: 60,
+    boost: 0.05,
+    message:
+      "Warning: heavy needs spending; towers light up +5%, but please restrain wants.",
+  },
+];
+
 interface SpendingFormProps {
   onTransactionProcessed?: (response: TransactionApiResponse) => Promise<void> | void;
 }
 
 export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
   const setCityMetrics = useCityStore((state) => state.setCityMetrics);
-  const [amount, setAmount] = useState("");
+  const setHeightMultiplier = useCityStore(
+    (state) => state.setHeightMultiplier,
+  );
+  const [selectedRangeIndex, setSelectedRangeIndex] = useState(0);
   const [category, setCategory] = useState<TransactionCategory>("Need");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const isDisabled = useMemo(() => {
-    return Number(amount) <= 0 || isSubmitting;
-  }, [amount, isSubmitting]);
+  const isDisabled = isSubmitting;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,13 +81,14 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
     setFeedback(null);
 
     try {
+      const selectedRange = rangeOptions[selectedRangeIndex];
       const response = await fetch("/api/transaction", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: Number(amount),
+          amount: selectedRange.value,
           category,
         }),
       });
@@ -58,12 +109,22 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
 
       await onTransactionProcessed?.(payload);
 
-      setFeedback(
+      let feedbackMessage =
         payload.mode === "supabase"
           ? "Transaction saved and city updated."
-          : "Running in local preview mode until Supabase is configured.",
-      );
-      setAmount("");
+          : "Running in local preview mode until Supabase is configured.";
+
+      if (category === "Need") {
+        const multiplier = 1 + selectedRange.boost;
+        setHeightMultiplier(multiplier);
+        feedbackMessage = `${selectedRange.message} Tower heights increased by ${
+          selectedRange.boost * 100
+        }%. ${feedbackMessage}`;
+      } else {
+        setHeightMultiplier(1);
+      }
+
+      setFeedback(feedbackMessage);
     } catch (error) {
       setFeedback(
         error instanceof Error ? error.message : "Something went wrong.",
@@ -93,18 +154,19 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
 
       <label className="mb-4 block">
         <span className="mb-2 block text-sm font-medium text-slate-200">
-          Amount
+          Amount range
         </span>
-        <input
-          type="number"
-          inputMode="decimal"
-          min="0"
-          step="0.01"
-          value={amount}
-          onChange={(event) => setAmount(event.target.value)}
-          placeholder="12.50"
+        <select
+          value={selectedRangeIndex}
+          onChange={(event) => setSelectedRangeIndex(Number(event.target.value))}
           className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-base text-white outline-none transition focus:border-sky-400"
-        />
+        >
+          {rangeOptions.map((item, index) => (
+            <option key={item.label} value={index}>
+              {item.label}
+            </option>
+          ))}
+        </select>
       </label>
 
       <div className="mb-5">

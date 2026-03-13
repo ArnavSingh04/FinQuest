@@ -6,7 +6,9 @@ import type { CityMetrics } from "@/types";
 
 interface CityStore {
   cityMetrics: CityMetrics;
+  heightMultiplier: number;
   setCityMetrics: (cityMetrics: CityMetrics) => void;
+  setHeightMultiplier: (multiplier: number) => void;
 }
 
 const defaultCityMetrics: CityMetrics = {
@@ -18,5 +20,7 @@ const defaultCityMetrics: CityMetrics = {
 
 export const useCityStore = create<CityStore>((set) => ({
   cityMetrics: defaultCityMetrics,
+  heightMultiplier: 1,
   setCityMetrics: (cityMetrics) => set({ cityMetrics }),
+  setHeightMultiplier: (multiplier) => set({ heightMultiplier: multiplier }),
 }));
