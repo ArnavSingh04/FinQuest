@@ -20,42 +20,42 @@ interface RangeOption {
 const rangeOptions: RangeOption[] = [
   {
     label: "Less than $10",
-    value: 7,
+    value: 8,
     boost: 0.4,
-    message: "Great restraint—towers grew 40% as a result.",
+    message: "You're keeping needs under $10—great job on only spending on essentials.",
   },
   {
     label: "$10 - $15",
     value: 12.5,
     boost: 0.25,
-    message: "Good job keeping needs modest—tower height +25%.",
+    message: "Good job keeping the focus on needs; your discipline is building a strong skyline.",
   },
   {
     label: "$15 - $25",
     value: 20,
     boost: 0.15,
-    message: "Nice job prioritizing needs—towers +15%, keep riding the momentum.",
+    message: "Solid essentials-first play; keep wants on hold and the skyline stays steady.",
   },
   {
     label: "$25 - $35",
     value: 30,
     boost: 0.1,
     message:
-      "Tower height +10%, but stay mindful—the city still prizes balance over wants.",
+      "Needs spending is creeping higher; towers gain height but keep wants tightly reined in.",
   },
   {
     label: "$35 - $50",
     value: 42,
     boost: 0.1,
     message:
-      "Needs spending is climbing—heights +10%, so keep curbing wants before they spike.",
+      "Needs-heavy territory; towers grow but this is your cue to curb wants before they spike.",
   },
   {
     label: "More than $50",
-    value: 60,
+    value: 65,
     boost: 0.05,
     message:
-      "Warning: heavy needs spending; towers light up +5%, but please restrain wants.",
+      "Warning: needs spending is high; towers stretch a little but seriously restrain wants.",
   },
 ];
 
@@ -65,8 +65,11 @@ interface SpendingFormProps {
 
 export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
   const setCityMetrics = useCityStore((state) => state.setCityMetrics);
-  const setHeightMultiplier = useCityStore(
-    (state) => state.setHeightMultiplier,
+  const incrementNeedsBoostVersion = useCityStore(
+    (state) => state.incrementNeedsBoostVersion,
+  );
+  const increaseHeightMultiplier = useCityStore(
+    (state) => state.increaseHeightMultiplier,
   );
   const [selectedRangeIndex, setSelectedRangeIndex] = useState(0);
   const [category, setCategory] = useState<TransactionCategory>("Need");
@@ -115,13 +118,11 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
           : "Running in local preview mode until Supabase is configured.";
 
       if (category === "Need") {
-        const multiplier = 1 + selectedRange.boost;
-        setHeightMultiplier(multiplier);
+        increaseHeightMultiplier(selectedRange.boost);
+        incrementNeedsBoostVersion();
         feedbackMessage = `${selectedRange.message} Tower heights increased by ${
           selectedRange.boost * 100
         }%. ${feedbackMessage}`;
-      } else {
-        setHeightMultiplier(1);
       }
 
       setFeedback(feedbackMessage);
