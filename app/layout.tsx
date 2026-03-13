@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
 
+import { NavBar } from "@/components/NavBar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "FinQuest",
-  description:
-    "A mobile-first financial literacy app that turns spending into a living 3D city.",
+  title: "FinQuest — Your Money, Your City",
+  description: "Turn your spending habits into a living 3D city. Financial literacy made visual for teens.",
   applicationName: "FinQuest",
   manifest: "/manifest.webmanifest",
 };
@@ -13,17 +13,16 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#07111f",
+  themeColor: "#06101e",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="antialiased">
+        <NavBar />
+        <div className="md:pt-14">{children}</div>
+      </body>
     </html>
   );
 }
