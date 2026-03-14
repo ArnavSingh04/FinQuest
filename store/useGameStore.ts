@@ -124,7 +124,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   setAdvisorMessage: (msg) => {
-    persist("fq-advisor", msg);
+    if (typeof window !== "undefined") localStorage.setItem("fq-advisor", msg);
     set({ advisorMessage: msg });
   },
 

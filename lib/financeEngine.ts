@@ -63,10 +63,10 @@ export function calculateSpendingRatios(
   );
 
   return {
-    needs_ratio: Number((categoryTotals.needs / totalSpent).toFixed(2)),
-    wants_ratio: Number((categoryTotals.wants / totalSpent).toFixed(2)),
-    treat_ratio: Number((categoryTotals.treat / totalSpent).toFixed(2)),
-    invest_ratio: Number((categoryTotals.invest / totalSpent).toFixed(2)),
+    needs_ratio: categoryTotals.needs / totalSpent,
+    wants_ratio: categoryTotals.wants / totalSpent,
+    treat_ratio: categoryTotals.treat / totalSpent,
+    invest_ratio: categoryTotals.invest / totalSpent,
   };
 }
 

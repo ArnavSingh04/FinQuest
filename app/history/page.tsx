@@ -5,6 +5,8 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 import { useAuth } from "@/hooks/useAuth";
+import { calculateHealthScore, mapHealthToWeather } from "@/lib/cityEngine";
+import { useGameStore } from "@/store/useGameStore";
 import type { DashboardPayload, Transaction } from "@/types";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -30,39 +32,14 @@ function formatPercent(value: number) {
   return `${Math.round(value * 100)}%`;
 }
 
-function getWeatherLabel(payload: DashboardPayload) {
-  if (payload.cityMetrics.emergencyWarning) {
-    return "Storm";
-  }
-
-  if (payload.cityMetrics.pollution >= 70) {
-    return "Smog";
-  }
-
-  if (payload.cityMetrics.growth >= 70 && payload.cityMetrics.pollution <= 30) {
-    return "Sunny";
-  }
-
-  if (payload.scores.stability >= 60) {
-    return "Clear";
-  }
-
-  return "Cloudy";
-}
-
-function getPopulationLabel(payload: DashboardPayload) {
-  const estimate = Math.max(
-    18,
-    Math.round(
-      (payload.cityMetrics.growth * 1400 +
-        payload.cityMetrics.infrastructure * 900 +
-        payload.cityMetrics.stability * 700) /
-        1000,
-    ),
-  );
-
-  return `${estimate}k`;
-}
+const WEATHER_LABELS: Record<ReturnType<typeof mapHealthToWeather>, string> = {
+  thriving:    "Thriving ✨",
+  clear:       "Clear ☀️",
+  overcast:    "Overcast ⛅",
+  rain:        "Rainy 🌧️",
+  storm:       "Storm ⛈️",
+  destruction: "Destruction 🔥",
+};
 
 function RatioRow({
   label,
@@ -127,6 +104,7 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
 
 export default function HistoryPage() {
   const { user, loading } = useAuth();
+  const clearGameStore = useGameStore((s) => s.clearAll);
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -188,21 +166,23 @@ export default function HistoryPage() {
   }, [loading, user]);
 
   const summary = useMemo(() => {
-    if (!dashboard) {
-      return null;
-    }
+    if (!dashboard) return null;
 
-    const healthScore = Math.round(
-      (dashboard.scores.budgetHealth +
-        dashboard.scores.stability +
-        dashboard.cityMetrics.economyScore) /
-        3,
-    );
+    const r = dashboard.ratios;
+    const proportions = {
+      needs:       r.needs_ratio,
+      wants:       r.wants_ratio,
+      treats:      r.treat_ratio,
+      investments: r.invest_ratio,
+    };
+    const healthScore = Math.round(calculateHealthScore(proportions));
+    const weather = mapHealthToWeather(healthScore);
+    const population = Math.floor(healthScore / 10);
 
     return {
       healthScore,
-      weather: getWeatherLabel(dashboard),
-      population: getPopulationLabel(dashboard),
+      weather: WEATHER_LABELS[weather],
+      population: `${population}K`,
     };
   }, [dashboard]);
 
@@ -234,9 +214,8 @@ export default function HistoryPage() {
 
       const payload = (await response.json()) as DashboardPayload;
       setDashboard(payload);
-      localStorage.setItem("finquest-ratios", JSON.stringify(payload.ratios));
-      localStorage.setItem("finquest-city-metrics", JSON.stringify(payload.cityMetrics));
-      localStorage.setItem("finquest-progress", JSON.stringify(payload.progress));
+      // Wipe the Zustand game store so the city page reflects the reset immediately
+      clearGameStore();
     } catch (resetError) {
       setError(
         resetError instanceof Error

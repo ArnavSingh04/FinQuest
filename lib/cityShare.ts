@@ -38,13 +38,18 @@ export function decodeCityShare(code: string): SharedCityPayload | null {
       p: [number, number, number, number];
       c: [number, number, number, number, number, number, string];
     };
+    const rawNeeds = raw.p[0] / 1000;
+    const rawWants = raw.p[1] / 1000;
+    const rawTreats = raw.p[2] / 1000;
+    const rawInvest = raw.p[3] / 1000;
+    const total = rawNeeds + rawWants + rawTreats + rawInvest || 1;
     return {
       name: raw.n ?? "Anonymous",
       props: {
-        needs:       raw.p[0] / 1000,
-        wants:       raw.p[1] / 1000,
-        treats:      raw.p[2] / 1000,
-        investments: raw.p[3] / 1000,
+        needs:       rawNeeds / total,
+        wants:       rawWants / total,
+        treats:      rawTreats / total,
+        investments: rawInvest / total,
       },
       city: {
         bankHeight:      raw.c[0] / 10,
