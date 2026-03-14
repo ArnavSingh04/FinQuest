@@ -1,5 +1,9 @@
 "use client";
 
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import type * as THREE from "three";
+
 import { useCityStore } from "@/store/useCityStore";
 import type { CityMetrics } from "@/types";
 
@@ -166,6 +170,106 @@ function getPlazaColor(index: number) {
   return palette[index % palette.length];
 }
 
+type CarSpec = {
+  axis: "x" | "z";
+  lane: number;
+  speed: number;
+  direction: 1 | -1;
+  color: string;
+  seed: number;
+};
+
+type PedSpec = {
+  axis: "x" | "z";
+  lane: number;
+  speed: number;
+  direction: 1 | -1;
+  seed: number;
+};
+
+const ROAD_OFFSETS = Array.from({ length: 9 }, (_, i) => (i - 4) * 3.2);
+const ROAD_SPAN_HALF = 14.4;
+
+function MovingCar({ spec }: { spec: CarSpec }) {
+  const ref = useRef<THREE.Group>(null);
+  const t = useRef(seededRandom(spec.seed) * ROAD_SPAN_HALF * 2 - ROAD_SPAN_HALF);
+
+  useFrame((_, delta) => {
+    if (!ref.current) return;
+    t.current += delta * spec.speed * spec.direction;
+    if (t.current > ROAD_SPAN_HALF) t.current = -ROAD_SPAN_HALF;
+    if (t.current < -ROAD_SPAN_HALF) t.current = ROAD_SPAN_HALF;
+
+    if (spec.axis === "x") {
+      ref.current.position.set(t.current, 0.09, spec.lane);
+      ref.current.rotation.y = spec.direction > 0 ? 0 : Math.PI;
+    } else {
+      ref.current.position.set(spec.lane, 0.09, t.current);
+      ref.current.rotation.y = spec.direction > 0 ? Math.PI / 2 : -Math.PI / 2;
+    }
+  });
+
+  return (
+    <group ref={ref}>
+      <mesh castShadow>
+        <boxGeometry args={[0.55, 0.16, 0.28]} />
+        <meshStandardMaterial color={spec.color} metalness={0.35} roughness={0.3} />
+      </mesh>
+      <mesh position={[0, 0.14, 0]} castShadow>
+        <boxGeometry args={[0.3, 0.12, 0.24]} />
+        <meshStandardMaterial color={spec.color} metalness={0.2} roughness={0.4} />
+      </mesh>
+      {([-0.18, 0.18] as number[]).map((wx) =>
+        ([-0.135, 0.135] as number[]).map((wz) => (
+          <mesh
+            key={`wheel-${wx}-${wz}`}
+            position={[wx, -0.07, wz]}
+            rotation={[Math.PI / 2, 0, 0]}
+            castShadow
+          >
+            <cylinderGeometry args={[0.06, 0.06, 0.05, 10]} />
+            <meshStandardMaterial color="#1f2937" roughness={0.9} />
+          </mesh>
+        )),
+      )}
+    </group>
+  );
+}
+
+function MovingPedestrian({ spec }: { spec: PedSpec }) {
+  const ref = useRef<THREE.Group>(null);
+  const t = useRef(seededRandom(spec.seed) * ROAD_SPAN_HALF * 2 - ROAD_SPAN_HALF);
+
+  useFrame((_, delta) => {
+    if (!ref.current) return;
+    t.current += delta * spec.speed * spec.direction;
+    if (t.current > ROAD_SPAN_HALF) t.current = -ROAD_SPAN_HALF;
+    if (t.current < -ROAD_SPAN_HALF) t.current = ROAD_SPAN_HALF;
+
+    const bob = Math.abs(Math.sin(t.current * 2.2)) * 0.03;
+    if (spec.axis === "x") {
+      ref.current.position.set(t.current, 0.06 + bob, spec.lane);
+      ref.current.rotation.y = spec.direction > 0 ? 0 : Math.PI;
+    } else {
+      ref.current.position.set(spec.lane, 0.06 + bob, t.current);
+      ref.current.rotation.y = spec.direction > 0 ? Math.PI / 2 : -Math.PI / 2;
+    }
+  });
+
+  return (
+    <group ref={ref}>
+      <mesh position={[0, 0.18, 0]} castShadow>
+        <capsuleGeometry args={[0.04, 0.14, 4, 8]} />
+        <meshStandardMaterial color="#cbd5e1" roughness={0.8} />
+      </mesh>
+      <mesh position={[0, 0.38, 0]} castShadow>
+        <sphereGeometry args={[0.045, 8, 8]} />
+        <meshStandardMaterial color="#fde68a" roughness={0.9} />
+      </mesh>
+    </group>
+  );
+}
+
 export function CityGenerator({ metrics }: CityGeneratorProps) {
   const blocks = createCityBlocks(metrics);
   const heightMultiplier = useCityStore((state) => state.heightMultiplier);
@@ -178,6 +282,46 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
   const maxTowerHeight = 7 + growth * 5;
   const mixedHeight = 3.5 + housing * 2.2;
   const residentialHeight = 1.8 + housing * 1.5;
+  const trafficCount = Math.max(6, Math.floor(8 + entertainment * 12));
+  const pedestrianCount = Math.max(10, Math.floor(14 + housing * 18));
+
+  const carSpecs = useMemo<CarSpec[]>(
+    () =>
+      Array.from({ length: trafficCount }, (_, i) => {
+        const axis = i % 2 === 0 ? "x" : "z";
+        const laneIndex = i % ROAD_OFFSETS.length;
+        const lane = ROAD_OFFSETS[laneIndex] + (i % 3 === 0 ? -0.22 : 0.22);
+        const direction = i % 4 < 2 ? 1 : -1;
+        const colors = ["#ef4444", "#3b82f6", "#f59e0b", "#22c55e", "#8b5cf6", "#06b6d4"];
+        return {
+          axis,
+          lane,
+          direction: direction as 1 | -1,
+          speed: 2.2 + seededRandom(i + 11) * 2.1,
+          color: colors[i % colors.length],
+          seed: i + 17,
+        };
+      }),
+    [trafficCount],
+  );
+
+  const pedestrianSpecs = useMemo<PedSpec[]>(
+    () =>
+      Array.from({ length: pedestrianCount }, (_, i) => {
+        const axis = i % 2 === 0 ? "x" : "z";
+        const laneIndex = (i * 2) % ROAD_OFFSETS.length;
+        const lane = ROAD_OFFSETS[laneIndex] + (i % 3 === 0 ? -0.3 : 0.3);
+        const direction = i % 4 < 2 ? 1 : -1;
+        return {
+          axis,
+          lane,
+          direction: direction as 1 | -1,
+          speed: 1.0 + seededRandom(i + 71) * 1.2,
+          seed: i + 71,
+        };
+      }),
+    [pedestrianCount],
+  );
 
   const streetColor = pollution > 0.55 ? "#59616b" : "#5c6770";
   const laneColor = "#f8fafc";
@@ -688,25 +832,12 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
         </group>
       ))}
 
-      {[
-        { x: -6.4, z: -3.2, color: "#ff595e", rot: 0 },
-        { x: 6.4, z: 3.2, color: "#ffca3a", rot: Math.PI / 2 },
-        { x: 0, z: -9.6, color: "#1982c4", rot: 0 },
-        { x: 9.6, z: 0, color: "#8ac926", rot: Math.PI / 2 },
-      ].map((car, i) => (
-        <mesh
-          key={`car-${i}`}
-          position={[car.x, 0.08, car.z]}
-          rotation={[0, car.rot, 0]}
-          castShadow
-        >
-          <boxGeometry args={[0.42, 0.14, 0.22]} />
-          <meshStandardMaterial
-            color={car.color}
-            metalness={0.22}
-            roughness={0.32}
-          />
-        </mesh>
+      {/* Moving traffic and pedestrians, constrained to road lanes */}
+      {carSpecs.map((spec, i) => (
+        <MovingCar key={`moving-car-${i}`} spec={spec} />
+      ))}
+      {pedestrianSpecs.map((spec, i) => (
+        <MovingPedestrian key={`moving-ped-${i}`} spec={spec} />
       ))}
     </group>
   );
