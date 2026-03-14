@@ -21,6 +21,7 @@ export default function LessonDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (loading) {
@@ -37,27 +38,48 @@ export default function LessonDetailPage() {
     async function loadLesson() {
       setIsLoading(true);
       setError(null);
+      setNotFound(false);
 
       try {
         const response = await fetch(`/api/lessons/${params.lessonId}`);
+        const text = await response.text();
 
         if (!response.ok) {
-          const payload = (await response.json()) as { error?: string };
-          throw new Error(payload.error || "Unable to load lesson.");
-        }
-
-        const payload = (await response.json()) as LessonDetailResponse;
-
-        if (!isMounted) {
+          let message = response.status === 404 ? "Lesson not found" : "Unable to load lesson.";
+          try {
+            const parsed = JSON.parse(text) as { error?: string };
+            if (parsed?.error && typeof parsed.error === "string") {
+              message = parsed.error;
+            }
+          } catch {
+            // Response was not JSON (e.g. HTML error page); keep default message
+          }
+          if (isMounted) {
+            setError(message);
+            setNotFound(response.status === 404);
+          }
           return;
         }
 
-        setLesson(payload.lesson);
+        let payload: LessonDetailResponse;
+        try {
+          payload = JSON.parse(text) as LessonDetailResponse;
+        } catch {
+          if (isMounted) {
+            setError("Invalid response from server.");
+          }
+          return;
+        }
+
+        if (!isMounted) return;
+        if (payload?.lesson) {
+          setLesson(payload.lesson);
+        } else {
+          setError("Lesson not found");
+          setNotFound(true);
+        }
       } catch (loadError) {
-        if (!isMounted) {
-          return;
-        }
-
+        if (!isMounted) return;
         setError(loadError instanceof Error ? loadError.message : "Unable to load lesson.");
       } finally {
         if (isMounted) {
@@ -92,13 +114,30 @@ export default function LessonDetailPage() {
         }),
       });
 
+      const text = await response.text();
+
       if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error || "Unable to update lesson.");
+        let message = "Unable to update lesson.";
+        try {
+          const parsed = JSON.parse(text) as { error?: string };
+          if (parsed?.error && typeof parsed.error === "string") {
+            message = parsed.error;
+          }
+        } catch {
+          // non-JSON response
+        }
+        throw new Error(message);
       }
 
-      const payload = (await response.json()) as LessonDetailResponse;
-      setLesson(payload.lesson);
+      let payload: LessonDetailResponse;
+      try {
+        payload = JSON.parse(text) as LessonDetailResponse;
+      } catch {
+        throw new Error("Invalid response from server.");
+      }
+      if (payload?.lesson) {
+        setLesson(payload.lesson);
+      }
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to update lesson.");
     } finally {
@@ -134,8 +173,21 @@ export default function LessonDetailPage() {
     return (
       <main className="min-h-screen w-full px-5 py-6" style={{ background: "var(--bg-base)" }}>
         <div className="mx-auto max-w-5xl">
-          <div className="rounded-2xl border p-6" style={{ background: "#FFFFFF", borderColor: "#C8BFA8", color: "#1C3A2E" }}>
-            {error || "Lesson not found."}
+          <div
+            className="rounded-2xl border p-6 text-center"
+            style={{ background: "#FFFFFF", borderColor: "#C8BFA8", color: "#1C3A2E" }}
+          >
+            <h1 className="font-heading text-2xl font-normal" style={{ color: "#1C3A2E" }}>
+              {notFound ? "Lesson not found" : "Something went wrong"}
+            </h1>
+            {error && <p className="mt-2 text-sm" style={{ color: "#4A6358" }}>{error}</p>}
+            <Link
+              href="/"
+              className="mt-6 inline-block rounded-full px-5 py-3 text-sm font-semibold text-white"
+              style={{ background: "#C17B3F" }}
+            >
+              Back to city
+            </Link>
           </div>
         </div>
       </main>
@@ -148,11 +200,11 @@ export default function LessonDetailPage() {
         <section className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <Link
-              href="/lessons"
+              href="/"
               className="text-sm font-medium transition hover:underline"
               style={{ color: "#4A6358" }}
             >
-              ← Back to lessons
+              ← Back to city
             </Link>
             <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
               {lesson.concept}
