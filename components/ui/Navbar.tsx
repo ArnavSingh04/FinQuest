@@ -10,7 +10,6 @@ import { signOutUser } from "@/lib/auth";
 const authenticatedLinks = [
   { href: "/", label: "Home" },
   { href: "/city", label: "My City" },
-  { href: "/dashboard", label: "Finances" },
   { href: "/history", label: "History" },
   { href: "/groups", label: "Groups" },
 ];
