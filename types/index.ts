@@ -68,6 +68,22 @@ export interface CityState {
   budgetUsed: number;
 }
 
+export type RewardBuildingType =
+  | "library"        // unlocked by: completing a financial lesson
+  | "stadium"        // unlocked by: keeping treats < 5% for 2 weeks
+  | "solar_tower"    // unlocked by: investments > 30% for a month
+  | "market"         // unlocked by: balanced budget (50/30/20 rule met)
+  | "monument"       // unlocked by: city health > 80 for 7 days
+  | "garden";        // unlocked by: first investment logged
+
+export interface RewardBuilding {
+  id: string;
+  type: RewardBuildingType;
+  unlockedAt: string;   // ISO date string
+  questId: string;     // which quest awarded this
+  position?: { x: number; z: number };  // optional manual placement
+}
+
 export interface CityStructureInfo {
   id: string;
   title: string;

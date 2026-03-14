@@ -77,11 +77,13 @@ function SheetContent() {
 
 export function CityLayout() {
   const activeSheet = useUIStore((s) => s.activeSheet);
-  const loadFromStorage = useGameStore((s) => s.loadFromStorage);
 
   useEffect(() => {
-    loadFromStorage();
-  }, [loadFromStorage]);
+    const state = useGameStore.getState();
+    if (state.transactions.length === 0) {
+      state.loadFromStorage();
+    }
+  }, []);
 
   return (
     <div

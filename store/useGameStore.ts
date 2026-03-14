@@ -1,14 +1,15 @@
 "use client";
 
+import { useEffect, useReducer } from "react";
 import { create } from "zustand";
 
 import { generateCityState, defaultCityState } from "@/lib/cityEngine";
 import { calculateSpendingRatios } from "@/lib/financeEngine";
-import type { CityState, Proportions, Transaction } from "@/types";
+import type { CityState, Proportions, RewardBuilding, Transaction } from "@/types";
 
 const defaultProportions: Proportions = { needs: 0, wants: 0, treats: 0, investments: 0 };
 
-interface GameStore {
+export interface GameStore {
   transactions: Transaction[];
   proportions: Proportions;
   cityState: CityState;
@@ -16,6 +17,7 @@ interface GameStore {
   isAdvisorLoading: boolean;
   monthlyIncome: number;
   cityName: string;
+  rewardBuildings: RewardBuilding[];
   addTransaction: (t: Omit<Transaction, "id" | "created_at">) => Transaction[];
   clearAll: () => void;
   loadFromStorage: () => void;
@@ -23,6 +25,8 @@ interface GameStore {
   setAdvisorLoading: (loading: boolean) => void;
   setMonthlyIncome: (income: number) => void;
   setCityName: (name: string) => void;
+  unlockRewardBuilding: (building: RewardBuilding) => void;
+  clearRewardBuildings: () => void;
 }
 
 function persist(key: string, value: unknown) {
@@ -50,6 +54,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   isAdvisorLoading: false,
   monthlyIncome: 0,
   cityName: "My City",
+  rewardBuildings: [],
 
   addTransaction: (incoming) => {
     const tx: Transaction = {
@@ -71,7 +76,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   clearAll: () => {
-    ["fq-transactions", "fq-proportions", "fq-city-state", "fq-advisor"].forEach((k) => {
+    ["fq-transactions", "fq-proportions", "fq-city-state", "fq-advisor", "fq-reward-buildings"].forEach((k) => {
       if (typeof window !== "undefined") localStorage.removeItem(k);
     });
     set({
@@ -79,6 +84,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       proportions: defaultProportions,
       cityState: defaultCityState,
       advisorMessage: "Log a transaction and your city will come to life.",
+      rewardBuildings: [],
     });
   },
 
@@ -91,6 +97,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const msgRaw     = localStorage.getItem("fq-advisor");
       const incomeRaw  = localStorage.getItem("fq-income");
       const nameRaw    = localStorage.getItem("fq-city-name");
+      const rbRaw      = localStorage.getItem("fq-reward-buildings");
 
       const updates: Partial<GameStore> = {};
       if (txRaw)     updates.transactions   = JSON.parse(txRaw);
@@ -99,6 +106,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (msgRaw)    updates.advisorMessage = msgRaw;
       if (incomeRaw) updates.monthlyIncome  = JSON.parse(incomeRaw);
       if (nameRaw)   updates.cityName       = nameRaw;
+      if (rbRaw)     updates.rewardBuildings = JSON.parse(rbRaw);
       set(updates);
     } catch {
       // ignore corrupt storage
@@ -126,4 +134,27 @@ export const useGameStore = create<GameStore>((set, get) => ({
     persist("fq-city-state", cityState);
     set({ monthlyIncome: income, cityState });
   },
+
+  unlockRewardBuilding: (building) => {
+    const next = [...get().rewardBuildings, building];
+    persist("fq-reward-buildings", next);
+    set({ rewardBuildings: next });
+  },
+
+  clearRewardBuildings: () => {
+    if (typeof window !== "undefined") localStorage.removeItem("fq-reward-buildings");
+    set({ rewardBuildings: [] });
+  },
 }));
+
+/** Use inside R3F Canvas so store updates trigger re-renders. */
+export function useGameStoreInCanvas<T>(selector: (s: GameStore) => T): T {
+  const [, forceUpdate] = useReducer((x) => x + 1, 0);
+
+  useEffect(() => {
+    const unsub = useGameStore.subscribe(() => forceUpdate());
+    return unsub;
+  }, []);
+
+  return useGameStore(selector);
+}
