@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
+import { Navbar } from "@/components/ui/Navbar";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,7 +25,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Navbar />
+        <div className="pb-12">{children}</div>
+      </body>
     </html>
   );
 }

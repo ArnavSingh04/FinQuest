@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
 
 import { useCityStore } from "@/store/useCityStore";
 import type {
@@ -18,6 +19,8 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
   const setCityMetrics = useCityStore((state) => state.setCityMetrics);
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<TransactionCategory>("Need");
+  const [merchantName, setMerchantName] = useState("");
+  const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -39,6 +42,8 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
         body: JSON.stringify({
           amount: Number(amount),
           category,
+          merchant_name: merchantName || null,
+          note: note || null,
         }),
       });
 
@@ -55,15 +60,14 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
         "finquest-city-metrics",
         JSON.stringify(payload.cityMetrics),
       );
+      localStorage.setItem("finquest-progress", JSON.stringify(payload.progress));
 
       await onTransactionProcessed?.(payload);
 
-      setFeedback(
-        payload.mode === "supabase"
-          ? "Transaction saved and city updated."
-          : "Running in local preview mode until Supabase is configured.",
-      );
+      setFeedback(payload.warning || "Transaction saved and your city updated.");
       setAmount("");
+      setMerchantName("");
+      setNote("");
     } catch (error) {
       setFeedback(
         error instanceof Error ? error.message : "Something went wrong.",
@@ -74,7 +78,9 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
   }
 
   return (
-    <form
+    <motion.form
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
       onSubmit={handleSubmit}
       className="glass-card rounded-[2rem] p-5 sm:p-6"
     >
@@ -107,6 +113,19 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
         />
       </label>
 
+      <label className="mb-4 block">
+        <span className="mb-2 block text-sm font-medium text-slate-200">
+          Merchant
+        </span>
+        <input
+          type="text"
+          value={merchantName}
+          onChange={(event) => setMerchantName(event.target.value)}
+          placeholder="Coffee shop"
+          className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-base text-white outline-none transition focus:border-sky-400"
+        />
+      </label>
+
       <div className="mb-5">
         <span className="mb-2 block text-sm font-medium text-slate-200">
           Category
@@ -133,6 +152,19 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
         </div>
       </div>
 
+      <label className="mb-5 block">
+        <span className="mb-2 block text-sm font-medium text-slate-200">
+          Note
+        </span>
+        <textarea
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          rows={3}
+          placeholder="Optional reason or context"
+          className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-base text-white outline-none transition focus:border-sky-400"
+        />
+      </label>
+
       <button
         type="submit"
         disabled={isDisabled}
@@ -144,6 +176,6 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
       {feedback ? (
         <p className="mt-4 text-sm leading-6 text-slate-300">{feedback}</p>
       ) : null}
-    </form>
+    </motion.form>
   );
 }
