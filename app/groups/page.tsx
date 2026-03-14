@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-import { useUser } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
 import type { GroupSummary } from "@/types";
 
 export default function GroupsPage() {
-  const { user, isLoading: isUserLoading } = useUser();
+  const { user, loading } = useAuth();
   const [groups, setGroups] = useState<GroupSummary[]>([]);
   const [groupName, setGroupName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
@@ -95,7 +95,7 @@ export default function GroupsPage() {
     }
   }
 
-  if (isUserLoading) {
+  if (loading) {
     return (
       <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-6">
         <div className="glass-card rounded-[2rem] p-6 text-slate-300">

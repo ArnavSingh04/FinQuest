@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
-import { signInWithEmail, useUser } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
+import { signInWithEmail } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,7 +18,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      router.replace("/dashboard");
+      router.replace("/");
     }
   }, [router, user]);
 
@@ -34,7 +35,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/dashboard");
+    router.push("/");
     router.refresh();
   }
 

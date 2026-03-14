@@ -3,7 +3,26 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+import { InsightsDashboard } from "@/components/dashboard/InsightsDashboard";
+import { useAuth } from "@/hooks/useAuth";
+
 export default function HomePage() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <main className="mx-auto min-h-screen w-full max-w-5xl px-5 py-6">
+        <div className="glass-card rounded-[2rem] p-6 text-slate-300">
+          Loading FinQuest...
+        </div>
+      </main>
+    );
+  }
+
+  if (user) {
+    return <InsightsDashboard />;
+  }
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-5 py-10 sm:max-w-6xl">
       <motion.section

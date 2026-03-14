@@ -12,7 +12,12 @@ export async function POST(request: Request) {
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser();
+
+    if (authError) {
+      return NextResponse.json({ error: authError.message }, { status: 401 });
+    }
 
     if (!user) {
       return NextResponse.json({ error: "Login required." }, { status: 401 });
@@ -28,22 +33,42 @@ export async function POST(request: Request) {
       );
     }
 
-    const groupResult = await supabase
-      .from("groups")
-      .insert({
-        name,
-        invite_code: buildInviteCode(),
-        owner_id: user.id,
-      })
-      .select("id, name, invite_code, owner_id, created_at")
-      .single();
+    let lastInsertError: Error | null = null;
+    let createdGroup:
+      | {
+          id: string;
+          name: string;
+          invite_code: string;
+          owner_id: string;
+          created_at: string;
+        }
+      | null = null;
 
-    if (groupResult.error) {
-      throw groupResult.error;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const groupResult = await supabase
+        .from("groups")
+        .insert({
+          name,
+          invite_code: buildInviteCode(),
+          owner_id: user.id,
+        })
+        .select("id, name, invite_code, owner_id, created_at")
+        .single();
+
+      if (!groupResult.error) {
+        createdGroup = groupResult.data;
+        break;
+      }
+
+      lastInsertError = groupResult.error;
+    }
+
+    if (!createdGroup) {
+      throw lastInsertError ?? new Error("Unable to create group.");
     }
 
     const memberResult = await supabase.from("group_members").insert({
-      group_id: groupResult.data.id,
+      group_id: createdGroup.id,
       user_id: user.id,
       role: "owner",
     });
@@ -52,7 +77,7 @@ export async function POST(request: Request) {
       throw memberResult.error;
     }
 
-    return NextResponse.json({ group: groupResult.data });
+    return NextResponse.json({ group: createdGroup }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       {
