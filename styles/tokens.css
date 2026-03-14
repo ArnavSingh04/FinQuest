@@ -1,12 +1,31 @@
 :root {
-  --background: #07111f;
-  --background-soft: #0f1b2d;
-  --card: rgba(15, 27, 45, 0.78);
-  --card-border: rgba(148, 163, 184, 0.18);
-  --foreground: #f8fafc;
-  --foreground-muted: #94a3b8;
-  --accent: #38bdf8;
-  --accent-strong: #22c55e;
-  --danger: #f97316;
-  --shadow: 0 20px 45px rgba(2, 8, 23, 0.35);
+  /* Backgrounds */
+  --bg-base: #F5F0E8;
+  --bg-surface: #EDE8DC;
+  --bg-elevated: #FFFFFF;
+  --border: #D4C9B0;
+
+  /* Text */
+  --text-primary: #2C2416;
+  --text-secondary: #6B5D4F;
+  --text-muted: #9C8E82;
+
+  /* Accent - primary CTAs */
+  --accent-primary: #C17B3F;
+  --accent-primary-hover: #A8652E;
+  --accent-glow: rgba(193, 123, 63, 0.15);
+
+  /* Category colours */
+  --cat-need: #3B7DD8;
+  --cat-want: #E8A020;
+  --cat-treat: #D94F3D;
+  --cat-invest: #3DAB6A;
+
+  /* City health gradient - left bad, right good */
+  --health-gradient: linear-gradient(90deg, #D94F3D, #E8A020, #3DAB6A);
+
+  /* Surfaces */
+  --shadow-card: 0 2px 12px rgba(44, 36, 22, 0.08);
+  --radius-card: 16px;
+  --radius-modal: 24px;
 }

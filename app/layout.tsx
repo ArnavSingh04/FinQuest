@@ -1,8 +1,18 @@
 import type { Metadata, Viewport } from "next";
-
-import { Navbar } from "@/components/ui/Navbar";
+import { DM_Sans, DM_Serif_Display } from "next/font/google";
 
 import "./globals.css";
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-body",
+});
+
+const dmSerif = DM_Serif_Display({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-heading",
+});
 
 export const metadata: Metadata = {
   title: "FinQuest",
@@ -15,7 +25,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#07111f",
+  themeColor: "#F5F0E8",
 };
 
 export default function RootLayout({
@@ -24,10 +34,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning>
-        <Navbar />
-        <div className="pb-12">{children}</div>
+    <html lang="en" suppressHydrationWarning className={`${dmSans.variable} ${dmSerif.variable}`}>
+      <body className="min-h-screen bg-bg-base text-text-primary" suppressHydrationWarning>
+        {children}
       </body>
     </html>
   );

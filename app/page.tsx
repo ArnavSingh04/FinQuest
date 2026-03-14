@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-import { FinanceLogsDashboard } from "@/components/dashboard/FinanceLogsDashboard";
+import { CityLayout } from "@/components/layout/CityLayout";
 import { useAuth } from "@/hooks/useAuth";
 
 const guestNavLinks = [
@@ -66,8 +66,8 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <main className="mx-auto min-h-screen w-full max-w-5xl px-5 py-6">
-        <div className="glass-card rounded-[2rem] p-6 text-slate-300">
+      <main className="mx-auto flex min-h-screen w-full max-w-[390px] items-center justify-center px-5">
+        <div className="glass-card rounded-2xl p-6 text-text-muted">
           Loading FinQuest...
         </div>
       </main>
@@ -75,7 +75,7 @@ export default function HomePage() {
   }
 
   if (user) {
-    return <FinanceLogsDashboard />;
+    return <CityLayout />;
   }
 
   return (

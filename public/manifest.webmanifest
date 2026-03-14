@@ -4,6 +4,6 @@
   "description": "Learn finance by watching your spending shape a 3D city.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#07111f",
-  "theme_color": "#07111f"
+  "background_color": "#F5F0E8",
+  "theme_color": "#F5F0E8"
 }

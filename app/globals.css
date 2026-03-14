@@ -1,16 +1,65 @@
 @import "../styles/tokens.css";
 @import "tailwindcss";
 
+@theme inline {
+  --color-bg-base: var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-border: var(--border);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-primary-hover: var(--accent-primary-hover);
+  --color-cat-need: var(--cat-need);
+  --color-cat-want: var(--cat-want);
+  --color-cat-treat: var(--cat-treat);
+  --color-cat-invest: var(--cat-invest);
+  --font-heading: "DM Serif Display", serif;
+  --font-body: "DM Sans", sans-serif;
+  --font-size-h1: 32px;
+  --font-size-h2: 24px;
+  --font-size-h3: 18px;
+  --shadow-card: var(--shadow-card);
+}
+
 html {
   scroll-behavior: smooth;
+  font-size: 16px;
 }
 
 body {
-  background:
-    radial-gradient(circle at top, rgba(56, 189, 248, 0.12), transparent 30%),
-    linear-gradient(180deg, var(--background) 0%, #020617 100%);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+h1 {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h1);
+}
+
+h2 {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h2);
+}
+
+h3 {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+}
+
+.label {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.font-heading {
+  font-family: var(--font-heading);
 }
 
 * {
@@ -18,17 +67,21 @@ body {
 }
 
 .glass-card {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(14px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.health-gradient {
+  background: var(--health-gradient);
 }
 
 .city-scene-shell:fullscreen {
   width: 100vw;
   height: 100vh;
   border-radius: 0;
-  background: #020617;
+  background: var(--bg-base);
 }
 
 .city-scene-shell:fullscreen canvas {
