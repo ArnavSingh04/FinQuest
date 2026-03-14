@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-import { InsightsDashboard } from "@/components/dashboard/InsightsDashboard";
+import { FinanceLogsDashboard } from "@/components/dashboard/FinanceLogsDashboard";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function HomePage() {
@@ -20,7 +20,7 @@ export default function HomePage() {
   }
 
   if (user) {
-    return <InsightsDashboard />;
+    return <FinanceLogsDashboard />;
   }
 
   return (

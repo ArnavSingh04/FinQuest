@@ -20,34 +20,59 @@ interface AchievementDefinition {
 
 const achievementDefinitions: AchievementDefinition[] = [
   {
-    id: "first-transaction",
-    title: "First Transaction",
-    description: "Log your first spending event.",
+    id: "city-founder",
+    title: "City Founder",
+    description: "Logged your first transaction.",
     xpReward: 20,
     isUnlocked: ({ transactions }) => transactions.length >= 1,
   },
   {
-    id: "balanced-spending",
-    title: "Balanced Spending",
-    description: "Keep your budget healthy across essentials, fun, and investing.",
-    xpReward: 50,
-    isUnlocked: ({ ratios, cityMetrics }) =>
-      cityMetrics.stability >= 70 && ratios.treat_ratio <= 0.18,
-  },
-  {
     id: "first-investment",
     title: "First Investment",
-    description: "Start putting money toward future growth.",
+    description: "Made your first investment.",
     xpReward: 100,
     isUnlocked: ({ transactions }) =>
       transactions.some((transaction) => transaction.category === "Invest"),
   },
   {
-    id: "city-builder",
-    title: "City Builder",
-    description: "Grow your city's economy and skyline.",
+    id: "disciplined-saver",
+    title: "Disciplined Saver",
+    description: "Investments are at least 20% of spending.",
+    xpReward: 70,
+    isUnlocked: ({ ratios }) => ratios.invest_ratio >= 0.2,
+  },
+  {
+    id: "balanced-budget",
+    title: "Balanced Budget",
+    description: "Stayed close to the 50/30/20 rule.",
+    xpReward: 90,
+    isUnlocked: ({ ratios }) =>
+      ratios.needs_ratio <= 0.5 &&
+      ratios.wants_ratio + ratios.treat_ratio <= 0.3 &&
+      ratios.invest_ratio >= 0.2,
+  },
+  {
+    id: "city-thriving",
+    title: "City Thriving",
+    description: "Achieved a city health score of at least 88.",
+    xpReward: 120,
+    isUnlocked: ({ cityMetrics }) =>
+      cityMetrics.economyScore >= 88 || cityMetrics.growth >= 80,
+  },
+  {
+    id: "clean-streak",
+    title: "Clean Streak",
+    description: "Kept treats under 5% of spending.",
     xpReward: 80,
-    isUnlocked: ({ cityMetrics }) => cityMetrics.growth >= 60,
+    isUnlocked: ({ ratios, transactions }) =>
+      transactions.length >= 3 && ratios.treat_ratio <= 0.05,
+  },
+  {
+    id: "tycoon",
+    title: "Tycoon",
+    description: "Investments reached 35% of spending.",
+    xpReward: 80,
+    isUnlocked: ({ ratios }) => ratios.invest_ratio >= 0.35,
   },
 ];
 

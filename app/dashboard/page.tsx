@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { FinanceLogsDashboard } from "@/components/dashboard/FinanceLogsDashboard";
 
 export default function DashboardPage() {
-  redirect("/");
+  return <FinanceLogsDashboard />;
 }

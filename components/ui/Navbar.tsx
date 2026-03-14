@@ -8,8 +8,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { signOutUser } from "@/lib/auth";
 
 const authenticatedLinks = [
+  { href: "/", label: "Home" },
+  { href: "/city", label: "My City" },
+  { href: "/dashboard", label: "Finances" },
   { href: "/history", label: "History" },
-  { href: "/city", label: "City" },
   { href: "/groups", label: "Groups" },
 ];
 
@@ -56,15 +58,17 @@ export function Navbar() {
       className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl"
     >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-4">
-        <Link href="/" className="text-lg font-semibold tracking-tight text-white">
+        <Link
+          href="/"
+          className="text-lg font-semibold tracking-tight text-white"
+        >
           FinQuest
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
-          <NavLink href="/" label="Home" isActive={pathname === "/"} />
           {authenticatedLinks.map((link) => (
             <NavLink
-              key={link.href}
+              key={`${link.href}-${link.label}`}
               href={link.href}
               label={link.label}
               isActive={pathname === link.href}
