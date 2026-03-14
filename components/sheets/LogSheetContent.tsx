@@ -1,178 +1,174 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 import { useGameStore } from "@/store/useGameStore";
 import { useUIStore } from "@/store/useUIStore";
-import type { TransactionApiResponse, TransactionCategory } from "@/types";
+import type { TransactionCategory } from "@/types";
 
-const CAT_VARS: Record<TransactionCategory, string> = {
-  Need: "var(--cat-need)",
-  Want: "var(--cat-want)",
-  Treat: "var(--cat-treat)",
-  Invest: "var(--cat-invest)",
+const CATEGORY_COLORS: Record<TransactionCategory, string> = {
+  Need: "#3B7DD8",
+  Want: "#E8A020",
+  Treat: "#D94F3D",
+  Invest: "#3DAB6A",
 };
 
-const CATEGORIES: {
+const CATEGORY_TILES: {
   id: TransactionCategory;
-  label: string;
   emoji: string;
-  border: string;
-  text: string;
+  title: string;
+  subtitle: string;
 }[] = [
-  { id: "Need", label: "Need", emoji: "🏠", border: "border-cat-need", text: "text-cat-need" },
-  { id: "Want", label: "Want", emoji: "✨", border: "border-cat-want", text: "text-cat-want" },
-  { id: "Treat", label: "Treat", emoji: "🍕", border: "border-cat-treat", text: "text-cat-treat" },
-  { id: "Invest", label: "Invest", emoji: "📈", border: "border-cat-invest", text: "text-cat-invest" },
+  { id: "Need", emoji: "🏠", title: "Need", subtitle: "Rent, groceries, utilities" },
+  { id: "Want", emoji: "🍕", title: "Want", subtitle: "Dining out, entertainment" },
+  { id: "Treat", emoji: "✨", title: "Treat", subtitle: "Luxury, impulse buys" },
+  { id: "Invest", emoji: "📈", title: "Investment", subtitle: "Savings, stocks, education" },
 ];
 
-const SUBMIT_LABELS: Record<TransactionCategory, string> = {
-  Need: "Log as Need",
-  Want: "Log as Want",
-  Treat: "Log as Treat",
-  Invest: "Log as Invest",
-};
+const AMOUNT_RANGES: { id: string; title: string; subtitle: string; midpoint: number }[] = [
+  { id: "<10", title: "<$10", subtitle: "Less than $10", midpoint: 5 },
+  { id: "10-20", title: "$10–$20", subtitle: "Between $10 and $20", midpoint: 15 },
+  { id: "20-50", title: "$20–$50", subtitle: "Between $20 and $50", midpoint: 35 },
+  { id: "50-100", title: "$50–$100", subtitle: "Between $50 and $100", midpoint: 75 },
+  { id: "100-200", title: "$100–$200", subtitle: "Between $100 and $200", midpoint: 150 },
+  { id: "200+", title: ">$200", subtitle: "More than $200", midpoint: 250 },
+];
 
 export function LogSheetContent() {
   const setActiveSheet = useUIStore((s) => s.setActiveSheet);
   const triggerCityPulse = useUIStore((s) => s.triggerCityPulse);
   const addTransaction = useGameStore((s) => s.addTransaction);
 
-  const [amount, setAmount] = useState("");
-  const [merchantName, setMerchantName] = useState("");
-  const [category, setCategory] = useState<TransactionCategory>("Need");
-  const [note, setNote] = useState("");
+  const [category, setCategory] = useState<TransactionCategory | null>(null);
+  const [amountRange, setAmountRange] = useState<(typeof AMOUNT_RANGES)[number] | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const amountNum = useMemo(() => (amount === "" ? 0 : Number(amount)), [amount]);
-  const isValid = amountNum > 0 && !isSubmitting;
+  const canSubmit = category != null && amountRange != null && !isSubmitting;
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!isValid) return;
+    if (!canSubmit || !category || !amountRange) return;
     setIsSubmitting(true);
-    try {
-      const res = await fetch("/api/transaction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: amountNum,
-          category,
-          merchant_name: merchantName || null,
-          note: note || null,
-        }),
-      });
-      if (!res.ok) {
-        const err = (await res.json()) as { error?: string };
-        throw new Error(err.error ?? "Unable to save transaction.");
-      }
-      const payload = (await res.json()) as TransactionApiResponse;
-      localStorage.setItem("finquest-ratios", JSON.stringify(payload.ratios));
-      localStorage.setItem("finquest-city-metrics", JSON.stringify(payload.cityMetrics));
-      localStorage.setItem("finquest-progress", JSON.stringify(payload.progress));
-      const last = payload.transactions?.[payload.transactions.length - 1];
-      if (last) {
-        addTransaction({
-          amount: last.amount,
-          category: last.category,
-          merchant_name: last.merchant_name ?? null,
-        });
-      }
-      setActiveSheet(null);
-      triggerCityPulse();
-    } catch {
-      setIsSubmitting(false);
-    }
+    addTransaction({
+      amount: amountRange.midpoint,
+      category,
+      merchant_name: category,
+      note: amountRange.title,
+    });
+    setActiveSheet(null);
+    triggerCityPulse();
+    setIsSubmitting(false);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="px-4 pb-6">
-      <h2 className="font-heading text-2xl font-normal text-text-primary" style={{ fontSize: 24 }}>
-        New Transaction
-      </h2>
-
-      {/* Amount — large, centred, $ prefix */}
-      <div className="mt-6 flex flex-col items-center">
-        <div className="flex items-baseline justify-center gap-0.5">
-          <span className="font-heading text-4xl text-text-primary" style={{ fontSize: 48 }}>
-            $
-          </span>
-          <input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step={0.01}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0"
-            className="w-32 border-none bg-transparent font-heading text-text-primary outline-none [font-size:48px] placeholder:text-text-muted"
-            aria-label="Amount"
-          />
-        </div>
-        <input
-          type="text"
-          value={merchantName}
-          onChange={(e) => setMerchantName(e.target.value)}
-          placeholder="Merchant name"
-          className="mt-2 w-full max-w-xs border-none bg-transparent text-center text-sm text-text-muted outline-none placeholder:text-text-muted"
-          aria-label="Merchant"
-        />
-      </div>
-
-      {/* Category selector — 2x2 pills */}
-      <div className="mt-8 grid grid-cols-2 gap-3">
-        {CATEGORIES.map((cat) => {
-          const selected = category === cat.id;
-          return (
-            <motion.button
-              key={cat.id}
-              type="button"
-              onClick={() => setCategory(cat.id)}
-              className={`touch-target flex min-h-[44px] items-center justify-center gap-2 rounded-2xl border-2 px-4 py-3 text-sm font-semibold transition active:scale-[0.97] ${
-                selected
-                  ? `border-transparent text-white shadow-card`
-                  : `border-current bg-bg-elevated ${cat.border} ${cat.text}`
-              }`}
-              style={selected ? { backgroundColor: CAT_VARS[cat.id] } : undefined}
-              whileTap={selected ? { scale: 1.03 } : undefined}
-              animate={selected ? { scale: 1.03 } : { scale: 1 }}
-            >
-              <span>{cat.emoji}</span>
-              <span>{cat.label}</span>
-            </motion.button>
-          );
-        })}
-      </div>
-
-      {/* Note */}
-      <input
-        type="text"
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Add a note..."
-        className="mt-6 w-full border-none border-b border-border bg-transparent py-2 text-sm text-text-secondary outline-none placeholder:text-text-muted"
-      />
-
-      {/* Submit — full width, 56px, rounded-full, label/color by category */}
+    <div className="px-4 pb-6">
+      {/* Header */}
       <button
-        type="submit"
-        disabled={!isValid}
-        className="touch-target mt-8 h-14 min-h-[44px] w-full rounded-full text-base font-semibold text-white transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
-        style={{
-          backgroundColor: isValid
-            ? (category === "Need"
-                ? "var(--cat-need)"
-                : category === "Want"
-                  ? "var(--cat-want)"
-                  : category === "Treat"
-                    ? "var(--cat-treat)"
-                    : "var(--cat-invest)")
-            : "var(--text-muted)",
-        }}
+        type="button"
+        onClick={() => setActiveSheet(null)}
+        className="mb-4 text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
+        style={{ fontFamily: "var(--font-sans), sans-serif" }}
       >
-        {isSubmitting ? "Saving…" : SUBMIT_LABELS[category]}
+        ← Back to city
       </button>
-    </form>
+      <h2
+        className="text-2xl font-normal text-[var(--text-primary)]"
+        style={{ fontFamily: "var(--font-serif), serif" }}
+      >
+        Log a Transaction
+      </h2>
+      <p
+        className="mt-1 text-sm text-[var(--text-muted)]"
+        style={{ fontFamily: "var(--font-sans), sans-serif" }}
+      >
+        Choose what you spent on and roughly how big the purchase was.
+      </p>
+
+      <form onSubmit={handleSubmit} className="mt-6">
+        {/* Step 1 — Type of spend */}
+        <p
+          className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]"
+          style={{ fontFamily: "var(--font-sans), sans-serif" }}
+        >
+          Type of spend
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          {CATEGORY_TILES.map((cat) => {
+            const selected = category === cat.id;
+            const color = CATEGORY_COLORS[cat.id];
+            return (
+              <motion.button
+                key={cat.id}
+                type="button"
+                onClick={() => setCategory(cat.id)}
+                className="touch-target flex min-h-[44px] flex-col items-start justify-center rounded-2xl border-2 px-4 py-3 text-left transition active:scale-[0.97]"
+                style={{
+                  borderRadius: 16,
+                  backgroundColor: selected ? `${color}18` : "var(--bg-surface)",
+                  borderColor: selected ? color : "var(--border)",
+                }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <span className="text-lg leading-tight">
+                  {cat.emoji} <span className="font-semibold text-[var(--text-primary)]" style={{ fontFamily: "var(--font-sans), sans-serif" }}>{cat.title}</span>
+                </span>
+                <span className="mt-0.5 text-xs text-[var(--text-muted)]" style={{ fontFamily: "var(--font-sans), sans-serif" }}>
+                  {cat.subtitle}
+                </span>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {/* Step 2 — How big was it? */}
+        <p
+          className="mt-6 mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]"
+          style={{ fontFamily: "var(--font-sans), sans-serif" }}
+        >
+          How big was it?
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          {AMOUNT_RANGES.map((range) => {
+            const selected = amountRange?.id === range.id;
+            const color = category ? CATEGORY_COLORS[category] : "var(--border)";
+            return (
+              <motion.button
+                key={range.id}
+                type="button"
+                onClick={() => setAmountRange(range)}
+                className="touch-target flex min-h-[44px] flex-col items-start justify-center rounded-2xl border-2 px-4 py-3 text-left transition active:scale-[0.97]"
+                style={{
+                  borderRadius: 16,
+                  backgroundColor: selected && category ? `${CATEGORY_COLORS[category]}18` : "var(--bg-surface)",
+                  borderColor: selected && category ? CATEGORY_COLORS[category] : "var(--border)",
+                }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <span className="font-semibold text-[var(--text-primary)]" style={{ fontFamily: "var(--font-sans), sans-serif" }}>
+                  {range.title}
+                </span>
+                <span className="mt-0.5 text-xs text-[var(--text-muted)]" style={{ fontFamily: "var(--font-sans), sans-serif" }}>
+                  {range.subtitle}
+                </span>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="touch-target mt-8 h-14 w-full rounded-full text-base font-semibold text-white transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+          style={{
+            fontFamily: "var(--font-sans), sans-serif",
+            backgroundColor: canSubmit && category ? CATEGORY_COLORS[category] : "var(--text-muted)",
+          }}
+        >
+          {isSubmitting ? "Saving…" : "Log Transaction →"}
+        </button>
+      </form>
+    </div>
   );
 }

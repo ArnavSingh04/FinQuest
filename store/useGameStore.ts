@@ -5,7 +5,7 @@ import { create } from "zustand";
 
 import { generateCityState, defaultCityState } from "@/lib/cityEngine";
 import { calculateSpendingRatios } from "@/lib/financeEngine";
-import type { CityState, Proportions, RewardBuilding, Transaction } from "@/types";
+import type { CityState, Proportions, RewardBuilding, Transaction, TransactionCategory } from "@/types";
 
 const defaultProportions: Proportions = { needs: 0, wants: 0, treats: 0, investments: 0 };
 
@@ -18,6 +18,8 @@ export interface GameStore {
   monthlyIncome: number;
   cityName: string;
   rewardBuildings: RewardBuilding[];
+  lastAffectedCategory: TransactionCategory | null;
+  resetCameraTrigger: number;
   addTransaction: (t: Omit<Transaction, "id" | "created_at">) => Transaction[];
   clearAll: () => void;
   loadFromStorage: () => void;
@@ -27,6 +29,8 @@ export interface GameStore {
   setCityName: (name: string) => void;
   unlockRewardBuilding: (building: RewardBuilding) => void;
   clearRewardBuildings: () => void;
+  setRewardBuildingPosition: (id: string, position: { x: number; z: number }) => void;
+  setResetCameraTrigger: () => void;
 }
 
 function persist(key: string, value: unknown) {
@@ -55,6 +59,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   monthlyIncome: 0,
   cityName: "My City",
   rewardBuildings: [],
+  lastAffectedCategory: null,
+  resetCameraTrigger: 0,
 
   addTransaction: (incoming) => {
     const tx: Transaction = {
@@ -71,7 +77,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     persist("fq-proportions", proportions);
     persist("fq-city-state", cityState);
 
-    set({ transactions: newTxs, proportions, cityState });
+    set({ transactions: newTxs, proportions, cityState, lastAffectedCategory: incoming.category });
+    setTimeout(() => {
+      get().lastAffectedCategory === incoming.category && set({ lastAffectedCategory: null });
+    }, 700);
     return newTxs;
   },
 
@@ -85,6 +94,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       cityState: defaultCityState,
       advisorMessage: "Log a transaction and your city will come to life.",
       rewardBuildings: [],
+      lastAffectedCategory: null,
     });
   },
 
@@ -145,6 +155,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (typeof window !== "undefined") localStorage.removeItem("fq-reward-buildings");
     set({ rewardBuildings: [] });
   },
+
+  setRewardBuildingPosition: (id, position) => {
+    const next = get().rewardBuildings.map((b) =>
+      b.id === id ? { ...b, position } : b
+    );
+    persist("fq-reward-buildings", next);
+    set({ rewardBuildings: next });
+  },
+
+  setResetCameraTrigger: () => set((s) => ({ resetCameraTrigger: s.resetCameraTrigger + 1 })),
 }));
 
 /** Use inside R3F Canvas so store updates trigger re-renders. */

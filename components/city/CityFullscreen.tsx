@@ -6,7 +6,7 @@ import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 
-import { useGameStore } from "@/store/useGameStore";
+import { useGameStore, useGameStoreInCanvas } from "@/store/useGameStore";
 import { CityStateContext, useCityStateOverride } from "@/contexts/CityStateContext";
 import { getCityTier } from "@/lib/cityLevel";
 import { CityGenerator } from "./CityGenerator";
@@ -28,12 +28,14 @@ const WARM_AFTERNOON = {
 } as const;
 
 const CAMERA_PRESETS = [
-  { label: "Overview",    icon: "⬡", pos: [12, 12, 16]  as [number,number,number], target: [-1, 1, -2]  as [number,number,number] },
+  { label: "Overview",    icon: "⬡", pos: [0, 18, 22] as [number,number,number], target: [0, 0, 0] as [number,number,number], fov: 45 },
   { label: "Street",      icon: "🚶", pos: [0, 1.6, 7]   as [number,number,number], target: [0, 1.5, 0]  as [number,number,number] },
   { label: "Top Down",    icon: "🗺", pos: [-1, 28, 0.1] as [number,number,number], target: [-1, 0, -2]  as [number,number,number] },
   { label: "Finance",     icon: "🏦", pos: [6, 5, 4]     as [number,number,number], target: [4, 2, -2]   as [number,number,number] },
   { label: "West Side",   icon: "🏘️", pos: [-14, 6, 2]   as [number,number,number], target: [-8, 1, -3]  as [number,number,number] },
 ];
+
+const DEFAULT_CAMERA = { pos: [0, 18, 22] as [number, number, number], target: [0, 0, 0] as [number, number, number], fov: 45 };
 
 function Lights() {
   const c = WARM_AFTERNOON;
@@ -78,8 +80,10 @@ function SkyBackground() {
 function CameraController({ preset }: { preset: typeof CAMERA_PRESETS[number] | null }) {
   const { camera } = useThree();
   const controlsRef = useRef<OrbitControlsImpl>(null);
-  const targetPos = useRef(new THREE.Vector3(...(preset?.pos ?? [9, 8, 11])));
-  const targetLook = useRef(new THREE.Vector3(...(preset?.target ?? [0, 1, 0])));
+  const targetPos = useRef(new THREE.Vector3(...(preset?.pos ?? DEFAULT_CAMERA.pos)));
+  const targetLook = useRef(new THREE.Vector3(...(preset?.target ?? DEFAULT_CAMERA.target)));
+  const resetCameraTrigger = useGameStoreInCanvas((s) => s.resetCameraTrigger);
+  const prevResetRef = useRef(resetCameraTrigger);
 
   useEffect(() => {
     if (preset) {
@@ -88,9 +92,17 @@ function CameraController({ preset }: { preset: typeof CAMERA_PRESETS[number] | 
     }
   }, [preset]);
 
+  useEffect(() => {
+    if (resetCameraTrigger !== prevResetRef.current) {
+      prevResetRef.current = resetCameraTrigger;
+      camera.position.set(...DEFAULT_CAMERA.pos);
+      if (controlsRef.current) {
+        controlsRef.current.target.set(...DEFAULT_CAMERA.target);
+      }
+    }
+  }, [resetCameraTrigger, camera]);
+
   useFrame((_, dt) => {
-    // Only enforce camera interpolation when a preset is active.
-    // In free mode, let OrbitControls own rotate/zoom fully.
     if (preset) {
       camera.position.lerp(targetPos.current, dt * 2.5);
       if (controlsRef.current) {
@@ -105,9 +117,10 @@ function CameraController({ preset }: { preset: typeof CAMERA_PRESETS[number] | 
       enableDamping
       dampingFactor={0.08}
       enablePan
-      maxPolarAngle={Math.PI / 2.1}
-      minDistance={2}
-      maxDistance={120}
+      minPolarAngle={0}
+      maxPolarAngle={Math.PI / 3.5}
+      minDistance={20}
+      maxDistance={80}
       autoRotate={false}
       zoomSpeed={0.45}
       rotateSpeed={0.85}
@@ -118,7 +131,7 @@ function CameraController({ preset }: { preset: typeof CAMERA_PRESETS[number] | 
 export function SceneContents({ preset }: { preset: typeof CAMERA_PRESETS[number] | null }) {
   return (
     <>
-      <PerspectiveCamera makeDefault position={[12, 12, 16]} fov={42} />
+      <PerspectiveCamera makeDefault position={[0, 18, 22]} fov={45} />
       <SceneFog />
       <SkyBackground />
       <Lights />
@@ -181,6 +194,7 @@ export function CityFullscreen({ onClose }: { onClose: () => void }) {
   const [preset, setPreset] = useState<typeof CAMERA_PRESETS[number] | null>(null);
   const cityState = useGameStore((s) => s.cityState);
   const cityName  = useGameStore((s) => s.cityName);
+  const setResetCameraTrigger = useGameStore((s) => s.setResetCameraTrigger);
   const tier      = getCityTier(cityState.healthScore);
 
   // Close on Escape
@@ -217,6 +231,16 @@ export function CityFullscreen({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
+      {/* Reset View button */}
+      <button
+        type="button"
+        onClick={() => setResetCameraTrigger()}
+        className="absolute top-14 right-3 z-10 rounded-xl border border-white/20 bg-black/50 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/15 pointer-events-auto"
+        title="Reset camera to default"
+      >
+        Reset View
+      </button>
+
       {/* Canvas fills screen */}
       <CityCanvas className="flex-1 w-full" preset={preset} />
 
@@ -246,7 +270,7 @@ export function CityFullscreen({ onClose }: { onClose: () => void }) {
       </div>
       {/* Bottom hint */}
       <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 text-xs text-slate-500 pointer-events-none">
-        Drag to rotate · Scroll to zoom · Pinch on mobile
+        Drag to rotate · Scroll/pinch to zoom (20–80) · Double-tap or Reset View to reset
       </div>
     </div>
   );

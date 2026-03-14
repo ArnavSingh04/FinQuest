@@ -135,6 +135,7 @@ export default function CityPage() {
 
           {/* Building legend */}
           <div className="glass-card rounded-3xl p-4">
+            <p className="mb-2 text-[11px] text-slate-500">Tap buildings for info · Long-press empty ground to place reward buildings · Double-tap or Reset View to reset camera.</p>
             <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">City Guide</p>
             <div className="flex flex-col gap-2.5">
               {LEGEND.map(({ icon, label, desc, color }) => (
