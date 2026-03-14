@@ -96,23 +96,28 @@ function CameraController({ preset }: { preset: typeof CAMERA_PRESETS[number] | 
   }, [preset]);
 
   useFrame((_, dt) => {
-    camera.position.lerp(targetPos.current, dt * 2.5);
-    if (controlsRef.current) {
-      controlsRef.current.target.lerp(targetLook.current, dt * 2.5);
+    // Only enforce camera interpolation when a preset is active.
+    // In free mode, let OrbitControls own rotate/zoom fully.
+    if (preset) {
+      camera.position.lerp(targetPos.current, dt * 2.5);
+      if (controlsRef.current) {
+        controlsRef.current.target.lerp(targetLook.current, dt * 2.5);
+      }
     }
-  });
+  }, -1);
 
   return (
     <OrbitControls
       ref={controlsRef}
       enableDamping
       dampingFactor={0.08}
-      enablePan={false}
+      enablePan
       maxPolarAngle={Math.PI / 2.1}
-      minDistance={4}
-      maxDistance={28}
-      autoRotate={!preset}
-      autoRotateSpeed={0.35}
+      minDistance={2}
+      maxDistance={120}
+      autoRotate={false}
+      zoomSpeed={0.45}
+      rotateSpeed={0.85}
     />
   );
 }
@@ -128,12 +133,12 @@ export function SceneContents({ preset }: { preset: typeof CAMERA_PRESETS[number
       {/* Ground */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[40, 40]} />
-        <meshStandardMaterial color="#0f1a10" roughness={0.95} />
+        <meshStandardMaterial color="#0b5d2a" roughness={0.9} />
       </mesh>
       {/* Roads */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.008, 0.3]}>
         <planeGeometry args={[40, 0.9]} />
-        <meshStandardMaterial color="#1c1917" roughness={0.9} />
+        <meshStandardMaterial color="#4b5563" roughness={0.85} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0.3]}>
         <planeGeometry args={[40, 0.07]} />
@@ -141,7 +146,7 @@ export function SceneContents({ preset }: { preset: typeof CAMERA_PRESETS[number
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.4, 0.008, 0]}>
         <planeGeometry args={[0.9, 40]} />
-        <meshStandardMaterial color="#1c1917" roughness={0.9} />
+        <meshStandardMaterial color="#4b5563" roughness={0.85} />
       </mesh>
 
       <CityGenerator />
