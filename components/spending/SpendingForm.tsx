@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { useCityStore } from "@/store/useCityStore";
-import { HAMMER_ANIMATION_DURATION } from "@/components/city/constants";
 import type {
   TransactionApiResponse,
   TransactionCategory,
@@ -14,7 +13,6 @@ const categories: TransactionCategory[] = ["Need", "Want", "Treat", "Invest"];
 interface RangeOption {
   label: string;
   value: number;
-  boost: number;
   message: string;
 }
 
@@ -22,41 +20,38 @@ const rangeOptions: RangeOption[] = [
   {
     label: "Less than $10",
     value: 8,
-    boost: 0.4,
-    message: "You're keeping needs under $10—great job on only spending on essentials.",
+    message:
+      "You are keeping things light; focus on essentials and steady growth.",
   },
   {
     label: "$10 - $15",
     value: 12.5,
-    boost: 0.25,
-    message: "Good job keeping the focus on needs; your discipline is building a strong skyline.",
+    message:
+      "Needs are getting solid funding; strong foundations make future upgrades smoother.",
   },
   {
     label: "$15 - $25",
     value: 20,
-    boost: 0.15,
-    message: "Solid essentials-first play; keep wants on hold and the skyline stays steady.",
+    message:
+      "Balanced spending keeps the city humming without overloading wants.",
   },
   {
     label: "$25 - $35",
     value: 30,
-    boost: 0.1,
     message:
-      "Needs spending is creeping higher; towers gain height but keep wants tightly reined in.",
+      "Growth is happening; be mindful that wants do not outpace infrastructure.",
   },
   {
     label: "$35 - $50",
     value: 42,
-    boost: 0.1,
     message:
-      "Needs-heavy territory; towers grow but this is your cue to curb wants before they spike.",
+      "The city feels lively; remember investments and assets are still needed to lock in strength.",
   },
   {
     label: "More than $50",
     value: 65,
-    boost: 0.05,
     message:
-      "Warning: needs spending is high; towers stretch a little but seriously restrain wants.",
+      "This is flashy spending territory; steady assets and investments will make that sparkle last.",
   },
 ];
 
@@ -66,28 +61,14 @@ interface SpendingFormProps {
 
 export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
   const setCityMetrics = useCityStore((state) => state.setCityMetrics);
-  const incrementNeedsBoostVersion = useCityStore(
-    (state) => state.incrementNeedsBoostVersion,
-  );
-  const increaseHeightMultiplier = useCityStore(
-    (state) => state.increaseHeightMultiplier,
-  );
+  const setFinanceMetrics = useCityStore((state) => state.setFinanceMetrics);
   const setSkyMode = useCityStore((state) => state.setSkyMode);
   const [selectedRangeIndex, setSelectedRangeIndex] = useState(0);
   const [category, setCategory] = useState<TransactionCategory>("Need");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const heightBoostTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isDisabled = isSubmitting;
-
-  useEffect(() => {
-    return () => {
-      if (heightBoostTimer.current) {
-        clearTimeout(heightBoostTimer.current);
-      }
-    };
-  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -115,6 +96,13 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
       const payload = (await response.json()) as TransactionApiResponse;
       setCityMetrics(payload.cityMetrics);
 
+      setFinanceMetrics({
+        needs: payload.ratios.needs_ratio * 100,
+        wants: payload.ratios.wants_ratio * 100,
+        investments: payload.ratios.invest_ratio * 100,
+        assets: payload.ratios.treat_ratio * 100,
+      });
+
       localStorage.setItem("finquest-ratios", JSON.stringify(payload.ratios));
       localStorage.setItem(
         "finquest-city-metrics",
@@ -128,32 +116,7 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
           ? "Transaction saved and city updated."
           : "Running in local preview mode until Supabase is configured.";
 
-      if (category === "Need") {
-        incrementNeedsBoostVersion();
-
-        setFeedback("Hammer crews are prepping the skyline...");
-
-        if (heightBoostTimer.current) {
-          clearTimeout(heightBoostTimer.current);
-        }
-
-        heightBoostTimer.current = setTimeout(() => {
-          increaseHeightMultiplier(selectedRange.boost);
-          setFeedback(
-            `${selectedRange.message} Tower heights increased by ${
-              selectedRange.boost * 100
-            }%. ${baseFeedbackMessage}`,
-          );
-          heightBoostTimer.current = null;
-        }, HAMMER_ANIMATION_DURATION);
-      } else if (category === "Want" && selectedRangeIndex === 0) {
-        increaseHeightMultiplier(-0.1);
-        setFeedback(
-          `Wants should be seen minded; tower heights are reduced by 10%. ${baseFeedbackMessage}`,
-        );
-      } else {
-        setFeedback(baseFeedbackMessage);
-      }
+      setFeedback(`${selectedRange.message} ${baseFeedbackMessage}`);
     } catch (error) {
       setFeedback(
         error instanceof Error ? error.message : "Something went wrong.",

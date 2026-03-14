@@ -2,26 +2,31 @@
 
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ContactShadows, OrbitControls, Sky, Stars } from "@react-three/drei";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Group } from "three";
 
 import { HAMMER_ANIMATION_DURATION } from "@/components/city/constants";
+import { deriveCityFinance } from "@/lib/cityFinanceModel";
 import { useCityStore } from "@/store/useCityStore";
 import { CityGenerator } from "./CityGenerator";
 
 export function CityScene() {
   const cityMetrics = useCityStore((state) => state.cityMetrics);
-  const heightMultiplier = useCityStore((state) => state.heightMultiplier);
-  const needsBoostVersion = useCityStore((state) => state.needsBoostVersion);
+  const financeMetrics = useCityStore((state) => state.financeMetrics);
+  const setHeightMultiplier = useCityStore((state) => state.setHeightMultiplier);
   const skyMode = useCityStore((state) => state.skyMode);
   const [hammerActive, setHammerActive] = useState(false);
-  const boostRef = useRef(needsBoostVersion);
+  const previousLevelRef = useRef<number>(0);
   const hammerTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const sunPosition: [number, number, number] = [10, 13, 10];
+  const finance = useMemo(() => deriveCityFinance(financeMetrics), [financeMetrics]);
 
   useEffect(() => {
-    if (needsBoostVersion > boostRef.current) {
+    setHeightMultiplier(finance.heightMultiplier);
+  }, [finance.heightMultiplier, setHeightMultiplier]);
+
+  useEffect(() => {
+    if (finance.developmentLevel > previousLevelRef.current) {
       setHammerActive(true);
       if (hammerTimeout.current) {
         clearTimeout(hammerTimeout.current);
@@ -31,7 +36,7 @@ export function CityScene() {
       }, HAMMER_ANIMATION_DURATION);
     }
 
-    boostRef.current = needsBoostVersion;
+    previousLevelRef.current = finance.developmentLevel;
 
     return () => {
       if (hammerTimeout.current) {
@@ -39,9 +44,10 @@ export function CityScene() {
         hammerTimeout.current = null;
       }
     };
-  }, [needsBoostVersion]);
+  }, [finance.developmentLevel]);
 
-  const hammerBaseHeight = 10.6 + (heightMultiplier - 1) * 2.2;
+  const sunPosition: [number, number, number] = [10, 13, 10];
+  const hammerBaseHeight = 10.6 + (finance.heightMultiplier - 1) * 2.2;
   const isNight = skyMode === "night";
   const backgroundColor = isNight ? "#01040d" : "#91cdee";
   const skyProps = isNight
@@ -106,9 +112,7 @@ export function CityScene() {
           color="#a2c9ff"
         />
 
-      
-
-        <CityGenerator metrics={cityMetrics} />
+        <CityGenerator metrics={cityMetrics} finance={finance} />
 
         {hammerActive && <HammerActor baseHeight={hammerBaseHeight} />}
 

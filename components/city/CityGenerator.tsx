@@ -1,14 +1,25 @@
 "use client";
 
-import { useCityStore } from "@/store/useCityStore";
+import { Color } from "three";
+
+import type { DerivedCityFinance } from "@/lib/cityFinanceModel";
 import type { CityMetrics } from "@/types";
 
 interface CityGeneratorProps {
   metrics: CityMetrics;
+  finance: DerivedCityFinance;
 }
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function blendColors(from: string, to: string, t: number) {
+  return new Color(from).lerp(new Color(to), clamp01(t)).getStyle();
 }
 
 function seededRandom(seed: number) {
@@ -123,8 +134,7 @@ function createCityBlocks(metrics: CityMetrics): Block[] {
             ? 0.34 + centerBoost * 0.22 + growthBias * 0.18 + noise * 0.12
             : 0.2 + growthBias * 0.12 + noise * 0.1;
 
-      const shouldSkip = noise < 0.15;
-      if (shouldSkip) {
+      if (noise < 0.15) {
         continue;
       }
 
@@ -157,51 +167,74 @@ function getRoofColor(index: number) {
   return palette[index % palette.length];
 }
 
-function getParkGreen() {
-  return CITY_GRASS;
-}
-
 function getPlazaColor(index: number) {
   const palette = ["#ffe5ec", "#fde2e4", "#e4f0ff", "#faf3dd"];
   return palette[index % palette.length];
 }
 
-export function CityGenerator({ metrics }: CityGeneratorProps) {
+export function CityGenerator({ metrics, finance }: CityGeneratorProps) {
   const blocks = createCityBlocks(metrics);
-  const heightMultiplier = useCityStore((state) => state.heightMultiplier);
 
   const growth = clamp(metrics.growth / 100, 0, 1);
   const housing = clamp(metrics.housing / 100, 0, 1);
-  const entertainment = clamp(metrics.entertainment / 100, 0, 1);
-  const pollution = clamp(metrics.pollution / 100, 0, 1);
 
   const maxTowerHeight = 7 + growth * 5;
   const mixedHeight = 3.5 + housing * 2.2;
   const residentialHeight = 1.8 + housing * 1.5;
 
-  const streetColor = pollution > 0.55 ? "#59616b" : "#5c6770";
-  const laneColor = "#f8fafc";
-  const sidewalkColor = "#d9d4cb";
-  const groundColor = CITY_GRASS;
+  const roadTone = clamp01(finance.infrastructureHealth * 0.75 + finance.prosperityGlow * 0.25);
+  const roadStress = clamp01(finance.pollutionLevel * 0.65 + finance.instabilityRisk * 0.35);
+  const streetColor = blendColors(
+    blendColors("#2f323d", "#6f8ea6", roadTone),
+    "#4e5057",
+    roadStress,
+  );
+  const laneColor = blendColors("#f8fafc", "#c7f9f0", finance.infrastructureHealth);
+  const sidewalkColor = blendColors("#b7b2a7", "#efe7d8", finance.infrastructureHealth);
+
+  const groundColor = blendColors(
+    blendColors(CITY_GRASS, "#2f6d38", finance.resilience),
+    "#5f665f",
+    finance.pollutionLevel,
+  );
+  const platformColor = blendColors(
+    blendColors("#e8dfd4", "#f6efe4", finance.prosperityGlow),
+    "#b8b2a8",
+    finance.pollutionLevel,
+  );
 
   const roadSpan = 29;
   const blockSpacing = 3.2;
 
+  const plazaLiveliness = clamp01(finance.lifestyleIntensity * 0.8 + finance.prosperityGlow * 0.2);
+  const neonOverload = clamp01(finance.lifestyleIntensity * finance.instabilityRisk);
+  const windowGlow = clamp01(0.08 + finance.lifestyleIntensity * 0.18 + neonOverload * 0.2);
+  const skylineRefinement = clamp01(finance.resilience * 0.6 + finance.prosperityGlow * 0.4);
+
   return (
     <group>
-      {/* Base ground */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[42, 42]} />
-        <meshStandardMaterial color={groundColor} roughness={1} metalness={0} />
+        <meshStandardMaterial color={groundColor} roughness={0.95} metalness={0.02} />
       </mesh>
 
-      {/* Bright city platform */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} receiveShadow>
         <planeGeometry args={[32, 32]} />
-        <meshStandardMaterial color="#f3eadf" roughness={1} metalness={0} />
+        <meshStandardMaterial color={platformColor} roughness={0.9} metalness={0.02} />
       </mesh>
 
-      {/* Horizontal roads */}
+      {finance.pollutionLevel > 0.05 && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
+          <planeGeometry args={[32, 32]} />
+          <meshStandardMaterial
+            color="#3f4248"
+            transparent
+            opacity={finance.pollutionLevel * 0.3}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
+
       {Array.from({ length: 9 }, (_, i) => {
         const offset = (i - 4) * blockSpacing;
 
@@ -213,7 +246,7 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
               receiveShadow
             >
               <planeGeometry args={[roadSpan, 0.8]} />
-              <meshStandardMaterial color={streetColor} />
+              <meshStandardMaterial color={streetColor} roughness={0.65 + roadStress * 0.3} />
             </mesh>
 
             {Array.from({ length: 10 }, (_, j) => (
@@ -230,7 +263,6 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
         );
       })}
 
-      {/* Vertical roads */}
       {Array.from({ length: 9 }, (_, i) => {
         const offset = (i - 4) * blockSpacing;
 
@@ -242,7 +274,7 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
               receiveShadow
             >
               <planeGeometry args={[0.8, roadSpan]} />
-              <meshStandardMaterial color={streetColor} />
+              <meshStandardMaterial color={streetColor} roughness={0.65 + roadStress * 0.3} />
             </mesh>
 
             {Array.from({ length: 10 }, (_, j) => (
@@ -259,96 +291,69 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
         );
       })}
 
-      {/* Buildings / parks / plazas */}
       {blocks.map((block, index) => {
         if (block.district === "park") {
           return (
             <group key={`park-${index}`} position={[block.x, 0, block.z]}>
               <mesh position={[0, 0.035, 0]} receiveShadow>
                 <boxGeometry args={[2.05, 0.07, 2.05]} />
-                <meshStandardMaterial color={getParkGreen()} roughness={1} metalness={0} />
+                <meshStandardMaterial
+                  color={blendColors("#4fba62", "#3a8f4a", finance.resilience)}
+                  roughness={0.9}
+                />
               </mesh>
 
               <mesh position={[0, 0.04, 0]} receiveShadow>
                 <boxGeometry args={[1.7, 0.02, 0.18]} />
-                <meshStandardMaterial color="#f5efe6" />
+                <meshStandardMaterial color={blendColors("#f5efe6", "#c9c1b3", 1 - finance.infrastructureHealth)} />
               </mesh>
               <mesh position={[0, 0.041, 0]} receiveShadow>
                 <boxGeometry args={[0.18, 0.02, 1.7]} />
-                <meshStandardMaterial color="#f5efe6" />
+                <meshStandardMaterial color={blendColors("#f5efe6", "#c9c1b3", 1 - finance.infrastructureHealth)} />
               </mesh>
-
-              {Array.from({ length: 4 }, (_, t) => {
-                const tx = (seededRandom(index * 13 + t) - 0.5) * 1.15;
-                const tz = (seededRandom(index * 29 + t) - 0.5) * 1.15;
-                const trunkH = 0.28 + seededRandom(index * 41 + t) * 0.12;
-                const crown = 0.2 + seededRandom(index * 53 + t) * 0.09;
-
-                return (
-                  <group key={`tree-${index}-${t}`} position={[tx, 0.04, tz]}>
-                    <mesh position={[0, trunkH / 2, 0]} castShadow>
-                      <cylinderGeometry args={[0.035, 0.05, trunkH, 8]} />
-                      <meshStandardMaterial color="#8b5e3c" />
-                    </mesh>
-                    <mesh position={[0, trunkH + crown * 0.6, 0]} castShadow>
-                      <sphereGeometry args={[crown, 12, 12]} />
-                      <meshStandardMaterial color="#52b788" />
-                    </mesh>
-                  </group>
-                );
-              })}
             </group>
           );
         }
 
         if (block.district === "plaza") {
+          const plazaColor = blendColors(getPlazaColor(index), "#ffb74d", plazaLiveliness);
+          const plazaEmissive = blendColors("#e8d5e0", "#ff6b6b", neonOverload);
+
           return (
             <group key={`plaza-${index}`} position={[block.x, 0, block.z]}>
               <mesh position={[0, 0.035, 0]} receiveShadow>
                 <boxGeometry args={[2, 0.07, 2]} />
-                <meshStandardMaterial color={getPlazaColor(index)} />
+                <meshStandardMaterial
+                  color={plazaColor}
+                  emissive={plazaEmissive}
+                  emissiveIntensity={0.05 + plazaLiveliness * 0.25 + neonOverload * 0.2}
+                />
               </mesh>
 
               <mesh position={[0, 0.12, 0]}>
                 <cylinderGeometry args={[0.22, 0.28, 0.18, 20]} />
-                <meshStandardMaterial color="#ffffff" />
+                <meshStandardMaterial color={blendColors("#ffffff", "#ffa94d", plazaLiveliness)} />
               </mesh>
 
               <mesh position={[0, 0.28, 0]}>
                 <sphereGeometry args={[0.14, 16, 16]} />
                 <meshStandardMaterial
-                  color="#7bdff2"
-                  emissive="#7bdff2"
-                  emissiveIntensity={0.25}
+                  color={blendColors("#7bdff2", "#ff758f", neonOverload)}
+                  emissive={blendColors("#7bdff2", "#ff5d8f", neonOverload)}
+                  emissiveIntensity={0.2 + plazaLiveliness * 0.35}
                 />
               </mesh>
-
-              {[
-                [-0.55, 0.08, 0],
-                [0.55, 0.08, 0],
-                [0, 0.08, -0.55],
-                [0, 0.08, 0.55],
-              ].map((pos, i) => (
-                <mesh
-                  key={`plaza-seat-${index}-${i}`}
-                  position={pos as [number, number, number]}
-                >
-                  <boxGeometry args={[0.28, 0.1, 0.16]} />
-                  <meshStandardMaterial color="#cdb4db" />
-                </mesh>
-              ))}
             </group>
           );
         }
 
         if (block.district === "school") {
-          const signColor = "#f87171";
-          const slideColor = "#22c55e";
+          const civicColor = blendColors("#f87171", "#ff9770", finance.infrastructureHealth);
           return (
             <group key={`school-${index}`} position={[block.x, 0, block.z]}>
               <mesh position={[0, 0.12, 0]} receiveShadow>
                 <boxGeometry args={[2.1, 0.24, 1.3]} />
-                <meshStandardMaterial color={signColor} />
+                <meshStandardMaterial color={civicColor} roughness={0.55 + (1 - finance.infrastructureHealth) * 0.3} />
               </mesh>
               <mesh position={[0, 0.36, 0]}>
                 <boxGeometry args={[1.6, 0.02, 0.8]} />
@@ -362,45 +367,18 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
                 <coneGeometry args={[0.2, 0.6, 6]} />
                 <meshStandardMaterial color="#f97316" />
               </mesh>
-
-              <mesh position={[0, 0.05, 1.1]}>
-                <boxGeometry args={[1.4, 0.08, 1.8]} />
-                <meshStandardMaterial color="#70efad" />
-              </mesh>
-              <mesh position={[0.4, 0.25, 1.35]}>
-                <boxGeometry args={[0.3, 0.2, 0.3]} />
-                <meshStandardMaterial color={slideColor} />
-              </mesh>
-              <mesh position={[-0.4, 0.25, 1.35]}>
-                <boxGeometry args={[0.3, 0.2, 0.3]} />
-                <meshStandardMaterial color={slideColor} />
-              </mesh>
-
-              <mesh position={[0, 0.14, -1.15]}>
-                <planeGeometry args={[1.1, 0.6]} />
-                <meshStandardMaterial color="#1e40af" />
-              </mesh>
             </group>
           );
         }
 
         if (block.special) {
-          const baseHeight = 0.4;
-          const stadiumRadius = 1.6;
+          const specialTone = blendColors("#5eead4", "#ff7b72", neonOverload);
           if (block.special === "stadium") {
             return (
               <group key={`stadium-${index}`} position={[block.x, 0, block.z]}>
-                <mesh position={[0, baseHeight, 0]} receiveShadow>
-                  <cylinderGeometry args={[stadiumRadius, stadiumRadius, 0.35, 64]} />
-                  <meshStandardMaterial color="#253b6b" metalness={0.3} />
-                </mesh>
-                <mesh position={[0, baseHeight + 0.25, 0]}>
-                  <torusGeometry args={[stadiumRadius - 0.15, 0.2, 16, 64]} />
-                  <meshStandardMaterial color="#bde0fe" />
-                </mesh>
-                <mesh position={[0, baseHeight + 0.6, 0]}>
-                  <cylinderGeometry args={[stadiumRadius * 0.6, stadiumRadius * 0.6, 0.15, 32]} />
-                  <meshStandardMaterial color="#020617" />
+                <mesh position={[0, 0.4, 0]} receiveShadow>
+                  <cylinderGeometry args={[1.6, 1.6, 0.35, 64]} />
+                  <meshStandardMaterial color={blendColors("#253b6b", specialTone, plazaLiveliness)} metalness={0.35} />
                 </mesh>
               </group>
             );
@@ -411,15 +389,7 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
               <group key={`gym-${index}`} position={[block.x, 0, block.z]}>
                 <mesh position={[0, 0.25, 0]} receiveShadow>
                   <boxGeometry args={[2, 0.5, 1.4]} />
-                  <meshStandardMaterial color="#5eead4" />
-                </mesh>
-                <mesh position={[0, 0.55, 0]} receiveShadow>
-                  <boxGeometry args={[1.4, 0.18, 0.8]} />
-                  <meshStandardMaterial color="#0ea5e9" />
-                </mesh>
-                <mesh position={[0, 0.03, 0.75]}>
-                  <boxGeometry args={[0.6, 0.06, 0.6]} />
-                  <meshStandardMaterial color="#f97316" />
+                  <meshStandardMaterial color={blendColors("#5eead4", "#0ea5e9", finance.resilience)} roughness={0.4} />
                 </mesh>
               </group>
             );
@@ -429,23 +399,7 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
             <group key={`hospital-${index}`} position={[block.x, 0, block.z]}>
               <mesh position={[0, 0.2, 0]} receiveShadow>
                 <boxGeometry args={[2.2, 0.4, 1.6]} />
-                <meshStandardMaterial color="#e0f2fe" />
-              </mesh>
-              <mesh position={[0, 0.6, 0]}>
-                <boxGeometry args={[1.4, 0.3, 1.6]} />
-                <meshStandardMaterial color="#ffffff" />
-              </mesh>
-              <mesh position={[0, 0.75, 0.7]}>
-                <boxGeometry args={[0.3, 0.3, 0.05]} />
-                <meshStandardMaterial color="#ef4444" />
-              </mesh>
-              <mesh position={[0, 0.75, 0.3]}>
-                <boxGeometry args={[0.05, 0.3, 0.3]} />
-                <meshStandardMaterial color="#ef4444" />
-              </mesh>
-              <mesh position={[0, 0.2, 1.1]}>
-                <boxGeometry args={[1.6, 0.05, 0.5]} />
-                <meshStandardMaterial color="#0ea5e9" />
+                <meshStandardMaterial color={blendColors("#e0f2fe", "#c7d2fe", finance.infrastructureHealth)} />
               </mesh>
             </group>
           );
@@ -467,11 +421,11 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
           block.district === "cbd"
             ? Math.max(2.6, baseHeight)
             : block.district === "mixed"
-            ? Math.max(1.5, baseHeight)
-            : Math.max(0.9, baseHeight * 0.9);
+              ? Math.max(1.5, baseHeight)
+              : Math.max(0.9, baseHeight * 0.9);
 
-        const adjustedPodiumHeight = podiumHeight * heightMultiplier;
-        const adjustedTowerHeight = towerHeight * heightMultiplier;
+        const adjustedPodiumHeight = podiumHeight * finance.heightMultiplier;
+        const adjustedTowerHeight = towerHeight * finance.heightMultiplier;
 
         const buildingWidth = block.width * 0.85;
         const buildingDepth = block.depth * 0.85;
@@ -480,9 +434,26 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
         const glassColor = getGlassColor(index);
         const roofColor = getRoofColor(index);
 
-        const isTall = block.district === "cbd" && adjustedTowerHeight > 4.6;
-        const hasSetback = isTall && seededRandom(index * 17) > 0.45;
-        const rooftopGarden = seededRandom(index * 77) > 0.65;
+        const flashyFactor = clamp01(finance.lifestyleIntensity * 0.6 + neonOverload * 0.4);
+        const facadeTint = blendColors(
+          facadeColor,
+          blendColors("#ffd166", "#ff4d6d", flashyFactor),
+          flashyFactor * 0.4,
+        );
+
+        const towerColor =
+          block.district === "residential"
+            ? blendColors(facadeTint, "#d5d7db", 1 - finance.infrastructureHealth)
+            : blendColors(glassColor, "#f7e8a4", finance.prosperityGlow);
+
+        const roofAccent = blendColors(
+          blendColors(roofColor, "#fef3c7", finance.wealthStrength),
+          "#ffffff",
+          finance.prosperityGlow * 0.4,
+        );
+
+        const rooftopGarden =
+          seededRandom(index * 77) < 0.2 + finance.resilience * 0.45;
 
         return (
           <group key={`block-${index}`} position={[block.x, 0, block.z]}>
@@ -496,99 +467,54 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
               castShadow
               receiveShadow
             >
-              <boxGeometry
-                args={[buildingWidth, adjustedPodiumHeight, buildingDepth]}
-              />
+              <boxGeometry args={[buildingWidth, adjustedPodiumHeight, buildingDepth]} />
               <meshStandardMaterial
-                color={facadeColor}
-                roughness={0.78}
-                metalness={0.06}
+                color={facadeTint}
+                roughness={0.78 - finance.infrastructureHealth * 0.2 + finance.pollutionLevel * 0.15}
+                metalness={0.06 + finance.wealthStrength * 0.18}
               />
             </mesh>
 
             <mesh
-              position={[
-                0,
-                adjustedPodiumHeight + adjustedTowerHeight / 2 + 0.06,
-                0,
-              ]}
+              position={[0, adjustedPodiumHeight + adjustedTowerHeight / 2 + 0.06, 0]}
               castShadow
               receiveShadow
             >
-              <boxGeometry
-                args={[
-                  hasSetback ? buildingWidth * 0.78 : buildingWidth * 0.94,
-                  adjustedTowerHeight,
-                  hasSetback ? buildingDepth * 0.78 : buildingDepth * 0.94,
-                ]}
-              />
+              <boxGeometry args={[buildingWidth * 0.94, adjustedTowerHeight, buildingDepth * 0.94]} />
               <meshStandardMaterial
-                color={block.district === "residential" ? facadeColor : glassColor}
-                roughness={block.district === "residential" ? 0.7 : 0.2}
-                metalness={block.district === "residential" ? 0.08 : 0.4}
+                color={towerColor}
+                roughness={0.2 + (1 - skylineRefinement) * 0.25}
+                metalness={0.25 + skylineRefinement * 0.25}
               />
             </mesh>
 
-            {hasSetback && (
-              <mesh
-                position={[
-                  0,
-                  adjustedPodiumHeight + adjustedTowerHeight + adjustedTowerHeight * 0.12,
-                  0,
-                ]}
-                castShadow
-                receiveShadow
-              >
-                <boxGeometry
-                  args={[
-                    buildingWidth * 0.52,
-                    adjustedTowerHeight * 0.22,
-                    buildingDepth * 0.52,
-                  ]}
-                />
-              <meshStandardMaterial
-                color={glassColor}
-                roughness={0.18}
-                  metalness={0.45}
-                />
-              </mesh>
-            )}
-
             <mesh
-              position={[
-                0,
-                adjustedPodiumHeight +
-                  adjustedTowerHeight +
-                  (hasSetback ? adjustedTowerHeight * 0.24 : 0) +
-                  0.08,
-                0,
-              ]}
+              position={[0, adjustedPodiumHeight + adjustedTowerHeight + 0.08, 0]}
               castShadow
             >
               <boxGeometry args={[buildingWidth * 0.55, 0.06, buildingDepth * 0.55]} />
-              <meshStandardMaterial color={roofColor} />
+              <meshStandardMaterial
+                color={roofAccent}
+                roughness={0.35 - finance.prosperityGlow * 0.15}
+                metalness={0.3 + finance.wealthStrength * 0.25}
+              />
             </mesh>
 
             {rooftopGarden && (
-              <mesh
-                position={[
-                  0,
-                  adjustedPodiumHeight +
-                    adjustedTowerHeight +
-                    (hasSetback ? adjustedTowerHeight * 0.24 : 0) +
-                    0.12,
-                  0,
-                ]}
-              >
+              <mesh position={[0, adjustedPodiumHeight + adjustedTowerHeight + 0.12, 0]}>
                 <boxGeometry args={[buildingWidth * 0.38, 0.04, buildingDepth * 0.38]} />
-                <meshStandardMaterial color="#80ed99" />
+                <meshStandardMaterial
+                  color={blendColors("#80ed99", "#1f8a5b", finance.resilience)}
+                  roughness={0.4}
+                  metalness={0.1}
+                />
               </mesh>
             )}
 
             {Array.from({ length: 3 }, (_, row) =>
               Array.from({ length: 3 }, (_, col) => {
                 const wy = 0.28 + row * 0.38;
-                const horizontalOffset = (col - 1) * (0.28 + 0.08);
+                const horizontalOffset = (col - 1) * 0.36;
 
                 const faces = [
                   { axis: "z", direction: 1 },
@@ -602,20 +528,22 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
                     face.axis === "z"
                       ? buildingDepth / 2 - 0.01
                       : buildingWidth / 2 - 0.01;
-                      const position =
-                        face.axis === "z"
-                          ? [
-                              horizontalOffset,
-                              adjustedPodiumHeight + wy,
-                              face.direction * wallDistance,
-                            ]
-                          : [
-                              face.direction * wallDistance,
-                              adjustedPodiumHeight + wy,
-                              horizontalOffset,
-                            ];
 
-                  const rotation = face.axis === "x" ? [0, Math.PI / 2, 0] : [0, 0, 0];
+                  const position =
+                    face.axis === "z"
+                      ? [
+                          horizontalOffset,
+                          adjustedPodiumHeight + wy,
+                          face.direction * wallDistance,
+                        ]
+                      : [
+                          face.direction * wallDistance,
+                          adjustedPodiumHeight + wy,
+                          horizontalOffset,
+                        ];
+
+                  const rotation =
+                    face.axis === "x" ? [0, Math.PI / 2, 0] : [0, 0, 0];
 
                   return (
                     <mesh
@@ -625,41 +553,16 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
                     >
                       <boxGeometry args={[0.22, 0.18, 0.02]} />
                       <meshStandardMaterial
-                        color={entertainment > 0.55 ? "#fff8d0" : "#b6e0ff"}
-                        emissive={entertainment > 0.55 ? "#ffe66d" : "#a5b4fc"}
-                        emissiveIntensity={entertainment > 0.55 ? 0.12 : 0.08}
+                        color={blendColors("#b6e0ff", "#ffe08a", finance.lifestyleIntensity)}
+                        emissive={blendColors("#a5b4fc", "#ff6b8a", neonOverload)}
+                        emissiveIntensity={windowGlow}
                         metalness={0.25}
                         roughness={0.3}
                       />
                     </mesh>
                   );
                 });
-              })
-            )}
-
-            {block.district === "cbd" && (
-              <>
-                <mesh
-                  position={[
-                    0,
-                    adjustedPodiumHeight + adjustedTowerHeight * 0.35,
-                    buildingDepth * 0.4,
-                  ]}
-                >
-                  <boxGeometry args={[buildingWidth * 0.82, 0.05, 0.03]} />
-                  <meshStandardMaterial color="#ffffff" />
-                </mesh>
-                <mesh
-                  position={[
-                    0,
-                    adjustedPodiumHeight + adjustedTowerHeight * 0.68,
-                    buildingDepth * 0.4,
-                  ]}
-                >
-                  <boxGeometry args={[buildingWidth * 0.82, 0.05, 0.03]} />
-                  <meshStandardMaterial color="#ffffff" />
-                </mesh>
-              </>
+              }),
             )}
           </group>
         );
@@ -673,17 +576,21 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
         <group key={`landmark-${i}`} position={[tower.x, 0, tower.z]}>
           <mesh position={[0, 0.38, 0]} castShadow receiveShadow>
             <boxGeometry args={[1.45, 0.76, 1.45]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.82} />
+            <meshStandardMaterial color={blendColors("#f8fafc", "#fff7d6", finance.wealthStrength)} roughness={0.65} metalness={0.12 + finance.wealthStrength * 0.2} />
           </mesh>
 
           <mesh position={[0, 0.76 + tower.h / 2, 0]} castShadow receiveShadow>
             <boxGeometry args={[tower.w, tower.h, tower.d]} />
-            <meshStandardMaterial color={tower.color} metalness={0.28} roughness={0.22} />
+            <meshStandardMaterial
+              color={blendColors(tower.color, "#fde68a", finance.wealthStrength)}
+              metalness={0.25 + finance.wealthStrength * 0.35}
+              roughness={0.2 + (1 - finance.wealthStrength) * 0.2}
+            />
           </mesh>
 
           <mesh position={[0, 0.76 + tower.h + 0.14, 0]}>
             <boxGeometry args={[tower.w * 0.45, 0.12, tower.d * 0.45]} />
-            <meshStandardMaterial color="#ffffff" />
+            <meshStandardMaterial color={blendColors("#ffffff", "#ffe8a3", finance.prosperityGlow)} />
           </mesh>
         </group>
       ))}
