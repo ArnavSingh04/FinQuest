@@ -22,10 +22,11 @@ const WEATHER_CFG = {
 } as const;
 
 const CAMERA_PRESETS = [
-  { label: "Overview",    icon: "⬡", pos: [9, 8, 11]   as [number,number,number], target: [0, 1, 0]  as [number,number,number] },
-  { label: "Street",      icon: "🚶", pos: [0, 1.6, 7]  as [number,number,number], target: [0, 1.5, 0] as [number,number,number] },
-  { label: "Top Down",    icon: "🗺", pos: [0, 20, 0.1] as [number,number,number], target: [0, 0, 0]  as [number,number,number] },
-  { label: "Finance",     icon: "🏦", pos: [6, 5, 4]    as [number,number,number], target: [4, 2, -1] as [number,number,number] },
+  { label: "Overview",    icon: "⬡", pos: [12, 12, 16]  as [number,number,number], target: [-1, 1, -2]  as [number,number,number] },
+  { label: "Street",      icon: "🚶", pos: [0, 1.6, 7]   as [number,number,number], target: [0, 1.5, 0]  as [number,number,number] },
+  { label: "Top Down",    icon: "🗺", pos: [-1, 28, 0.1] as [number,number,number], target: [-1, 0, -2]  as [number,number,number] },
+  { label: "Finance",     icon: "🏦", pos: [6, 5, 4]     as [number,number,number], target: [4, 2, -2]   as [number,number,number] },
+  { label: "West Side",   icon: "🏘️", pos: [-14, 6, 2]   as [number,number,number], target: [-8, 1, -3]  as [number,number,number] },
 ];
 
 function useWeather() {
@@ -53,9 +54,9 @@ function Lights() {
       <directionalLight
         ref={dirRef} position={[8, 14, 6]} intensity={cfg.dir} color={cfg.dirColor}
         castShadow shadow-mapSize={[2048, 2048]}
-        shadow-camera-near={0.5} shadow-camera-far={60}
-        shadow-camera-left={-16} shadow-camera-right={16}
-        shadow-camera-top={16} shadow-camera-bottom={-16}
+        shadow-camera-near={0.5} shadow-camera-far={90}
+        shadow-camera-left={-22} shadow-camera-right={22}
+        shadow-camera-top={22} shadow-camera-bottom={-22}
       />
     </>
   );
@@ -64,7 +65,7 @@ function Lights() {
 function SceneFog() {
   const weather = useWeather();
   const { scene } = useThree();
-  const fogRef = useRef<THREE.Fog>(new THREE.Fog(WEATHER_CFG[weather].fog, 18, 42));
+  const fogRef = useRef<THREE.Fog>(new THREE.Fog(WEATHER_CFG[weather].fog, 28, 70));
   useFrame((_, dt) => {
     (fogRef.current.color as THREE.Color).lerp(new THREE.Color(WEATHER_CFG[weather].fog), dt * 1.2);
   });
@@ -126,7 +127,7 @@ function CameraController({ preset }: { preset: typeof CAMERA_PRESETS[number] | 
 export function SceneContents({ preset }: { preset: typeof CAMERA_PRESETS[number] | null }) {
   return (
     <>
-      <PerspectiveCamera makeDefault position={[9, 8, 11]} fov={40} />
+      <PerspectiveCamera makeDefault position={[12, 12, 16]} fov={42} />
       <SceneFog />
       <SkyBackground />
       <Lights />

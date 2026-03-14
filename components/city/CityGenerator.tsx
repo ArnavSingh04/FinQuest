@@ -264,7 +264,7 @@ function BankTower({ x, z }: { x: number; z: number }) {
         <sphereGeometry args={[0.055, 8, 8]} />
         <meshStandardMaterial color="#e0f2fe" emissive="#7dd3fc" emissiveIntensity={3} />
       </mesh>
-      <pointLight position={[x, height + height * 0.2, z]} intensity={6} color="#93c5fd" distance={8} decay={2} />
+      <pointLight position={[0, height + height * 0.2, 0]} intensity={6} color="#93c5fd" distance={8} decay={2} />
     </group>
   );
 }
@@ -339,7 +339,7 @@ function InvestmentTower({ x, z }: { x: number; z: number }) {
         <coneGeometry args={[0.18, 1, 6]} />
         <meshStandardMaterial color="#34d399" emissive="#6ee7b7" emissiveIntensity={2.0} />
       </mesh>
-      <pointLight position={[x, h + h * 0.2, z]} intensity={8} color="#34d399" distance={10} decay={2} />
+      <pointLight position={[0, h + h * 0.2, 0]} intensity={8} color="#34d399" distance={10} decay={2} />
     </group>
   );
 }
@@ -391,7 +391,7 @@ function StreetLamp({ x, z }: { x: number; z: number }) {
         <sphereGeometry args={[0.07, 8, 8]} />
         <meshStandardMaterial color="#fef9c3" emissive="#fef08a" emissiveIntensity={4} />
       </mesh>
-      <pointLight position={[0.2 + x, 2.1, z]} intensity={3.5} color="#fef08a" distance={5} decay={2} />
+      <pointLight position={[0.2, 2.1, 0]} intensity={3.5} color="#fef08a" distance={5} decay={2} />
     </group>
   );
 }
@@ -619,8 +619,8 @@ function Lightning() {
 
 // ─── School building (appears when needs ≥ 40%) ──────────────────────────────
 function School({ x, z }: { x: number; z: number }) {
-  const { cityState } = useActiveCityState();
-  const visible = cityState.apartmentCount >= 4; // proxy for needs ≥ 40%
+  const { proportions } = useActiveCityState();
+  const visible = Math.round(proportions.needs * 100) >= 40; // needs ≥ 40%
   const target = visible ? 1 : 0.01;
   const bodyRef = useLerpScale(target);
   const towerRef = useLerpScale(target, 1.8);
@@ -664,8 +664,8 @@ function School({ x, z }: { x: number; z: number }) {
 
 // ─── Hospital (appears when invest ≥ 15%) ─────────────────────────────────────
 function Hospital({ x, z }: { x: number; z: number }) {
-  const { cityState } = useActiveCityState();
-  const visible = cityState.towerHeight >= 1.5; // proxy for invest ≥ 15%
+  const { proportions } = useActiveCityState();
+  const visible = Math.round(proportions.investments * 100) >= 15; // invest ≥ 15%
   const target = visible ? 1 : 0.01;
   const bodyRef = useLerpScale(target);
 
@@ -890,6 +890,169 @@ function Pedestrian({ idx }: { idx: number }) {
   );
 }
 
+// ─── Office Block ─────────────────────────────────────────────────────────────
+function OfficeBlock({ x, z, idx }: { x: number; z: number; idx: number }) {
+  const { cityState } = useActiveCityState();
+  const h = cityState.bankHeight * 0.6 + (idx % 3) * 0.55;
+  const mainRef = useLerpScale(h, 2);
+  const bW = 1.0; const bD = 0.85;
+  const cols = Math.max(2, Math.min(5, Math.floor(h * 0.8) + 2));
+  const rows = Math.max(2, Math.floor(h * 1.4));
+
+  return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, 0.2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[bW + 0.2, 0.4, bD + 0.2]} />
+        <meshStandardMaterial color="#1e293b" roughness={0.5} metalness={0.3} />
+      </mesh>
+      <mesh ref={mainRef} position={[0, h * 0.5, 0]} castShadow>
+        <boxGeometry args={[bW, 1, bD]} />
+        <meshStandardMaterial color="#334155" roughness={0.22} metalness={0.55} emissive="#1e293b" emissiveIntensity={0.4} />
+      </mesh>
+      <WindowGrid cols={cols} rows={rows} width={bW - 0.12} height={Math.max(0.3, h - 0.5)} depth={bD / 2}  facingZ    baseY={0.5}  winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.8} />
+      <WindowGrid cols={cols} rows={rows} width={bW - 0.12} height={Math.max(0.3, h - 0.5)} depth={-bD / 2} facingZ    baseY={0.5}  winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.8} />
+      <WindowGrid cols={cols} rows={rows} width={bD - 0.12} height={Math.max(0.3, h - 0.5)} depth={bW / 2}  facingZ={false} baseY={0.5} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.6} />
+      <WindowGrid cols={cols} rows={rows} width={bD - 0.12} height={Math.max(0.3, h - 0.5)} depth={-bW / 2} facingZ={false} baseY={0.5} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.6} />
+      <mesh position={[0, h + 0.06, 0]}>
+        <boxGeometry args={[bW - 0.2, 0.12, bD - 0.2]} />
+        <meshStandardMaterial color="#475569" metalness={0.6} roughness={0.3} />
+      </mesh>
+    </group>
+  );
+}
+
+// ─── Shopping Mall ────────────────────────────────────────────────────────────
+function ShoppingMall({ x, z }: { x: number; z: number }) {
+  const { proportions } = useActiveCityState();
+  const visible = Math.round(proportions.wants * 100) >= 15;
+  const bodyRef = useLerpScale(visible ? 1 : 0.01);
+
+  return (
+    <group position={[x, 0, z]}>
+      <mesh ref={bodyRef} position={[0, 0.9, 0]} castShadow receiveShadow>
+        <boxGeometry args={[3.8, 1.8, 2.2]} />
+        <meshStandardMaterial color="#92400e" roughness={0.5} metalness={0.05} emissive="#7c2d12" emissiveIntensity={0.15} />
+      </mesh>
+      {visible && (
+        <mesh position={[0, 1.22, 1.12]}>
+          <boxGeometry args={[2.2, 0.08, 0.6]} />
+          <meshStandardMaterial color="#d97706" emissive="#92400e" emissiveIntensity={0.5} />
+        </mesh>
+      )}
+      {visible && <WindowGrid cols={5} rows={2} width={3.6}  height={1.4} depth={1.12}  facingZ       baseY={0.14} winColor="#f8fafc" winEmissive="#e2e8f0" winIntensity={0.3} />}
+      {visible && <WindowGrid cols={2} rows={2} width={2.05} height={1.4} depth={1.92}  facingZ={false} baseY={0.14} winColor="#f8fafc" winEmissive="#e2e8f0" winIntensity={0.25} />}
+      {visible && <WindowGrid cols={2} rows={2} width={2.05} height={1.4} depth={-1.92} facingZ={false} baseY={0.14} winColor="#f8fafc" winEmissive="#e2e8f0" winIntensity={0.25} />}
+      {visible && (
+        <mesh position={[0, 1.95, 1.12]}>
+          <boxGeometry args={[2.8, 0.22, 0.04]} />
+          <meshStandardMaterial color="#f59e0b" emissive="#d97706" emissiveIntensity={1.5} />
+        </mesh>
+      )}
+      {[[-1.2, 0], [0, 0], [1.2, 0]].map(([rx, rz], i) => (
+        <mesh key={i} position={[rx, 1.88, rz as number]}>
+          <boxGeometry args={[0.4, 0.14, 0.35]} />
+          <meshStandardMaterial color="#374151" roughness={0.9} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// ─── Market / Corner Shop ─────────────────────────────────────────────────────
+const MKT_PALETTE = [
+  { wall: "#065f46", sign: "#10b981", awning: "#059669" },
+  { wall: "#1e3a8a", sign: "#60a5fa", awning: "#2563eb" },
+  { wall: "#7f1d1d", sign: "#f87171", awning: "#dc2626" },
+  { wall: "#4c1d95", sign: "#a78bfa", awning: "#7c3aed" },
+  { wall: "#713f12", sign: "#fb923c", awning: "#d97706" },
+  { wall: "#134e4a", sign: "#2dd4bf", awning: "#0d9488" },
+] as const;
+
+function Market({ x, z, idx }: { x: number; z: number; idx: number }) {
+  const pal = MKT_PALETTE[idx % MKT_PALETTE.length];
+  const h = 0.85 + (idx % 3) * 0.12;
+  return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, h * 0.5, 0]} castShadow receiveShadow>
+        <boxGeometry args={[1.3, h, 1.0]} />
+        <meshStandardMaterial color={pal.wall} roughness={0.5} metalness={0.05} />
+      </mesh>
+      <mesh position={[0, h + 0.04, 0.54]}>
+        <boxGeometry args={[1.3, 0.05, 0.35]} />
+        <meshStandardMaterial color={pal.awning} emissive={pal.awning} emissiveIntensity={0.5} />
+      </mesh>
+      <mesh position={[0, h - 0.08, 0.52]}>
+        <boxGeometry args={[0.9, 0.12, 0.025]} />
+        <meshStandardMaterial color={pal.sign} emissive={pal.sign} emissiveIntensity={1.2} />
+      </mesh>
+      <WindowGrid cols={2} rows={1} width={1.1} height={h * 0.35} depth={0.51} facingZ baseY={0.12} winColor="#f0fdf4" winEmissive="#dcfce7" winIntensity={0.3} />
+      <mesh position={[0.5, 0.22, 0.6]}>
+        <boxGeometry args={[0.45, 0.38, 0.08]} />
+        <meshStandardMaterial color={pal.sign} roughness={0.8} />
+      </mesh>
+    </group>
+  );
+}
+
+// ─── Warehouse ────────────────────────────────────────────────────────────────
+function Warehouse({ x, z }: { x: number; z: number }) {
+  return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, 0.75, 0]} castShadow receiveShadow>
+        <boxGeometry args={[3.0, 1.5, 2.0]} />
+        <meshStandardMaterial color="#374151" roughness={0.8} metalness={0.3} />
+      </mesh>
+      <mesh position={[0, 1.62, 0]}>
+        <boxGeometry args={[3.0, 0.24, 0.4]} />
+        <meshStandardMaterial color="#1f2937" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 0.22, 1.06]}>
+        <boxGeometry args={[1.4, 0.44, 0.12]} />
+        <meshStandardMaterial color="#1f2937" roughness={0.85} />
+      </mesh>
+      <WindowGrid cols={3} rows={1} width={2.8} height={0.35} depth={1.02} facingZ baseY={0.95} winColor="#cbd5e1" winEmissive="#94a3b8" winIntensity={0.3} />
+      <WindowGrid cols={2} rows={1} width={1.85} height={0.35} depth={1.02} facingZ={false} baseY={0.95} winColor="#cbd5e1" winEmissive="#94a3b8" winIntensity={0.3} />
+    </group>
+  );
+}
+
+// ─── Condo Tower (taller residential variant) ─────────────────────────────────
+const CONDO_COLORS = ["#0c4a6e", "#164e63", "#0e7490", "#075985"] as const;
+
+function CondoTower({ x, z, idx }: { x: number; z: number; idx: number }) {
+  const { cityState } = useActiveCityState();
+  const count = cityState.apartmentCount;
+  const visible = idx < Math.floor(count / 3); // one condo per 3 apartments
+  const h = 3.2 + (idx % 3) * 1.1;
+  const target = visible ? 1 : 0.01;
+  const mainRef = useLerpScale(target * h, 2);
+  const color = CONDO_COLORS[idx % CONDO_COLORS.length];
+  const cols = 3; const rows = Math.max(3, Math.floor(h * 1.5));
+
+  return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, 0.18, 0]} castShadow receiveShadow>
+        <boxGeometry args={[1.15, 0.36, 1.15]} />
+        <meshStandardMaterial color="#1e293b" roughness={0.4} metalness={0.4} />
+      </mesh>
+      <mesh ref={mainRef} position={[0, h * 0.5, 0]} castShadow>
+        <boxGeometry args={[0.9, 1, 0.9]} />
+        <meshStandardMaterial color={color} roughness={0.2} metalness={0.55} emissive={color} emissiveIntensity={0.25} />
+      </mesh>
+      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={0.46}  facingZ       baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={1.0} />}
+      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={-0.46} facingZ       baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={1.0} />}
+      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={0.46}  facingZ={false} baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={0.8} />}
+      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={-0.46} facingZ={false} baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={0.8} />}
+      {visible && (
+        <mesh position={[0, h + 0.12, 0]}>
+          <boxGeometry args={[0.6, 0.25, 0.6]} />
+          <meshStandardMaterial color={color} roughness={0.15} metalness={0.7} emissive={color} emissiveIntensity={0.6} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
 // ─── Main city export ──────────────────────────────────────────────────────────
 export function CityGenerator() {
   const { proportions, cityState } = useActiveCityState();
@@ -929,64 +1092,161 @@ export function CityGenerator() {
   );
 
   const treats = proportions.treats;
-  const cloudCount = Math.min(6, Math.floor(treats * 14));
-  const carCount = Math.max(1, Math.min(6, cityState.population));
-  const pedCount = Math.max(2, Math.min(10, cityState.population * 2));
+  const cloudCount = Math.min(8, Math.floor(treats * 18));
+  const carCount   = Math.max(2, Math.min(8, cityState.population));
+  const pedCount   = Math.max(3, Math.min(16, cityState.population * 2));
+  const officeCount = Math.max(2, Math.round(investPct / 100 * 8));
 
+  // 24 apartment positions — Near NW, Far NW, NE, Deep NW
   const aptPositions: [number, number][] = [
-    [-5.5, -3.2], [-4.2, -3.2], [-2.9, -3.2], [-1.6, -3.2],
-    [-5.5, -1.8], [-4.2, -1.8], [-2.9, -1.8], [-1.6, -1.8],
+    [-5.5,-3.2], [-4.2,-3.2], [-2.9,-3.2], [-1.6,-3.2],
+    [-6.8,-1.8], [-5.5,-1.8], [-4.2,-1.8], [-2.9,-1.8],
+    [-9.0,-3.2], [-10.5,-3.2], [-12.0,-3.2],
+    [-9.0,-1.8], [-10.5,-1.8],
+    [-9.0,-6.8], [-10.5,-6.8], [-12.0,-6.8], [-13.5,-6.8],
+    [1.5,-3.2],  [3.0,-3.2],
+    [1.5,-6.8],  [3.0,-6.8],  [4.5,-6.8],
+    [-9.0,-9.5], [-10.5,-9.5],
   ];
 
+  // 12 restaurant positions — SW strip, SE strip, deep SW strip
   const restPositions: [number, number][] = [
-    [-4.5, 1.8], [-2.9, 1.8], [-1.3, 1.8], [0.3, 1.8], [1.9, 1.8], [3.5, 1.8],
+    [-6.5, 2.2], [-5.0, 2.2], [-3.5, 2.2], [-2.0, 2.2], [-0.5, 2.2],
+    [1.5, 2.2],  [3.0, 2.2],  [4.5, 2.2],
+    [-9.0, 7.5], [-6.5, 7.5], [-4.0, 7.5], [-1.5, 7.5],
+  ];
+
+  // 8 office block positions — NE district
+  const officePositions: [number, number][] = [
+    [1.5,-1.6],  [3.5,-1.6],
+    [8.0,-2.0],  [9.5,-2.0],
+    [8.0,-5.0],  [9.5,-5.0],
+    [8.0,-8.0],  [9.5,-8.0],
+  ];
+
+  // 4 condo tower positions — tall residential punctuating the skyline
+  const condoPositions: [number, number][] = [
+    [-13.5,-3.2], [-13.5,-1.8], [-13.5,-9.5], [4.5,-3.2],
+  ];
+
+  // 6 market positions — commercial strips
+  const marketPositions: [number, number][] = [
+    [-8.5, 2.2], [-10.0, 2.2],
+    [6.0, 2.2],  [7.5, 2.2],
+    [-8.5, 5.5], [-6.0, 5.5],
   ];
 
   return (
     <group>
+      {/* ── Secondary road network ── */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.007, -5.5]} receiveShadow>
+        <planeGeometry args={[40, 0.65]} />
+        <meshStandardMaterial color="#374151" roughness={0.9} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.007, 6.5]} receiveShadow>
+        <planeGeometry args={[40, 0.65]} />
+        <meshStandardMaterial color="#374151" roughness={0.9} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-7.5, 0.007, 0]} receiveShadow>
+        <planeGeometry args={[0.65, 40]} />
+        <meshStandardMaterial color="#374151" roughness={0.9} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[7.0, 0.007, 0]} receiveShadow>
+        <planeGeometry args={[0.65, 40]} />
+        <meshStandardMaterial color="#374151" roughness={0.9} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.007, -10.5]} receiveShadow>
+        <planeGeometry args={[40, 0.55]} />
+        <meshStandardMaterial color="#374151" roughness={0.9} />
+      </mesh>
+
       {/* ── Parks ── */}
-      <group {...hoverProps("Parks", `Treats: ${treatsPct}%`, treatsState, "Keep treats under 20% to keep your green spaces clean.", [-3.5, 0.5, -2.5])}>
-        <Park x={-3.5} z={-2.5} w={6.5} d={3.5} />
+      <group {...hoverProps("Central Park", `Treats: ${treatsPct}%`, treatsState, "Keep treats under 20% to keep your green spaces clean.", [-3.5, 0.5, -2.5])}>
+        <Park x={-3.5} z={-2.5} w={5.5} d={3.5} />
       </group>
-      <group {...hoverProps("Parks", `Treats: ${treatsPct}%`, treatsState, "Keep treats under 20% to keep your green spaces clean.", [-1, 0.5, 2.2])}>
-        <Park x={-1}   z={2.2}  w={9}   d={2.2} />
+      <group {...hoverProps("South Park", `Treats: ${treatsPct}%`, treatsState, "Keep treats under 20% to keep your green spaces clean.", [-2.0, 0.5, 4.5])}>
+        <Park x={-2.0} z={4.5} w={9.5} d={3.5} />
+      </group>
+      <group {...hoverProps("Northwest Reserve", `Treats: ${treatsPct}%`, treatsState, "Reduce treats to grow your nature reserves.", [-11.5, 0.5, -8.2])}>
+        <Park x={-11.5} z={-8.2} w={5.0} d={3.0} />
+      </group>
+      <group {...hoverProps("East Gardens", `Treats: ${treatsPct}%`, treatsState, "Lower treats keep these gardens flourishing.", [4.5, 0.5, -8.0])}>
+        <Park x={4.5} z={-8.0} w={5.5} d={3.5} />
       </group>
 
       {/* ── Pavements ── */}
       <group {...hoverProps("Sidewalks", `Needs: ${needsPct}%`, needsState, "Spending on needs builds city infrastructure — aim for ~50%.", [-3.0, 0.35, -0.45])}>
         <Pavement x={-3.0} z={-0.45} w={8}    d={0.55} />
-      </group>
-      <group {...hoverProps("Sidewalks", `Needs: ${needsPct}%`, needsState, "Spending on needs builds city infrastructure — aim for ~50%.", [-3.0, 0.35, 1.05])}>
         <Pavement x={-3.0} z={1.05}  w={8}    d={0.55} />
-      </group>
-      <group {...hoverProps("Sidewalks", `Needs: ${needsPct}%`, needsState, "Spending on needs builds city infrastructure — aim for ~50%.", [3.6, 0.35, -1.2])}>
-        <Pavement x={3.6}  z={-1.2}  w={0.55} d={5}    />
+        <Pavement x={3.6}  z={-1.2}  w={0.55} d={5} />
+        <Pavement x={-10.8} z={-0.45} w={6.5} d={0.5} />
+        <Pavement x={-10.8} z={1.05}  w={6.5} d={0.5} />
+        <Pavement x={8.8}  z={-0.45} w={4.0}  d={0.5} />
+        <Pavement x={8.8}  z={1.05}  w={4.0}  d={0.5} />
+        <Pavement x={-10.8} z={-5.8}  w={6.5} d={0.45} />
+        <Pavement x={3.0}  z={-5.8}  w={6.0}  d={0.45} />
+        <Pavement x={8.8}  z={-5.8}  w={4.0}  d={0.45} />
       </group>
 
       {/* ── Benches ── */}
       <group {...hoverProps("Park Benches", `Treats: ${treatsPct}%`, treatsState, "Less treats = cleaner parks with more amenities.", [-1.8, 0.7, -0.6])}>
         <Bench x={-1.8} z={-0.6} />
-      </group>
-      <group {...hoverProps("Park Benches", `Treats: ${treatsPct}%`, treatsState, "Less treats = cleaner parks with more amenities.", [1.2, 0.7, -0.6])}>
         <Bench x={1.2}  z={-0.6} />
-      </group>
-      <group {...hoverProps("Park Benches", `Treats: ${treatsPct}%`, treatsState, "Less treats = cleaner parks with more amenities.", [-4.0, 0.7, 1.2])}>
-        <Bench x={-4.0} z={1.2}  />
+        <Bench x={-4.0} z={1.2} />
+        <Bench x={-10.5} z={-7.5} />
+        <Bench x={4.0}  z={-7.5} />
+        <Bench x={-2.0} z={4.8} />
+        <Bench x={0.5}  z={4.8} />
+        <Bench x={-5.0} z={5.0} />
       </group>
 
-      {/* ── Apartments ── */}
+      {/* ── Apartments (24 positions) ── */}
       {aptPositions.map(([x, z], i) => (
         <group key={`apt-wrap-${i}`} {...hoverProps("Apartments", `Needs: ${needsPct}%`, needsState, "More needs spending = more apartments and residents.", [x, 1.4, z])}>
-          <Apartment key={`apt-${i}`} x={x} z={z} idx={i} />
+          <Apartment x={x} z={z} idx={i} />
         </group>
       ))}
 
-      {/* ── Restaurants ── */}
-      {restPositions.map(([x, z], i) => (
-        <group key={`rest-wrap-${i}`} {...hoverProps("Restaurants", `Wants: ${wantsPct}%`, wantsState, "Wants add variety, but keep them under 30% for a balanced city.", [x, 1.2, z])}>
-          <Restaurant key={`rest-${i}`} x={x} z={z} idx={i} />
+      {/* ── Condo Towers (4 tall residential towers) ── */}
+      {condoPositions.map(([x, z], i) => (
+        <group key={`condo-${i}`} {...hoverProps("Condo Tower", `Needs: ${needsPct}%`, needsState, "Condos rise as residential spending grows — aim for 50% needs.", [x, 3.5, z])}>
+          <CondoTower x={x} z={z} idx={i} />
         </group>
       ))}
+
+      {/* ── Restaurants (12 positions) ── */}
+      {restPositions.map(([x, z], i) => (
+        <group key={`rest-wrap-${i}`} {...hoverProps("Restaurants", `Wants: ${wantsPct}%`, wantsState, "Wants add variety, but keep them under 30% for a balanced city.", [x, 1.2, z])}>
+          <Restaurant x={x} z={z} idx={i} />
+        </group>
+      ))}
+
+      {/* ── Office Blocks (scale with investment) ── */}
+      {officePositions.slice(0, officeCount).map(([x, z], i) => (
+        <group key={`office-${i}`} {...hoverProps("Office Block", `Investments: ${investPct}%`, investState, "More investment grows your business district.", [x, 2.5, z])}>
+          <OfficeBlock x={x} z={z} idx={i} />
+        </group>
+      ))}
+
+      {/* ── Markets (always visible) ── */}
+      {marketPositions.map(([x, z], i) => (
+        <group key={`market-${i}`} {...hoverProps("Market", `Wants: ${wantsPct}%`, wantsState, "Markets serve the community's daily needs.", [x, 1.0, z])}>
+          <Market x={x} z={z} idx={i} />
+        </group>
+      ))}
+
+      {/* ── Shopping Mall (unlocks at wants ≥ 15%) ── */}
+      <group {...hoverProps("Shopping Mall", `Wants: ${wantsPct}%`, wantsState, "The mall thrives when wants spending is above 15%.", [-11.5, 1.5, 5.5])}>
+        <ShoppingMall x={-11.5} z={5.5} />
+      </group>
+
+      {/* ── Warehouses (industrial east) ── */}
+      <group {...hoverProps("Warehouse", `Health: ${healthPct}/100`, healthState, "Industrial buildings anchor the far edge of your city.", [10.5, 1.2, 3.5])}>
+        <Warehouse x={10.5} z={3.5} />
+      </group>
+      <group {...hoverProps("Warehouse", `Health: ${healthPct}/100`, healthState, "Industrial buildings anchor the far edge of your city.", [10.5, 1.2, 7.5])}>
+        <Warehouse x={10.5} z={7.5} />
+      </group>
 
       {/* ── Financial district ── */}
       <group {...hoverProps("Bank Tower", `Investments: ${investPct}%`, investState, "Invest more to grow your financial district — aim for 20%+.", [3.5, 3.5, -2.5])}>
@@ -1008,31 +1268,75 @@ export function CityGenerator() {
       <group {...hoverProps("Fountain", `Health: ${healthPct}/100`, healthState, "A well-funded city keeps its fountain running all year.", [-2.1, 1.2, 2.9])}>
         <Fountain x={-2.1} z={2.9} />
       </group>
+      <group {...hoverProps("Fountain", `Health: ${healthPct}/100`, healthState, "A well-funded city keeps its fountain running all year.", [4.5, 1.2, -7.5])}>
+        <Fountain x={4.5} z={-7.5} />
+      </group>
 
       {/* ── Bridge ── */}
       <group {...hoverProps("Bridge", `Health: ${healthPct}/100`, healthState, "City bridges reflect overall financial health — keep the score high!", [-0.4, 1.2, 0.3])}>
         <Bridge />
       </group>
 
-      {/* ── Trees ── */}
+      {/* ── Trees (expanded throughout city) ── */}
       <group {...hoverProps("Trees", `Treats: ${treatsPct}%`, treatsState, "Cutting treats keeps the air clean and trees green.", [0, 2.2, -1.2])}>
+        {/* Central park */}
         <Tree x={-0.6} z={-3.0} scale={1.1} />
         <Tree x={-0.6} z={-1.5} scale={0.9} />
         <Tree x={0.7}  z={-2.3} scale={1.0} />
+        {/* NW reserve */}
+        <Tree x={-10.5} z={-7.5} scale={0.9} />
+        <Tree x={-12.0} z={-7.0} scale={1.1} />
+        <Tree x={-11.0} z={-9.0} scale={0.85} />
+        <Tree x={-13.0} z={-8.5} scale={1.0} />
+        {/* East gardens */}
+        <Tree x={4.5}  z={-7.5} scale={1.0} />
+        <Tree x={6.0}  z={-8.0} scale={0.9} />
+        <Tree x={3.5}  z={-9.0} scale={1.1} />
+        <Tree x={5.8}  z={-9.2} scale={0.85} />
+        {/* South park */}
+        <Tree x={-1.5} z={4.5}  scale={1.0} />
+        <Tree x={0.5}  z={5.0}  scale={0.85} />
+        <Tree x={-3.0} z={5.5}  scale={0.95} />
+        <Tree x={1.5}  z={4.2}  scale={1.05} />
+        <Tree x={-4.5} z={4.8}  scale={0.9} />
+        {/* Street trees */}
         <Tree x={-5.8} z={-0.8} scale={0.85} />
         <Tree x={4.8}  z={-0.8} scale={0.95} />
-        <Tree x={2.2}  z={3.2}  scale={0.9} />
-        <Tree x={5.0}  z={3.0}  scale={1.05} />
-        <Tree x={-4.0} z={3.2}  scale={0.8} />
+        <Tree x={-13.5} z={-1.0} scale={1.0} />
+        <Tree x={10.5} z={-1.0} scale={0.9} />
+        <Tree x={-7.5} z={-5.8} scale={0.8} />
+        <Tree x={7.0}  z={-5.8} scale={0.85} />
       </group>
 
-      {/* ── Street lamps ── */}
+      {/* ── Street lamps (full network) ── */}
       <group {...hoverProps("Street Lamps", `Needs: ${needsPct}%`, needsState, "Needs spending keeps the streets lit and safe.", [-0.6, 1.8, 0.6])}>
+        {/* Main intersection */}
         <StreetLamp x={-0.6} z={0.6} />
         <StreetLamp x={2.5}  z={0.6} />
         <StreetLamp x={-3.5} z={0.6} />
         <StreetLamp x={-0.6} z={-0.9} />
         <StreetLamp x={2.5}  z={-0.9} />
+        {/* West section */}
+        <StreetLamp x={-8.0} z={0.6} />
+        <StreetLamp x={-8.0} z={-0.9} />
+        <StreetLamp x={-11.5} z={0.6} />
+        <StreetLamp x={-11.5} z={-0.9} />
+        {/* East section */}
+        <StreetLamp x={7.5}  z={0.6} />
+        <StreetLamp x={7.5}  z={-0.9} />
+        <StreetLamp x={10.5} z={0.6} />
+        {/* Secondary road lamps */}
+        <StreetLamp x={-0.6} z={-5.8} />
+        <StreetLamp x={-4.0} z={-5.8} />
+        <StreetLamp x={4.0}  z={-5.8} />
+        <StreetLamp x={-8.5} z={-5.8} />
+        <StreetLamp x={7.5}  z={-5.8} />
+        <StreetLamp x={-0.6} z={-10.5} />
+        <StreetLamp x={-5.0} z={-10.5} />
+        <StreetLamp x={-10.5} z={-10.5} />
+        <StreetLamp x={0.6}  z={6.5} />
+        <StreetLamp x={-5.0} z={6.5} />
+        <StreetLamp x={-11.0} z={6.5} />
       </group>
 
       {/* ── Pollution clouds ── */}
@@ -1040,9 +1344,9 @@ export function CityGenerator() {
         {Array.from({ length: cloudCount }, (_, i) => (
           <PollutionCloud
             key={i}
-            x={1 + i * 2.1}
-            y={4 + i * 0.4}
-            z={3 - i * 0.6}
+            x={1 + (i % 4) * 2.5}
+            y={4 + (i % 3) * 0.5}
+            z={3 - (i % 3) * 1.5}
             opacity={0.2 + treats * 0.55}
           />
         ))}
@@ -1051,19 +1355,19 @@ export function CityGenerator() {
       {/* ── Traffic ── */}
       {Array.from({ length: carCount }, (_, i) => (
         <group key={`car-wrap-h-${i}`} {...hoverProps("Traffic", `Pop: ${cityState.population * 1000}K`, healthState, "More cars appear as your city's health score rises.", [0, 1.1, 0.3])}>
-          <Car key={`car-h-${i}`} idx={i} lane="h" direction={i % 2 === 0 ? 1 : -1} />
+          <Car idx={i} lane="h" direction={i % 2 === 0 ? 1 : -1} />
         </group>
       ))}
       {Array.from({ length: Math.floor(carCount / 2) }, (_, i) => (
         <group key={`car-wrap-v-${i}`} {...hoverProps("Traffic", `Pop: ${cityState.population * 1000}K`, healthState, "More cars appear as your city's health score rises.", [-0.4, 1.1, 0])}>
-          <Car key={`car-v-${i}`} idx={i + 10} lane="v" direction={i % 2 === 0 ? 1 : -1} />
+          <Car idx={i + 10} lane="v" direction={i % 2 === 0 ? 1 : -1} />
         </group>
       ))}
 
       {/* ── Pedestrians ── */}
       {Array.from({ length: pedCount }, (_, i) => (
         <group key={`ped-wrap-${i}`} {...hoverProps("Residents", `Pop: ${cityState.population * 1000}K`, healthState, "A healthier city attracts more residents walking the streets.", [-1.8, 1.1, -0.6])}>
-          <Pedestrian key={`ped-${i}`} idx={i} />
+          <Pedestrian idx={i} />
         </group>
       ))}
 

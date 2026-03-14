@@ -2,8 +2,8 @@ import type { CityState, Proportions, WeatherType } from "@/types";
 
 // Pure mapping functions — proportions in %, city values out
 export const mapInvestToBank = (pct: number) => 1 + (pct / 30) * 7;
-export const mapWantsToRestaurants = (pct: number) => Math.max(1, Math.floor(pct / 8));
-export const mapNeedsToApartments = (pct: number) => Math.max(2, Math.floor(pct / 10));
+export const mapWantsToRestaurants = (pct: number) => Math.max(4, Math.round(pct / 100 * 12));
+export const mapNeedsToApartments  = (pct: number) => Math.max(8, Math.round(pct / 100 * 24));
 export const mapInvestToTower = (pct: number) => 0.5 + (pct / 20) * 4;
 
 export function mapHealthToWeather(score: number): WeatherType {
