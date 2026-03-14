@@ -75,14 +75,53 @@ export function generateCityMetrics(input: {
   };
 }
 
+/** Visual/category state for CityGenerator (returned with CityState, not in types) */
+export interface CityStateVisual {
+  residentialCount: number;
+  residentialCrowded: boolean;
+  commercialCount: number;
+  commercialDebt: boolean;
+  entertainmentCount: number;
+  smogLevel: number;
+  towerComplete: boolean;
+  prosperityAura: boolean;
+  solarPanelOrGarden: boolean;
+  birdsVisible: boolean;
+}
+
+function mapNeedsToResidentialCount(needsPct: number): number {
+  if (needsPct < 30) return Math.max(1, Math.min(2, Math.round(needsPct / 15)));
+  if (needsPct >= 40 && needsPct <= 50) return 4 + Math.round((needsPct - 40) / 5); // 4–6
+  if (needsPct > 60) return Math.min(10, 6 + Math.round((needsPct - 60) / 5));
+  return Math.max(2, Math.min(4, Math.round(needsPct / 15)));
+}
+
+function mapWantsToCommercialCount(wantsPct: number): number {
+  if (wantsPct < 10) return Math.round(wantsPct / 5); // 0–1
+  if (wantsPct >= 15 && wantsPct <= 25) return 2 + Math.round((wantsPct - 15) / 3); // 2–4
+  return Math.min(12, Math.round((wantsPct / 100) * 12));
+}
+
+function mapTreatsToEntertainmentCount(treatsPct: number): number {
+  if (treatsPct < 5) return 0;
+  if (treatsPct <= 15) return 1 + (treatsPct >= 10 ? 1 : 0);
+  return Math.min(4, 2 + Math.round((treatsPct - 15) / 5));
+}
+
 export function generateCityState(proportions: Proportions, monthlyIncome = 0, totalSpend = 0): CityState {
   const needsPct    = proportions.needs * 100;
-  const wantsPct    = proportions.wants * 100;
-  const investPct   = proportions.investments * 100;
-  const budgetUsed  = monthlyIncome > 0 ? totalSpend / monthlyIncome : 0;
+  const wantsPct   = proportions.wants * 100;
+  const treatsPct  = proportions.treats * 100;
+  const investPct  = proportions.investments * 100;
+  const budgetUsed = monthlyIncome > 0 ? totalSpend / monthlyIncome : 0;
   const healthScore = calculateHealthScore(proportions, budgetUsed);
 
-  return {
+  const residentialCount = mapNeedsToResidentialCount(needsPct);
+  const commercialCount  = mapWantsToCommercialCount(wantsPct);
+  const entertainmentCount = mapTreatsToEntertainmentCount(treatsPct);
+  const smogLevel = Math.min(1, Math.max(0, (treatsPct / 100) * 5)); // 0–1 from treats
+
+  const base: CityState = {
     bankHeight:      mapInvestToBank(investPct),
     restaurantCount: mapWantsToRestaurants(wantsPct),
     apartmentCount:  mapNeedsToApartments(needsPct),
@@ -92,7 +131,35 @@ export function generateCityState(proportions: Proportions, monthlyIncome = 0, t
     healthScore:     Math.round(healthScore),
     budgetUsed,
   };
+
+  const visual: CityStateVisual = {
+    residentialCount,
+    residentialCrowded: needsPct > 60,
+    commercialCount,
+    commercialDebt: wantsPct > 35,
+    entertainmentCount,
+    smogLevel,
+    towerComplete: investPct >= 10,
+    prosperityAura: investPct > 20,
+    solarPanelOrGarden: investPct > 25,
+    birdsVisible: healthScore > 70,
+  };
+
+  return { ...base, ...visual } as CityState;
 }
+
+const defaultVisual: CityStateVisual = {
+  residentialCount: 2,
+  residentialCrowded: false,
+  commercialCount: 2,
+  commercialDebt: false,
+  entertainmentCount: 0,
+  smogLevel: 0,
+  towerComplete: false,
+  prosperityAura: false,
+  solarPanelOrGarden: false,
+  birdsVisible: false,
+};
 
 export const defaultCityState: CityState = {
   bankHeight: 1.5,
@@ -103,4 +170,5 @@ export const defaultCityState: CityState = {
   population: 5,
   healthScore: 50,
   budgetUsed: 0,
-};
+  ...defaultVisual,
+} as CityState;
