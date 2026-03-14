@@ -197,7 +197,7 @@ export function InsightsDashboard() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div id="log-spending">
+        <div>
           <SpendingForm onTransactionProcessed={handleTransactionProcessed} />
         </div>
 
