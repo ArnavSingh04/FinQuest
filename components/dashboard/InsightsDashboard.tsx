@@ -7,7 +7,6 @@ import { motion } from "framer-motion";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { SpendingForm } from "@/components/spending/SpendingForm";
 import { useAuth } from "@/hooks/useAuth";
-import { useCityStore } from "@/store/useCityStore";
 import type {
   DashboardPayload,
   InsightApiResponse,
@@ -31,8 +30,6 @@ function createInsightPayload(data: DashboardPayload): UserMetrics {
 
 export function InsightsDashboard() {
   const { user, loading } = useAuth();
-  const cityMetrics = useCityStore((state) => state.cityMetrics);
-  const setCityMetrics = useCityStore((state) => state.setCityMetrics);
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [isDashboardLoading, setIsDashboardLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +67,6 @@ export function InsightsDashboard() {
         }
 
         setDashboard(payload);
-        setCityMetrics(payload.cityMetrics);
       } catch (loadError) {
         if (!isMounted) {
           return;
@@ -93,7 +89,7 @@ export function InsightsDashboard() {
     return () => {
       isMounted = false;
     };
-  }, [loading, setCityMetrics, user]);
+  }, [loading, user]);
 
   async function fetchInsight(data: DashboardPayload) {
     const response = await fetch("/api/insight", {
@@ -114,7 +110,6 @@ export function InsightsDashboard() {
 
   async function handleTransactionProcessed(payload: TransactionApiResponse) {
     setDashboard(payload);
-    setCityMetrics(payload.cityMetrics);
     setIsInsightLoading(true);
     setError(null);
 
@@ -262,24 +257,24 @@ export function InsightsDashboard() {
       <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           label="Economy"
-          value={`${cityMetrics.economyScore}`}
+          value={`${dashboard.cityMetrics.economyScore}`}
           helperText="Overall city economy derived from budget health and growth."
         />
         <StatsCard
           label="Infrastructure"
-          value={`${cityMetrics.infrastructure}`}
+          value={`${dashboard.cityMetrics.infrastructure}`}
           helperText="Needs spending keeps roads, homes, and services stable."
           accent="from-pink-400/30 to-violet-400/10"
         />
         <StatsCard
           label="Pollution"
-          value={`${cityMetrics.pollution}`}
+          value={`${dashboard.cityMetrics.pollution}`}
           helperText="Treat-heavy habits create visible smoke in the scene."
           accent="from-orange-400/30 to-red-400/10"
         />
         <StatsCard
           label="Growth"
-          value={`${cityMetrics.growth}`}
+          value={`${dashboard.cityMetrics.growth}`}
           helperText="Investing increases skyline growth and ambition."
           accent="from-emerald-400/30 to-cyan-400/10"
         />
@@ -363,7 +358,7 @@ export function InsightsDashboard() {
             label="Stability"
             value={`${dashboard.scores.stability}`}
             helperText={
-              cityMetrics.emergencyWarning
+              dashboard.cityMetrics.emergencyWarning
                 ? "Low liquidity triggered an emergency warning in the city."
                 : "Stable finances keep the city calm and resilient."
             }

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 import { useAuth } from "@/hooks/useAuth";
-import { useCityStore } from "@/store/useCityStore";
 import type { DashboardPayload, Transaction } from "@/types";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -128,7 +127,6 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
 
 export default function HistoryPage() {
   const { user, loading } = useAuth();
-  const setCityMetrics = useCityStore((state) => state.setCityMetrics);
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -165,7 +163,6 @@ export default function HistoryPage() {
         }
 
         setDashboard(payload);
-        setCityMetrics(payload.cityMetrics);
       } catch (loadError) {
         if (!isMounted) {
           return;
@@ -188,7 +185,7 @@ export default function HistoryPage() {
     return () => {
       isMounted = false;
     };
-  }, [loading, setCityMetrics, user]);
+  }, [loading, user]);
 
   const summary = useMemo(() => {
     if (!dashboard) {
@@ -237,7 +234,6 @@ export default function HistoryPage() {
 
       const payload = (await response.json()) as DashboardPayload;
       setDashboard(payload);
-      setCityMetrics(payload.cityMetrics);
       localStorage.setItem("finquest-ratios", JSON.stringify(payload.ratios));
       localStorage.setItem("finquest-city-metrics", JSON.stringify(payload.cityMetrics));
       localStorage.setItem("finquest-progress", JSON.stringify(payload.progress));

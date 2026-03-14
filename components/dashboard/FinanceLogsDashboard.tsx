@@ -5,7 +5,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 import { useAuth } from "@/hooks/useAuth";
-import { useCityStore } from "@/store/useCityStore";
 import type {
   AchievementState,
   DashboardPayload,
@@ -330,7 +329,6 @@ function AchievementCard({ achievement }: { achievement: AchievementState }) {
 
 export function FinanceLogsDashboard() {
   const { user, loading } = useAuth();
-  const setCityMetrics = useCityStore((state) => state.setCityMetrics);
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [isDashboardLoading, setIsDashboardLoading] = useState(true);
   const [isInsightLoading, setIsInsightLoading] = useState(false);
@@ -374,7 +372,6 @@ export function FinanceLogsDashboard() {
         }
 
         setDashboard(payload);
-        setCityMetrics(payload.cityMetrics);
       } catch (loadError) {
         if (!isMounted) {
           return;
@@ -395,7 +392,7 @@ export function FinanceLogsDashboard() {
     return () => {
       isMounted = false;
     };
-  }, [loading, setCityMetrics, user]);
+  }, [loading, user]);
 
   async function fetchInsight(data: DashboardPayload) {
     const response = await fetch("/api/insight", {
@@ -416,7 +413,6 @@ export function FinanceLogsDashboard() {
 
   function syncDashboard(payload: DashboardPayload) {
     setDashboard(payload);
-    setCityMetrics(payload.cityMetrics);
     localStorage.setItem("finquest-ratios", JSON.stringify(payload.ratios));
     localStorage.setItem("finquest-city-metrics", JSON.stringify(payload.cityMetrics));
     localStorage.setItem("finquest-progress", JSON.stringify(payload.progress));

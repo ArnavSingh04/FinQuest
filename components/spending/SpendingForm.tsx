@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
-import { useCityStore } from "@/store/useCityStore";
 import type {
   TransactionApiResponse,
   TransactionCategory,
@@ -16,7 +15,6 @@ interface SpendingFormProps {
 }
 
 export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
-  const setCityMetrics = useCityStore((state) => state.setCityMetrics);
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<TransactionCategory>("Need");
   const [merchantName, setMerchantName] = useState("");
@@ -53,7 +51,6 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
       }
 
       const payload = (await response.json()) as TransactionApiResponse;
-      setCityMetrics(payload.cityMetrics);
 
       localStorage.setItem("finquest-ratios", JSON.stringify(payload.ratios));
       localStorage.setItem(

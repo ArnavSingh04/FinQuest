@@ -7,7 +7,6 @@ import { useParams } from "next/navigation";
 import { CityScene } from "@/components/city/CityScene";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { useAuth } from "@/hooks/useAuth";
-import { useCityStore } from "@/store/useCityStore";
 import type { GroupMemberProfileResponse } from "@/types";
 
 function formatPercent(value: number) {
@@ -17,13 +16,6 @@ function formatPercent(value: number) {
 export default function GroupMemberPage() {
   const params = useParams<{ groupId: string; memberId: string }>();
   const { user, loading } = useAuth();
-  const setCityMetrics = useCityStore((state) => state.setCityMetrics);
-  const setHoveredStructure = useCityStore(
-    (state) => state.setHoveredStructure
-  );
-  const setSelectedStructure = useCityStore(
-    (state) => state.setSelectedStructure
-  );
   const [profile, setProfile] = useState<GroupMemberProfileResponse | null>(
     null
   );
@@ -86,16 +78,6 @@ export default function GroupMemberPage() {
       isMounted = false;
     };
   }, [loading, params.groupId, params.memberId, user]);
-
-  useEffect(() => {
-    if (!profile) {
-      return;
-    }
-
-    setCityMetrics(profile.dashboard.cityMetrics);
-    setHoveredStructure(null);
-    setSelectedStructure(null);
-  }, [profile, setCityMetrics, setHoveredStructure, setSelectedStructure]);
 
   if (loading || isLoading) {
     return (

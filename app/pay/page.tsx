@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/hooks/useAuth";
-import { useCityStore } from "@/store/useCityStore";
 import type { TransactionApiResponse, TransactionCategory } from "@/types";
 
 type AmountBucket =
@@ -49,7 +48,6 @@ const amountOptions: Array<{
 export default function PayPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const setCityMetrics = useCityStore((state) => state.setCityMetrics);
   const [amountBucket, setAmountBucket] = useState<AmountBucket | null>(null);
   const [category, setCategory] = useState<TransactionCategory | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,7 +85,6 @@ export default function PayPage() {
 
       const payload = (await response.json()) as TransactionApiResponse;
 
-      setCityMetrics(payload.cityMetrics);
       localStorage.setItem("finquest-ratios", JSON.stringify(payload.ratios));
       localStorage.setItem("finquest-city-metrics", JSON.stringify(payload.cityMetrics));
       localStorage.setItem("finquest-progress", JSON.stringify(payload.progress));
