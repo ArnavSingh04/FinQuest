@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { signOutUser } from "@/lib/auth";
 
 const authenticatedLinks = [
+  { href: "/history", label: "History" },
   { href: "/city", label: "City" },
   { href: "/groups", label: "Groups" },
 ];
