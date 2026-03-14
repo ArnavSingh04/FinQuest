@@ -12,32 +12,47 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
+const CAT_COLORS: Record<string, string> = {
+  Need: "bg-[#3B7DD8]/15 text-[#3B7DD8]",
+  Want: "bg-[#E8A020]/15 text-[#E8A020]",
+  Treat: "bg-[#D94F3D]/15 text-[#D94F3D]",
+  Invest: "bg-[#3DAB6A]/15 text-[#3DAB6A]",
+};
+
 function LessonCard({ lesson }: { lesson: Lesson }) {
+  const catClass = CAT_COLORS[lesson.concept] ?? "bg-[#1C3A2E]/10 text-[#1C3A2E]";
+
   return (
     <Link
       href={`/lessons/${lesson.id}`}
-      className="glass-card block rounded-[1.75rem] p-5 transition hover:border-white/20 hover:bg-white/[0.04]"
+      className="block rounded-2xl border p-5 transition hover:border-[#C8BFA8]"
+      style={{ background: "#FFFFFF", borderColor: "#C8BFA8" }}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-300">
+          <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider ${catClass}`}>
             {lesson.concept}
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold text-white">{lesson.title}</h2>
+          </span>
+          <h2 className="mt-2 font-heading text-2xl font-normal" style={{ color: "#1C3A2E" }}>
+            {lesson.title}
+          </h2>
         </div>
         <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${
+          className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider"
+          style={
             lesson.completed
-              ? "bg-emerald-400/15 text-emerald-200"
-              : "bg-amber-400/15 text-amber-200"
-          }`}
+              ? { background: "#E8F7EE", color: "#3DAB6A" }
+              : { background: "#E8E0D0", color: "#1C3A2E" }
+          }
         >
           {lesson.completed ? "Completed" : "New"}
         </span>
       </div>
 
-      <p className="mt-4 text-sm leading-6 text-slate-300">{lesson.previewText}</p>
-      <p className="mt-5 text-xs uppercase tracking-[0.16em] text-slate-500">
+      <p className="mt-4 text-sm leading-6" style={{ color: "#4A6358" }}>
+        {lesson.previewText}
+      </p>
+      <p className="mt-5 text-xs uppercase tracking-[0.08em]" style={{ color: "#8A9E94" }}>
         {dateFormatter.format(new Date(lesson.createdAt))}
       </p>
     </Link>
@@ -117,9 +132,11 @@ export default function LessonsPage() {
 
   if (loading || isLoading) {
     return (
-      <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-6">
-        <div className="glass-card rounded-[2rem] p-6 text-slate-300">
-          Loading lessons...
+      <main className="min-h-screen w-full px-5 py-6" style={{ background: "var(--bg-base)" }}>
+        <div className="mx-auto max-w-6xl">
+          <div className="rounded-2xl border p-6" style={{ background: "#E8E0D0", borderColor: "#C8BFA8", color: "#4A6358" }}>
+            Loading lessons...
+          </div>
         </div>
       </main>
     );
@@ -127,65 +144,83 @@ export default function LessonsPage() {
 
   if (!user) {
     return (
-      <main className="mx-auto min-h-screen w-full max-w-4xl px-5 py-6">
-        <div className="glass-card rounded-[2rem] p-6 text-slate-300">
-          Log in to unlock personalized lessons based on your spending.
+      <main className="min-h-screen w-full px-5 py-6" style={{ background: "var(--bg-base)" }}>
+        <div className="mx-auto max-w-4xl">
+          <div className="rounded-2xl border p-6" style={{ background: "#E8E0D0", borderColor: "#C8BFA8", color: "#4A6358" }}>
+            Log in to unlock personalized lessons based on your spending.
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-6">
-      <section className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-            FinQuest Academy
-          </p>
-          <h1 className="mt-2 text-4xl font-semibold text-white">Lessons</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-            Short financial lessons generated from your real spending patterns so you
-            can learn from what your money is already doing.
-          </p>
-        </div>
+    <main className="min-h-screen w-full px-5 py-6" style={{ background: "var(--bg-base)" }}>
+      <div className="mx-auto max-w-6xl">
+        <section className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
+              FinQuest Academy
+            </p>
+            <h1 className="mt-2 font-heading text-4xl font-normal" style={{ color: "#1C3A2E" }}>
+              Lessons
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6" style={{ color: "#4A6358" }}>
+              Short financial lessons generated from your real spending patterns so you
+              can learn from what your money is already doing.
+            </p>
+          </div>
 
-        <button
-          type="button"
-          onClick={handleGenerateLesson}
-          disabled={isGenerating}
-          className="rounded-2xl bg-gradient-to-r from-sky-400 to-emerald-400 px-5 py-3 text-sm font-semibold text-slate-950 transition disabled:opacity-60"
-        >
-          {isGenerating ? "Generating..." : "Generate New Lesson"}
-        </button>
-      </section>
+          <button
+            type="button"
+            onClick={handleGenerateLesson}
+            disabled={isGenerating}
+            className="rounded-full px-5 py-3 text-sm font-semibold text-white transition disabled:opacity-60"
+            style={{ background: "#C17B3F" }}
+          >
+            {isGenerating ? "Generating..." : "Generate New Lesson"}
+          </button>
+        </section>
 
-      {feedback ? (
-        <section className="glass-card mb-6 rounded-[1.5rem] p-4 text-sm text-emerald-200">
-          {feedback}
-        </section>
-      ) : null}
+        {feedback ? (
+          <section className="mb-6 rounded-2xl border p-4 text-sm" style={{ background: "#E8F7EE", borderColor: "#C8BFA8", color: "#1C3A2E" }}>
+            {feedback}
+          </section>
+        ) : null}
 
-      {error ? (
-        <section className="glass-card mb-6 rounded-[1.5rem] p-4 text-sm text-rose-300">
-          {error}
-        </section>
-      ) : null}
+        {error ? (
+          <section className="mb-6 rounded-2xl border p-4 text-sm" style={{ background: "#FFFFFF", borderColor: "#D94F3D", color: "#D94F3D" }}>
+            {error}
+          </section>
+        ) : null}
 
-      {lessons.length === 0 ? (
-        <section className="glass-card rounded-[2rem] p-6">
-          <h2 className="text-2xl font-semibold text-white">No lessons yet</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-            Log a few transactions first, then FinQuest will turn those money habits
-            into personalized micro lessons.
-          </p>
-        </section>
-      ) : (
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {lessons.map((lesson) => (
-            <LessonCard key={lesson.id} lesson={lesson} />
-          ))}
-        </section>
-      )}
+        {lessons.length === 0 ? (
+          <section className="rounded-2xl border p-6" style={{ background: "#FFFFFF", borderColor: "#C8BFA8" }}>
+            <h2 className="font-heading text-2xl font-normal" style={{ color: "#1C3A2E" }}>
+              No lessons yet
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6" style={{ color: "#4A6358" }}>
+              Log a few transactions first, then FinQuest will turn those money habits
+              into personalized micro lessons.
+            </p>
+            <button
+              type="button"
+              onClick={handleGenerateLesson}
+              disabled={isGenerating}
+              className="mt-4 rounded-full px-5 py-3 text-sm font-semibold text-white transition disabled:opacity-60"
+              style={{ background: "#C17B3F" }}
+            >
+              Generate New Lesson
+            </button>
+          </section>
+        ) : (
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {lessons.map((lesson) => (
+              <LessonCard key={lesson.id} lesson={lesson} />
+            ))}
+          </section>
+        )}
+      </div>
     </main>
   );
 }

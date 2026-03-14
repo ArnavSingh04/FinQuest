@@ -66,8 +66,8 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-[390px] items-center justify-center px-5">
-        <div className="glass-card rounded-2xl p-6 text-text-muted">
+      <main className="flex min-h-screen w-full items-center justify-center px-5" style={{ background: "#F2EDE3" }}>
+        <div className="rounded-2xl border p-6" style={{ background: "#FFFFFF", borderColor: "#C8BFA8", color: "#4A6358" }}>
           Loading FinQuest...
         </div>
       </main>
@@ -79,14 +79,15 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.12),transparent_32%),linear-gradient(180deg,#08111f_0%,#07111f_100%)] text-white">
+    <main className="min-h-screen w-full" style={{ background: "#F2EDE3" }}>
       <div className="mx-auto w-full max-w-6xl px-5 py-6">
         <motion.header
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-10 flex items-center justify-between gap-4 rounded-[2rem] border border-white/10 bg-slate-950/60 px-5 py-4 backdrop-blur-xl"
+          className="m-3 flex items-center justify-between gap-4 rounded-xl px-5 py-4"
+          style={{ background: "#1C3A2E" }}
         >
-          <Link href="/" className="text-xl font-semibold tracking-tight text-white">
+          <Link href="/" className="font-heading text-xl font-normal tracking-tight" style={{ color: "#F2EDE3" }}>
             FinQuest
           </Link>
 
@@ -95,7 +96,8 @@ export default function HomePage() {
               <Link
                 key={`${link.label}-${index}`}
                 href={link.href}
-                className="rounded-full px-3 py-2 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white"
+                className="rounded-full px-3 py-2 text-sm transition hover:opacity-90"
+                style={{ color: "#8ABF9E", fontFamily: "var(--font-body), DM Sans, sans-serif", fontSize: 14 }}
               >
                 {link.label}
               </Link>
@@ -108,13 +110,19 @@ export default function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           className="px-2 py-8 text-center"
         >
-          <p className="mx-auto inline-flex rounded-full border border-sky-400/20 bg-sky-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-sky-200">
+          <p
+            className="mx-auto inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em]"
+            style={{ background: "#1C3A2E", color: "#F2EDE3", fontFamily: "var(--font-body), DM Sans, sans-serif" }}
+          >
             Financial Literacy · Reimagined
           </p>
-          <h1 className="mx-auto mt-8 max-w-5xl text-5xl font-semibold tracking-tight text-white sm:text-7xl">
-            Your money builds <span className="text-emerald-300">your city</span>
+          <h1 className="mx-auto mt-8 max-w-5xl font-heading text-5xl font-normal tracking-tight sm:text-7xl" style={{ color: "#1C3A2E" }}>
+            Your money builds <span style={{ color: "#C17B3F" }}>your city</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-300">
+          <p
+            className="mx-auto mt-6 max-w-3xl leading-relaxed"
+            style={{ color: "#4A6358", fontFamily: "var(--font-body), DM Sans, sans-serif", fontSize: 16, lineHeight: 1.6 }}
+          >
             Every purchase you make shapes a living 3D skyline. Spend wisely and
             watch towers rise. Overspend on impulses and storm clouds roll in.
             FinQuest turns daily money decisions into something you can actually see.
@@ -123,42 +131,44 @@ export default function HomePage() {
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/signup"
-              className="rounded-2xl bg-gradient-to-r from-sky-400 to-emerald-400 px-8 py-4 text-sm font-semibold text-slate-950 shadow-[0_12px_30px_rgba(34,211,238,0.22)] transition hover:scale-[1.01]"
+              className="rounded-full px-8 py-4 text-sm font-semibold text-white transition hover:opacity-90"
+              style={{ background: "#C17B3F" }}
             >
               Start Building
             </Link>
             <Link
               href="/login"
-              className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="rounded-full border-2 px-8 py-4 text-sm font-semibold transition hover:opacity-90"
+              style={{ borderColor: "#1C3A2E", color: "#1C3A2E", background: "transparent" }}
             >
               View My City
             </Link>
           </div>
 
           <div className="mt-12 grid gap-4 text-left sm:grid-cols-3">
-            <div className="glass-card rounded-[2rem] p-6">
-              <p className="text-5xl font-semibold text-white">0</p>
-              <p className="mt-2 text-lg text-slate-200">bank links needed</p>
-              <p className="mt-2 text-sm text-slate-400">Start with simple manual logs.</p>
+            <div className="rounded-2xl border p-6" style={{ background: "#FFFFFF", borderColor: "#C8BFA8" }}>
+              <p className="font-heading text-5xl font-normal" style={{ color: "#1C3A2E" }}>0</p>
+              <p className="mt-2 text-lg" style={{ color: "#4A6358", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>bank links needed</p>
+              <p className="mt-2 text-[13px]" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>Start with simple manual logs.</p>
             </div>
-            <div className="glass-card rounded-[2rem] p-6">
-              <p className="text-5xl font-semibold text-white">1</p>
-              <p className="mt-2 text-lg text-slate-200">tap to log</p>
-              <p className="mt-2 text-sm text-slate-400">Fast, phone-friendly spending input.</p>
+            <div className="rounded-2xl border p-6" style={{ background: "#FFFFFF", borderColor: "#C8BFA8" }}>
+              <p className="font-heading text-5xl font-normal" style={{ color: "#1C3A2E" }}>1</p>
+              <p className="mt-2 text-lg" style={{ color: "#4A6358", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>tap to log</p>
+              <p className="mt-2 text-[13px]" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>Fast, phone-friendly spending input.</p>
             </div>
-            <div className="glass-card rounded-[2rem] p-6">
-              <p className="text-5xl font-semibold text-white">4</p>
-              <p className="mt-2 text-lg text-slate-200">money categories</p>
-              <p className="mt-2 text-sm text-slate-400">Need · Want · Treat · Invest</p>
+            <div className="rounded-2xl border p-6" style={{ background: "#FFFFFF", borderColor: "#C8BFA8" }}>
+              <p className="font-heading text-5xl font-normal" style={{ color: "#1C3A2E" }}>4</p>
+              <p className="mt-2 text-lg" style={{ color: "#4A6358", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>money categories</p>
+              <p className="mt-2 text-[13px]" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>Need · Want · Treat · Invest</p>
             </div>
           </div>
         </motion.section>
 
         <section className="mt-10">
-          <p className="text-center text-sm font-semibold uppercase tracking-[0.22em] text-sky-300">
+          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
             How It Works
           </p>
-          <h2 className="mt-4 text-center text-4xl font-semibold text-white sm:text-5xl">
+          <h2 className="mt-4 text-center font-heading text-4xl font-normal sm:text-5xl" style={{ color: "#1C3A2E" }}>
             Four categories. One living city.
           </h2>
 
@@ -166,11 +176,12 @@ export default function HomePage() {
             {categoryCards.map((card) => (
               <div
                 key={card.title}
-                className="glass-card rounded-[2rem] p-6"
+                className="rounded-2xl border p-6"
+                style={{ background: "#FFFFFF", borderColor: "#C8BFA8" }}
               >
-                <p className="text-2xl font-semibold text-white">{card.title}</p>
-                <p className="mt-1 text-sm text-sky-300">{card.subtitle}</p>
-                <p className="mt-5 text-sm leading-7 text-slate-300">
+                <p className="font-heading text-2xl font-normal" style={{ color: "#1C3A2E" }}>{card.title}</p>
+                <p className="mt-1 text-sm" style={{ color: "#C17B3F", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>{card.subtitle}</p>
+                <p className="mt-5 text-sm leading-7" style={{ color: "#4A6358", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
                   {card.description}
                 </p>
               </div>
@@ -178,22 +189,22 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="glass-card mt-12 grid gap-8 rounded-[2rem] p-6 lg:grid-cols-[1fr_0.95fr] lg:p-8">
+        <section className="mt-12 grid gap-8 rounded-2xl p-6 lg:grid-cols-[1fr_0.95fr] lg:p-8" style={{ background: "#FFFFFF", border: "1px solid #C8BFA8" }}>
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-300">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
               The 3-Step Loop
             </p>
-            <h2 className="mt-4 text-4xl font-semibold text-white sm:text-5xl">
+            <h2 className="mt-4 font-heading text-4xl font-normal sm:text-5xl" style={{ color: "#1C3A2E" }}>
               Log · Watch · Improve
             </h2>
 
             <div className="mt-10 space-y-8">
               {loopSteps.map((step) => (
                 <div key={step.id} className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-4">
-                  <p className="text-4xl font-semibold text-slate-700">{step.id}</p>
+                  <p className="font-heading text-4xl font-normal" style={{ color: "#1C3A2E" }}>{step.id}</p>
                   <div>
-                    <p className="text-2xl font-semibold text-white">{step.title}</p>
-                    <p className="mt-2 text-base leading-7 text-slate-300">
+                    <p className="font-heading text-2xl font-normal" style={{ color: "#1C3A2E" }}>{step.title}</p>
+                    <p className="mt-2 text-base leading-7" style={{ color: "#4A6358", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
                       {step.description}
                     </p>
                   </div>
@@ -203,48 +214,49 @@ export default function HomePage() {
 
             <Link
               href="/signup"
-              className="mt-10 inline-flex rounded-2xl bg-gradient-to-r from-sky-400 to-emerald-400 px-7 py-4 text-sm font-semibold text-slate-950 shadow-[0_12px_30px_rgba(34,211,238,0.22)] transition hover:scale-[1.01]"
+              className="mt-10 inline-flex rounded-full px-7 py-4 text-sm font-semibold text-white transition hover:opacity-90"
+              style={{ background: "#C17B3F" }}
             >
               Get started — it&apos;s free
             </Link>
           </div>
 
-          <div className="rounded-[2rem] border border-white/10 bg-slate-950/35 p-5">
+          <div className="rounded-2xl border p-5" style={{ background: "#F2EDE3", borderColor: "#C8BFA8" }}>
             <div className="flex items-center justify-between gap-4">
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
+              <p className="text-sm font-semibold uppercase tracking-[0.08em]" style={{ color: "#4A6358", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
                 City Health
               </p>
-              <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-sm font-semibold text-emerald-200">
+              <span className="rounded-full px-3 py-1 text-sm font-semibold" style={{ background: "#E8F7EE", color: "#3DAB6A" }}>
                 Thriving
               </span>
             </div>
 
-            <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full w-[78%] rounded-full bg-gradient-to-r from-sky-400 to-emerald-400" />
+            <div className="mt-5 h-3 overflow-hidden rounded-full" style={{ background: "#E8E0D0" }}>
+              <div className="h-full w-[78%] rounded-full" style={{ background: "linear-gradient(90deg, #3DAB6A, #C17B3F)" }} />
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-                <p className="text-sm text-slate-400">Needs</p>
-                <p className="mt-2 text-4xl font-semibold text-sky-300">52%</p>
+              <div className="rounded-2xl border p-4" style={{ borderColor: "#C8BFA8", background: "#FFFFFF" }}>
+                <p className="text-sm" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>Needs</p>
+                <p className="mt-2 font-heading text-4xl font-normal" style={{ color: "#1C3A2E" }}>52%</p>
               </div>
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-                <p className="text-sm text-slate-400">Invest</p>
-                <p className="mt-2 text-4xl font-semibold text-emerald-300">21%</p>
+              <div className="rounded-2xl border p-4" style={{ borderColor: "#C8BFA8", background: "#FFFFFF" }}>
+                <p className="text-sm" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>Invest</p>
+                <p className="mt-2 font-heading text-4xl font-normal" style={{ color: "#1C3A2E" }}>21%</p>
               </div>
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-                <p className="text-sm text-slate-400">Wants</p>
-                <p className="mt-2 text-4xl font-semibold text-amber-300">20%</p>
+              <div className="rounded-2xl border p-4" style={{ borderColor: "#C8BFA8", background: "#FFFFFF" }}>
+                <p className="text-sm" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>Wants</p>
+                <p className="mt-2 font-heading text-4xl font-normal" style={{ color: "#1C3A2E" }}>20%</p>
               </div>
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-                <p className="text-sm text-slate-400">Treats</p>
-                <p className="mt-2 text-4xl font-semibold text-rose-300">7%</p>
+              <div className="rounded-2xl border p-4" style={{ borderColor: "#C8BFA8", background: "#FFFFFF" }}>
+                <p className="text-sm" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>Treats</p>
+                <p className="mt-2 font-heading text-4xl font-normal" style={{ color: "#1C3A2E" }}>7%</p>
               </div>
             </div>
 
-            <div className="mt-6 rounded-[1.5rem] border border-sky-400/20 bg-sky-500/10 p-5">
-              <p className="text-sm font-semibold text-sky-200">AI Advisor</p>
-              <p className="mt-3 text-sm leading-7 text-slate-200">
+            <div className="mt-6 rounded-2xl border p-5" style={{ borderColor: "#C8BFA8", background: "#E8F7EE" }}>
+              <p className="text-sm font-semibold" style={{ color: "#1C3A2E", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>AI Advisor</p>
+              <p className="mt-3 text-sm leading-7" style={{ color: "#4A6358", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
                 &quot;Your investment tower is climbing. Keep needs above 50% and
                 you&apos;ll see clear skies all week.&quot;
               </p>
@@ -252,24 +264,26 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="py-16 text-center">
-          <h2 className="text-4xl font-semibold text-white sm:text-5xl">
+        <section className="py-16 text-center" style={{ background: "#F2EDE3" }}>
+          <h2 className="font-heading text-4xl font-normal sm:text-5xl" style={{ color: "#1C3A2E" }}>
             Ready to build your city?
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-slate-300">
+          <p className="mx-auto mt-4 max-w-2xl text-lg leading-8" style={{ color: "#4A6358", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
             Sign in to start logging transactions, unlock your personal skyline,
             and track how every habit changes your city over time.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/signup"
-              className="rounded-2xl bg-gradient-to-r from-sky-400 to-emerald-400 px-8 py-4 text-sm font-semibold text-slate-950 shadow-[0_12px_30px_rgba(34,211,238,0.22)] transition hover:scale-[1.01]"
+              className="rounded-full px-8 py-4 text-sm font-semibold text-white transition hover:opacity-90"
+              style={{ background: "#C17B3F" }}
             >
               Start FinQuest
             </Link>
             <Link
               href="/login"
-              className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="rounded-full border-2 px-8 py-4 text-sm font-semibold transition hover:opacity-90"
+              style={{ borderColor: "#1C3A2E", color: "#1C3A2E", background: "transparent" }}
             >
               Sign In
             </Link>

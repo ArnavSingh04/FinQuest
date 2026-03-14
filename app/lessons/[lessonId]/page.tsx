@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+
 import { useParams } from "next/navigation";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -107,9 +108,11 @@ export default function LessonDetailPage() {
 
   if (loading || isLoading) {
     return (
-      <main className="mx-auto min-h-screen w-full max-w-5xl px-5 py-6">
-        <div className="glass-card rounded-[2rem] p-6 text-slate-300">
-          Loading lesson...
+      <main className="min-h-screen w-full px-5 py-6" style={{ background: "var(--bg-base)" }}>
+        <div className="mx-auto max-w-5xl">
+          <div className="rounded-2xl border p-6" style={{ background: "#E8E0D0", borderColor: "#C8BFA8", color: "#4A6358" }}>
+            Loading lesson...
+          </div>
         </div>
       </main>
     );
@@ -117,9 +120,11 @@ export default function LessonDetailPage() {
 
   if (!user) {
     return (
-      <main className="mx-auto min-h-screen w-full max-w-5xl px-5 py-6">
-        <div className="glass-card rounded-[2rem] p-6 text-slate-300">
-          Log in to read personalized lessons.
+      <main className="min-h-screen w-full px-5 py-6" style={{ background: "var(--bg-base)" }}>
+        <div className="mx-auto max-w-5xl">
+          <div className="rounded-2xl border p-6" style={{ background: "#E8E0D0", borderColor: "#C8BFA8", color: "#4A6358" }}>
+            Log in to read personalized lessons.
+          </div>
         </div>
       </main>
     );
@@ -127,94 +132,134 @@ export default function LessonDetailPage() {
 
   if (!lesson) {
     return (
-      <main className="mx-auto min-h-screen w-full max-w-5xl px-5 py-6">
-        <div className="glass-card rounded-[2rem] p-6 text-slate-300">
-          {error || "Lesson not found."}
+      <main className="min-h-screen w-full px-5 py-6" style={{ background: "var(--bg-base)" }}>
+        <div className="mx-auto max-w-5xl">
+          <div className="rounded-2xl border p-6" style={{ background: "#FFFFFF", borderColor: "#C8BFA8", color: "#1C3A2E" }}>
+            {error || "Lesson not found."}
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-5xl px-5 py-6">
-      <section className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <Link href="/lessons" className="text-sm font-medium text-sky-300 transition hover:text-sky-200">
-            ← Back to lessons
-          </Link>
-          <p className="mt-4 text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-            {lesson.concept}
-          </p>
-          <h1 className="mt-2 text-4xl font-semibold text-white">{lesson.title}</h1>
-          <p className="mt-3 text-sm text-slate-400">
-            Generated {dateFormatter.format(new Date(lesson.createdAt))}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={toggleCompletion}
-          disabled={isSaving}
-          className={`rounded-2xl px-5 py-3 text-sm font-semibold transition disabled:opacity-60 ${
-            lesson.completed
-              ? "border border-white/10 bg-slate-900/60 text-white"
-              : "bg-gradient-to-r from-sky-400 to-emerald-400 text-slate-950"
-          }`}
-        >
-          {isSaving
-            ? "Saving..."
-            : lesson.completed
-              ? "Mark as Incomplete"
-              : "Mark as Complete"}
-        </button>
-      </section>
-
-      <section className="glass-card rounded-[2rem] p-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-300">
-          Explanation
-        </p>
-        <p className="mt-4 text-lg leading-8 text-slate-200">{lesson.explanation}</p>
-      </section>
-
-      <section className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-300">
-            Your Examples
-          </p>
-          <div className="mt-5 space-y-3">
-            {lesson.examples.map((example, index) => (
-              <div
-                key={`${lesson.id}-example-${index}`}
-                className="rounded-[1.5rem] border border-white/10 bg-slate-950/30 p-4 text-sm leading-6 text-slate-300"
-              >
-                {example}
-              </div>
-            ))}
+    <main className="min-h-screen w-full px-5 py-6" style={{ background: "var(--bg-base)" }}>
+      <div className="mx-auto max-w-5xl">
+        <section className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <Link
+              href="/lessons"
+              className="text-sm font-medium transition hover:underline"
+              style={{ color: "#4A6358" }}
+            >
+              ← Back to lessons
+            </Link>
+            <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
+              {lesson.concept}
+            </p>
+            <h1 className="mt-2 font-heading text-4xl font-normal" style={{ color: "#1C3A2E" }}>
+              {lesson.title}
+            </h1>
+            <p className="mt-3 text-[13px]" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
+              Generated {dateFormatter.format(new Date(lesson.createdAt))}
+            </p>
           </div>
-        </div>
 
-        <div className="glass-card rounded-[2rem] p-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-300">
-            Actionable Advice
-          </p>
-          <div className="mt-5 space-y-3">
-            {lesson.advice.map((tip, index) => (
-              <div
-                key={`${lesson.id}-advice-${index}`}
-                className="rounded-[1.5rem] border border-emerald-400/15 bg-emerald-500/10 p-4 text-sm leading-6 text-emerald-100"
-              >
-                {tip}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {error ? (
-        <section className="glass-card mt-6 rounded-[1.5rem] p-4 text-sm text-rose-300">
-          {error}
+          <button
+            type="button"
+            onClick={toggleCompletion}
+            disabled={isSaving}
+            className="rounded-full px-5 py-3 text-sm font-semibold text-white transition disabled:opacity-60"
+            style={{ background: "#C17B3F" }}
+          >
+            {isSaving
+              ? "Saving..."
+              : lesson.completed
+                ? "Mark as Incomplete"
+                : "Mark as Complete"}
+          </button>
         </section>
-      ) : null}
+
+        {/* Explanation card */}
+        <section
+          className="rounded-2xl border p-6"
+          style={{ background: "#FFFFFF", borderColor: "#C8BFA8", borderRadius: 16 }}
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
+            Explanation
+          </p>
+          <p className="mt-4 leading-relaxed" style={{ color: "#4A6358", fontFamily: "var(--font-body), DM Sans, sans-serif", fontSize: 15, lineHeight: 1.6 }}>
+            {lesson.explanation}
+          </p>
+        </section>
+
+        <section className="mt-6 grid gap-6 lg:grid-cols-2">
+          {/* Your Examples card */}
+          <div
+            className="rounded-2xl border p-6"
+            style={{ background: "#FFFFFF", borderColor: "#C8BFA8", borderRadius: 16 }}
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
+              Your Examples
+            </p>
+            <div className="mt-5 space-y-3">
+              {lesson.examples.map((example, index) => (
+                <div
+                  key={`${lesson.id}-example-${index}`}
+                  className="rounded-xl px-4 py-3"
+                  style={{
+                    background: "#E8E0D0",
+                    color: "#1C3A2E",
+                    borderRadius: 12,
+                    padding: "12px 16px",
+                    fontFamily: "var(--font-body), DM Sans, sans-serif",
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {example}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Actionable Advice card */}
+          <div
+            className="rounded-2xl border p-6"
+            style={{ background: "#FFFFFF", borderColor: "#C8BFA8", borderRadius: 16 }}
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
+              Actionable Advice
+            </p>
+            <div className="mt-5 space-y-3">
+              {lesson.advice.map((tip, index) => (
+                <div
+                  key={`${lesson.id}-advice-${index}`}
+                  className="rounded-xl border-l-4 px-4 py-3"
+                  style={{
+                    background: "#E8F7EE",
+                    color: "#1C3A2E",
+                    borderLeftColor: "#3DAB6A",
+                    borderRadius: 12,
+                    padding: "12px 16px",
+                    fontFamily: "var(--font-body), DM Sans, sans-serif",
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {tip}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {error ? (
+          <section className="mt-6 rounded-2xl border p-4 text-sm" style={{ background: "#FFFFFF", borderColor: "#D94F3D", color: "#D94F3D" }}>
+            {error}
+          </section>
+        ) : null}
+      </div>
     </main>
   );
 }

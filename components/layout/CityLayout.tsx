@@ -34,7 +34,6 @@ function CityPulseOverlay() {
     <motion.div
       key={cityPulseTrigger}
       className="pointer-events-none fixed inset-0 z-25 flex items-center justify-center"
-      style={{ maxWidth: 390, left: "50%", transform: "translateX(-50%)" }}
       initial={{ opacity: 0 }}
       animate={{
         opacity: [0, 0.2, 0],
@@ -86,10 +85,7 @@ export function CityLayout() {
   }, []);
 
   return (
-    <div
-      className="relative h-screen w-full overflow-hidden bg-bg-base"
-      style={{ maxWidth: 390, margin: "0 auto" }}
-    >
+    <div className="city-layout-root relative h-screen w-full overflow-hidden bg-bg-base">
       {/* 1. Persistent city layer — full viewport, behind everything (full-bleed via .city-canvas-fullbleed in globals) */}
       <div className="absolute inset-0 z-0 city-canvas-fullbleed">
         <CityScene height="h-full" />
@@ -103,11 +99,13 @@ export function CityLayout() {
         }}
       />
 
-      {/* 2. Top HUD */}
+      {/* 2. Top HUD — full width; desktop padding via globals */}
       <TopHUD />
 
-      {/* 3. Bottom action card */}
-      <BottomActionCard />
+      {/* 3. Bottom action card — mobile: full width 12px margins; desktop: max-w 480px centered (see globals.css) */}
+      <div className="bottom-action-card-wrapper absolute bottom-0 left-0 right-0 z-30 md:fixed md:bottom-6 md:left-1/2 md:right-auto md:max-w-[480px] md:w-full md:-translate-x-1/2">
+        <BottomActionCard />
+      </div>
 
       {/* 4. Bottom sheets (overlay + panel) */}
       <AnimatePresence mode="wait">
