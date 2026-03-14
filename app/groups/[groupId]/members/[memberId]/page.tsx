@@ -18,9 +18,15 @@ export default function GroupMemberPage() {
   const params = useParams<{ groupId: string; memberId: string }>();
   const { user, loading } = useAuth();
   const setCityMetrics = useCityStore((state) => state.setCityMetrics);
-  const setHoveredStructure = useCityStore((state) => state.setHoveredStructure);
-  const setSelectedStructure = useCityStore((state) => state.setSelectedStructure);
-  const [profile, setProfile] = useState<GroupMemberProfileResponse | null>(null);
+  const setHoveredStructure = useCityStore(
+    (state) => state.setHoveredStructure
+  );
+  const setSelectedStructure = useCityStore(
+    (state) => state.setSelectedStructure
+  );
+  const [profile, setProfile] = useState<GroupMemberProfileResponse | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -42,7 +48,7 @@ export default function GroupMemberPage() {
 
       try {
         const response = await fetch(
-          `/api/groups/${params.groupId}/members/${params.memberId}`,
+          `/api/groups/${params.groupId}/members/${params.memberId}`
         );
 
         if (!response.ok) {
@@ -65,7 +71,7 @@ export default function GroupMemberPage() {
         setError(
           loadError instanceof Error
             ? loadError.message
-            : "Unable to load member profile.",
+            : "Unable to load member profile."
         );
       } finally {
         if (isMounted) {
@@ -105,9 +111,12 @@ export default function GroupMemberPage() {
     return (
       <main className="mx-auto min-h-screen w-full max-w-3xl px-5 py-10">
         <div className="glass-card rounded-[2rem] p-6">
-          <h1 className="text-3xl font-semibold text-white">Login to view member cities</h1>
+          <h1 className="text-3xl font-semibold text-white">
+            Login to view member cities
+          </h1>
           <p className="mt-3 text-sm leading-6 text-slate-300">
-            Group member stats and city views are only available to signed-in players.
+            Group member stats and city views are only available to signed-in
+            players.
           </p>
           <div className="mt-6 flex gap-3">
             <Link
@@ -141,7 +150,10 @@ export default function GroupMemberPage() {
   const { dashboard, group, member } = profile;
   const xpProgress =
     dashboard.progress.nextLevelXp > 0
-      ? Math.min(100, (dashboard.progress.xp / dashboard.progress.nextLevelXp) * 100)
+      ? Math.min(
+          100,
+          (dashboard.progress.xp / dashboard.progress.nextLevelXp) * 100
+        )
       : 0;
 
   return (
@@ -180,32 +192,34 @@ export default function GroupMemberPage() {
       <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
         <div>
           <CityScene />
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <div className="glass-card rounded-2xl p-4">
-              <p className="text-sm text-slate-300">Economy</p>
-              <p className="mt-1 text-2xl font-semibold text-white">
-                {dashboard.cityMetrics.economyScore}
-              </p>
+          {member.userId === user.id && (
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="glass-card rounded-2xl p-4">
+                <p className="text-sm text-slate-300">Economy</p>
+                <p className="mt-1 text-2xl font-semibold text-white">
+                  {dashboard.cityMetrics.economyScore}
+                </p>
+              </div>
+              <div className="glass-card rounded-2xl p-4">
+                <p className="text-sm text-slate-300">Infrastructure</p>
+                <p className="mt-1 text-2xl font-semibold text-white">
+                  {dashboard.cityMetrics.infrastructure}
+                </p>
+              </div>
+              <div className="glass-card rounded-2xl p-4">
+                <p className="text-sm text-slate-300">Pollution</p>
+                <p className="mt-1 text-2xl font-semibold text-white">
+                  {dashboard.cityMetrics.pollution}
+                </p>
+              </div>
+              <div className="glass-card rounded-2xl p-4">
+                <p className="text-sm text-slate-300">Growth</p>
+                <p className="mt-1 text-2xl font-semibold text-white">
+                  {dashboard.cityMetrics.growth}
+                </p>
+              </div>
             </div>
-            <div className="glass-card rounded-2xl p-4">
-              <p className="text-sm text-slate-300">Infrastructure</p>
-              <p className="mt-1 text-2xl font-semibold text-white">
-                {dashboard.cityMetrics.infrastructure}
-              </p>
-            </div>
-            <div className="glass-card rounded-2xl p-4">
-              <p className="text-sm text-slate-300">Pollution</p>
-              <p className="mt-1 text-2xl font-semibold text-white">
-                {dashboard.cityMetrics.pollution}
-              </p>
-            </div>
-            <div className="glass-card rounded-2xl p-4">
-              <p className="text-sm text-slate-300">Growth</p>
-              <p className="mt-1 text-2xl font-semibold text-white">
-                {dashboard.cityMetrics.growth}
-              </p>
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -227,117 +241,148 @@ export default function GroupMemberPage() {
             </div>
           </div>
 
-          <div className="glass-card rounded-[2rem] p-5 sm:p-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-              Snapshot
-            </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <StatsCard
-                label="Transactions"
-                value={`${dashboard.transactionCount}`}
-                helperText="Total spending entries recorded for this player."
-              />
-              <StatsCard
-                label="Total Spent"
-                value={`$${dashboard.totalSpent.toFixed(2)}`}
-                helperText="Combined value of all saved transactions."
-                accent="from-violet-400/30 to-sky-400/10"
-              />
+          {member.userId === user.id && (
+            <div className="glass-card rounded-[2rem] p-5 sm:p-6">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
+                Snapshot
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <StatsCard
+                  label="Transactions"
+                  value={`${dashboard.transactionCount}`}
+                  helperText="Total spending entries recorded for this player."
+                />
+                <StatsCard
+                  label="Total Spent"
+                  value={`$${dashboard.totalSpent.toFixed(2)}`}
+                  helperText="Combined value of all saved transactions."
+                  accent="from-violet-400/30 to-sky-400/10"
+                />
+              </div>
             </div>
-          </div>
+          )}
+
         </div>
       </section>
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          label="Needs Ratio"
-          value={formatPercent(dashboard.ratios.needs_ratio)}
-          helperText="Needs support housing and essential infrastructure."
-        />
-        <StatsCard
-          label="Wants Ratio"
-          value={formatPercent(dashboard.ratios.wants_ratio)}
-          helperText="Lifestyle spending powers malls and fun districts."
-          accent="from-fuchsia-400/30 to-violet-400/10"
-        />
-        <StatsCard
-          label="Treat Ratio"
-          value={formatPercent(dashboard.ratios.treat_ratio)}
-          helperText="Too many treats can raise pollution pressure."
-          accent="from-orange-400/30 to-red-400/10"
-        />
-        <StatsCard
-          label="Invest Ratio"
-          value={formatPercent(dashboard.ratios.invest_ratio)}
-          helperText="Investing increases long-term city growth."
-          accent="from-emerald-400/30 to-cyan-400/10"
-        />
-      </section>
-
-      <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.7fr]">
-        <div className="glass-card rounded-[2rem] p-5 sm:p-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-            Latest Insight
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold text-white">
-            Financial coach summary
-          </h2>
-          <p className="mt-4 text-sm leading-7 text-slate-300">
-            {dashboard.latestInsight?.insight ||
-              "This member has not generated an AI insight yet."}
-          </p>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-5 sm:p-6">
+      <section className="glass-card mt-6 rounded-[2rem] p-5 sm:p-6">
+        <div className="flex items-center justify-between gap-4">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
             Achievements
           </p>
-          <div className="mt-4 space-y-3">
-            {dashboard.progress.achievements.map((achievement) => (
-              <div
-                key={achievement.id}
-                className={`rounded-2xl border p-4 ${
-                  achievement.unlocked
-                    ? "border-emerald-400/30 bg-emerald-500/10"
-                    : "border-white/10 bg-slate-950/30"
-                }`}
-              >
-                <p className="text-sm font-semibold text-white">{achievement.title}</p>
-                <p className="mt-1 text-sm text-slate-300">
-                  {achievement.description}
+          <p className="text-sm text-slate-400">
+            {
+              dashboard.progress.achievements.filter(
+                (achievement) => achievement.unlocked,
+              ).length
+            }
+            /{dashboard.progress.achievements.length} unlocked
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {dashboard.progress.achievements.map((achievement) => (
+            <div
+              key={achievement.id}
+              className={`rounded-2xl border p-4 ${
+                achievement.unlocked
+                  ? "border-emerald-400/30 bg-emerald-500/10"
+                  : "border-white/10 bg-slate-950/30"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm font-semibold text-white">
+                  {achievement.title}
                 </p>
-                <p className="mt-2 text-xs uppercase tracking-[0.16em] text-sky-300">
-                  {achievement.xpReward} XP
-                </p>
+                <span
+                  className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                    achievement.unlocked
+                      ? "bg-emerald-400/15 text-emerald-200"
+                      : "bg-white/5 text-slate-400"
+                  }`}
+                >
+                  {achievement.unlocked ? "Unlocked" : "Locked"}
+                </span>
               </div>
-            ))}
-          </div>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                {achievement.description}
+              </p>
+              <p className="mt-3 text-xs uppercase tracking-[0.16em] text-sky-300">
+                {achievement.xpReward} XP
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-3">
-        <StatsCard
-          label="Liquidity"
-          value={`${dashboard.scores.liquidity}`}
-          helperText="Spending flexibility available to this player."
-        />
-        <StatsCard
-          label="Budget Health"
-          value={`${dashboard.scores.budgetHealth}`}
-          helperText="Balanced habits keep the city resilient."
-          accent="from-violet-400/30 to-sky-400/10"
-        />
-        <StatsCard
-          label="Stability"
-          value={`${dashboard.scores.stability}`}
-          helperText={
-            dashboard.cityMetrics.emergencyWarning
-              ? "Low liquidity triggered a city stability warning."
-              : "Stable finances keep the city calm."
-          }
-          accent="from-amber-400/30 to-orange-400/10"
-        />
-      </section>
+      {member.userId === user.id && (
+        <>
+          <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatsCard
+              label="Needs Ratio"
+              value={formatPercent(dashboard.ratios.needs_ratio)}
+              helperText="Needs support housing and essential infrastructure."
+            />
+            <StatsCard
+              label="Wants Ratio"
+              value={formatPercent(dashboard.ratios.wants_ratio)}
+              helperText="Lifestyle spending powers malls and fun districts."
+              accent="from-fuchsia-400/30 to-violet-400/10"
+            />
+            <StatsCard
+              label="Treat Ratio"
+              value={formatPercent(dashboard.ratios.treat_ratio)}
+              helperText="Too many treats can raise pollution pressure."
+              accent="from-orange-400/30 to-red-400/10"
+            />
+            <StatsCard
+              label="Invest Ratio"
+              value={formatPercent(dashboard.ratios.invest_ratio)}
+              helperText="Investing increases long-term city growth."
+              accent="from-emerald-400/30 to-cyan-400/10"
+            />
+          </section>
+
+          <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.7fr]">
+            <div className="glass-card rounded-[2rem] p-5 sm:p-6">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
+                Latest Insight
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">
+                Financial coach summary
+              </h2>
+              <p className="mt-4 text-sm leading-7 text-slate-300">
+                {dashboard.latestInsight?.insight ||
+                  "This member has not generated an AI insight yet."}
+              </p>
+            </div>
+          </section>
+
+          <section className="mt-6 grid gap-4 sm:grid-cols-3">
+            <StatsCard
+              label="Liquidity"
+              value={`${dashboard.scores.liquidity}`}
+              helperText="Spending flexibility available to this player."
+            />
+            <StatsCard
+              label="Budget Health"
+              value={`${dashboard.scores.budgetHealth}`}
+              helperText="Balanced habits keep the city resilient."
+              accent="from-violet-400/30 to-sky-400/10"
+            />
+            <StatsCard
+              label="Stability"
+              value={`${dashboard.scores.stability}`}
+              helperText={
+                dashboard.cityMetrics.emergencyWarning
+                  ? "Low liquidity triggered a city stability warning."
+                  : "Stable finances keep the city calm."
+              }
+              accent="from-amber-400/30 to-orange-400/10"
+            />
+          </section>
+        </>
+      )}
 
       {error ? (
         <section className="glass-card mt-6 rounded-[2rem] p-5 text-sm text-rose-300">
