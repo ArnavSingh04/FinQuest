@@ -11,14 +11,20 @@ import { CityStateContext, useCityStateOverride } from "@/contexts/CityStateCont
 import { getCityTier } from "@/lib/cityLevel";
 import { CityGenerator } from "./CityGenerator";
 
-// Re-export the core scene internals so both normal and fullscreen can share them
-const WEATHER_CFG = {
-  thriving:    { bg: "#060e1c", fog: "#060e1c", ambient: 1.0,  dir: 2.8, dirColor: "#fff7d6", hemiSky: "#2563eb", hemiGround: "#166534" },
-  clear:       { bg: "#090f1f", fog: "#090f1f", ambient: 0.75, dir: 2.1, dirColor: "#fff5e0", hemiSky: "#1e40af", hemiGround: "#14532d" },
-  overcast:    { bg: "#111827", fog: "#111827", ambient: 0.5,  dir: 0.8, dirColor: "#c8d8e8", hemiSky: "#374151", hemiGround: "#1a2e1a" },
-  rain:        { bg: "#0c1422", fog: "#0c1422", ambient: 0.3,  dir: 0.45, dirColor: "#8899aa", hemiSky: "#1e2a3a", hemiGround: "#111a11" },
-  storm:       { bg: "#070c14", fog: "#070c14", ambient: 0.18, dir: 0.2,  dirColor: "#606878", hemiSky: "#111827", hemiGround: "#0a0f0a" },
-  destruction: { bg: "#0f0404", fog: "#1a0505", ambient: 0.12, dir: 0.15, dirColor: "#ff4422", hemiSky: "#3b0a0a", hemiGround: "#0a0505" },
+// Fixed warm afternoon / golden hour — no day/night cycle
+const WARM_AFTERNOON = {
+  ambientColor: "#FFF5E0",
+  ambientIntensity: 0.6,
+  mainDirColor: "#FFD580",
+  mainDirIntensity: 1.4,
+  mainDirPosition: [50, 80, 30] as [number, number, number],
+  fillColor: "#C8E0FF",
+  fillIntensity: 0.4,
+  fillPosition: [-30, 40, -20] as [number, number, number],
+  fogColor: "#F0E8D0",
+  fogNear: 80,
+  fogFar: 200,
+  skyColor: "#A8D8EA",
 } as const;
 
 const CAMERA_PRESETS = [
@@ -29,58 +35,43 @@ const CAMERA_PRESETS = [
   { label: "West Side",   icon: "🏘️", pos: [-14, 6, 2]   as [number,number,number], target: [-8, 1, -3]  as [number,number,number] },
 ];
 
-function useWeather() {
-  const override = useCityStateOverride();
-  const storeWeather = useGameStore((s) => s.cityState.weather);
-  return override ? override.cityState.weather : storeWeather;
-}
-
 function Lights() {
-  const weather = useWeather();
-  const ambRef  = useRef<THREE.AmbientLight>(null);
-  const dirRef  = useRef<THREE.DirectionalLight>(null);
-  const hemiRef = useRef<THREE.HemisphereLight>(null);
-  const cfg = WEATHER_CFG[weather];
-  useFrame((_, dt) => {
-    const k = dt * 1.4;
-    if (ambRef.current)  ambRef.current.intensity  = THREE.MathUtils.lerp(ambRef.current.intensity,  cfg.ambient, k);
-    if (dirRef.current)  dirRef.current.intensity  = THREE.MathUtils.lerp(dirRef.current.intensity,  cfg.dir,     k);
-    if (hemiRef.current) hemiRef.current.intensity = THREE.MathUtils.lerp(hemiRef.current.intensity, cfg.ambient * 0.6, k);
-  });
+  const c = WARM_AFTERNOON;
   return (
     <>
-      <ambientLight ref={ambRef} intensity={cfg.ambient} />
-      <hemisphereLight ref={hemiRef} args={[cfg.hemiSky, cfg.hemiGround, cfg.ambient * 0.6]} />
+      <ambientLight color={c.ambientColor} intensity={c.ambientIntensity} />
       <directionalLight
-        ref={dirRef} position={[8, 14, 6]} intensity={cfg.dir} color={cfg.dirColor}
-        castShadow shadow-mapSize={[2048, 2048]}
-        shadow-camera-near={0.5} shadow-camera-far={90}
-        shadow-camera-left={-22} shadow-camera-right={22}
-        shadow-camera-top={22} shadow-camera-bottom={-22}
+        position={c.mainDirPosition}
+        intensity={c.mainDirIntensity}
+        color={c.mainDirColor}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-near={0.5}
+        shadow-camera-far={90}
+        shadow-camera-left={-22}
+        shadow-camera-right={22}
+        shadow-camera-top={22}
+        shadow-camera-bottom={-22}
+      />
+      <directionalLight
+        position={c.fillPosition}
+        intensity={c.fillIntensity}
+        color={c.fillColor}
       />
     </>
   );
 }
 
 function SceneFog() {
-  const weather = useWeather();
   const { scene } = useThree();
-  const fogRef = useRef<THREE.Fog>(new THREE.Fog(WEATHER_CFG[weather].fog, 28, 70));
-  useFrame((_, dt) => {
-    (fogRef.current.color as THREE.Color).lerp(new THREE.Color(WEATHER_CFG[weather].fog), dt * 1.2);
-  });
-  scene.fog = fogRef.current;
+  const c = WARM_AFTERNOON;
+  scene.fog = new THREE.Fog(c.fogColor, c.fogNear, c.fogFar);
   return null;
 }
 
 function SkyBackground() {
-  const weather = useWeather();
-  const ref = useRef<THREE.Color>(new THREE.Color(WEATHER_CFG[weather].bg));
   const { scene } = useThree();
-  useFrame((_, dt) => {
-    (ref.current as THREE.Color).lerp(new THREE.Color(WEATHER_CFG[weather].bg), dt * 1.2);
-    scene.background = ref.current;
-  });
+  scene.background = new THREE.Color(WARM_AFTERNOON.skyColor);
   return null;
 }
 
@@ -132,23 +123,23 @@ export function SceneContents({ preset }: { preset: typeof CAMERA_PRESETS[number
       <SkyBackground />
       <Lights />
 
-      {/* Ground */}
+      {/* Ground — primary grass */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[40, 40]} />
-        <meshStandardMaterial color="#0b5d2a" roughness={0.9} />
+        <meshStandardMaterial color="#7AB648" roughness={0.9} />
       </mesh>
-      {/* Roads */}
+      {/* Roads — warm asphalt */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.008, 0.3]}>
         <planeGeometry args={[40, 0.9]} />
-        <meshStandardMaterial color="#4b5563" roughness={0.85} />
+        <meshStandardMaterial color="#6B6560" roughness={0.85} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0.3]}>
         <planeGeometry args={[40, 0.07]} />
-        <meshStandardMaterial color="#f59e0b" emissive="#f59e0b" emissiveIntensity={0.5} />
+        <meshStandardMaterial color="#FFE566" emissive="#FFE566" emissiveIntensity={0.4} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.4, 0.008, 0]}>
         <planeGeometry args={[0.9, 40]} />
-        <meshStandardMaterial color="#4b5563" roughness={0.85} />
+        <meshStandardMaterial color="#6B6560" roughness={0.85} />
       </mesh>
 
       <CityGenerator />

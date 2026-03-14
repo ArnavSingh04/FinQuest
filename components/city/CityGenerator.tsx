@@ -45,8 +45,8 @@ interface WindowGridProps {
 function WindowGrid({
   cols, rows, width, height, depth,
   facingZ = true,
-  winColor = "#ffffff",
-  winEmissive = "#f8fafc",
+  winColor = "#FFF3B0",
+  winEmissive = "#FFF3B0",
   winIntensity = 0.9,
   baseY = 0,
 }: WindowGridProps) {
@@ -94,8 +94,8 @@ function WindowGrid({
   );
 }
 
-// ─── Apartment building ───────────────────────────────────────────────────────
-const APT_COLORS = ["#7c3aed", "#6d28d9", "#5b21b6", "#8b5cf6", "#4c1d95"] as const;
+// ─── Apartment building (Needs/residential — warm sandstone) ───────────────────
+const APT_COLORS = ["#D4A96A", "#C49558", "#D4A96A", "#C49558", "#D4A96A"] as const;
 
 function Apartment({ x, z, idx }: { x: number; z: number; idx: number }) {
   const { cityState } = useActiveCityState();
@@ -119,7 +119,7 @@ function Apartment({ x, z, idx }: { x: number; z: number; idx: number }) {
       {/* Base block */}
       <mesh ref={baseRef} position={[0, baseH * 0.5, 0]} castShadow receiveShadow>
         <boxGeometry args={[bW, baseH, bD]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.18} roughness={0.55} metalness={0.12} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.06} roughness={0.55} metalness={0.12} />
       </mesh>
       {/* Window grids on all 4 faces — only when building is visible */}
       {visible && <WindowGrid cols={2} rows={baseWindowRows} width={bW - 0.1} height={baseWindowBandHeight} depth={bD / 2} facingZ baseY={0.04} />}
@@ -130,26 +130,26 @@ function Apartment({ x, z, idx }: { x: number; z: number; idx: number }) {
       {/* Upper setback */}
       <mesh ref={upperRef} position={[0, baseH + topH * 0.5, 0]} castShadow>
         <boxGeometry args={[tW, topH, tD]} />
-        <meshStandardMaterial color={color} roughness={0.5} metalness={0.16} emissive={color} emissiveIntensity={0.2} />
+        <meshStandardMaterial color={color} roughness={0.5} metalness={0.16} emissive={color} emissiveIntensity={0.06} />
       </mesh>
       {/* Keep apartment windows in the lower/base section only */}
 
       {/* Entrance canopy */}
       <mesh position={[0, 0.22, bD / 2 + 0.14]}>
         <boxGeometry args={[0.5, 0.05, 0.28]} />
-        <meshStandardMaterial color="#1e293b" roughness={0.7} metalness={0.3} />
+        <meshStandardMaterial color="#C49558" roughness={0.7} metalness={0.2} />
       </mesh>
     </group>
   );
 }
 
-// ─── Restaurant building ──────────────────────────────────────────────────────
+// ─── Restaurant building (Wants/Treat — soft coral & amber) ───────────────────
 const REST_PALETTE = [
-  { wall: "#c2410c", sign: "#f97316", trim: "#ea580c" },
-  { wall: "#b45309", sign: "#fbbf24", trim: "#d97706" },
-  { wall: "#7c3aed", sign: "#a78bfa", trim: "#8b5cf6" },
-  { wall: "#0369a1", sign: "#38bdf8", trim: "#0284c7" },
-  { wall: "#065f46", sign: "#34d399", trim: "#059669" },
+  { wall: "#E8836A", sign: "#E8A020", trim: "#D4725A" },
+  { wall: "#D4725A", sign: "#E8A020", trim: "#E8836A" },
+  { wall: "#E8A020", sign: "#D4725A", trim: "#E8836A" },
+  { wall: "#E8836A", sign: "#D4725A", trim: "#E8A020" },
+  { wall: "#D4725A", sign: "#E8836A", trim: "#E8A020" },
 ] as const;
 
 function Restaurant({ x, z, idx }: { x: number; z: number; idx: number }) {
@@ -188,9 +188,9 @@ function Restaurant({ x, z, idx }: { x: number; z: number; idx: number }) {
         depth={bD / 2}
         facingZ
         baseY={0.08}
-        winColor="#f8fafc"
-        winEmissive="#e2e8f0"
-        winIntensity={0.25}
+        winColor="#FFF3B0"
+        winEmissive="#FFF3B0"
+        winIntensity={0.4}
       />
       {/* Awning */}
       <mesh position={[0, h + 0.06, bD / 2 + 0.04]}>
@@ -224,47 +224,47 @@ function BankTower({ x, z }: { x: number; z: number }) {
 
   return (
     <group position={[x, 0, z]}>
-      {/* Podium base */}
+      {/* Podium base — investment blue */}
       <mesh position={[0, 0.3, 0]} castShadow receiveShadow>
         <boxGeometry args={[1.55, 0.6, 1.55]} />
-        <meshStandardMaterial color="#1e3a8a" roughness={0.35} metalness={0.5} />
+        <meshStandardMaterial color="#4A90D9" roughness={0.35} metalness={0.5} />
       </mesh>
       {/* Podium columns decorative */}
       {[-0.55, 0.55].map((cx) => (
         <mesh key={cx} position={[cx, 0.38, 0.78]} castShadow>
           <cylinderGeometry args={[0.055, 0.065, 0.76, 8]} />
-          <meshStandardMaterial color="#1d4ed8" roughness={0.3} metalness={0.6} />
+          <meshStandardMaterial color="#4A90D9" roughness={0.3} metalness={0.6} />
         </mesh>
       ))}
 
-      {/* Main shaft */}
+      {/* Main shaft — investment blue */}
       <mesh ref={mainRef} position={[0, height * 0.5, 0]} castShadow>
         <boxGeometry args={[bW, 1, bD]} />
-        <meshStandardMaterial color="#1d4ed8" roughness={0.2} metalness={0.65} emissive="#172554" emissiveIntensity={0.7} />
+        <meshStandardMaterial color="#4A90D9" roughness={0.2} metalness={0.65} emissive="#3a7bc8" emissiveIntensity={0.3} />
       </mesh>
-      {/* Window grids all 4 faces */}
-      <WindowGrid cols={towerCols} rows={towerRows} width={bW - 0.12} height={height - 0.6} depth={bD / 2} facingZ baseY={0.65} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={1.4} />
-      <WindowGrid cols={towerCols} rows={towerRows} width={bW - 0.12} height={height - 0.6} depth={-bD / 2} facingZ baseY={0.65} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={1.4} />
-      <WindowGrid cols={towerCols} rows={towerRows} width={bD - 0.12} height={height - 0.6} depth={bW / 2} facingZ={false} baseY={0.65} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={1.0} />
-      <WindowGrid cols={towerCols} rows={towerRows} width={bD - 0.12} height={height - 0.6} depth={-bW / 2} facingZ={false} baseY={0.65} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={1.0} />
+      {/* Window grids all 4 faces — warm window lights */}
+      <WindowGrid cols={towerCols} rows={towerRows} width={bW - 0.12} height={height - 0.6} depth={bD / 2} facingZ baseY={0.65} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.2} />
+      <WindowGrid cols={towerCols} rows={towerRows} width={bW - 0.12} height={height - 0.6} depth={-bD / 2} facingZ baseY={0.65} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.2} />
+      <WindowGrid cols={towerCols} rows={towerRows} width={bD - 0.12} height={height - 0.6} depth={bW / 2} facingZ={false} baseY={0.65} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.0} />
+      <WindowGrid cols={towerCols} rows={towerRows} width={bD - 0.12} height={height - 0.6} depth={-bW / 2} facingZ={false} baseY={0.65} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.0} />
 
       {/* Mid setback */}
       <mesh position={[0, height * 0.72, 0]} castShadow>
         <boxGeometry args={[bW - 0.16, height * 0.06, bD - 0.16]} />
-        <meshStandardMaterial color="#2563eb" roughness={0.25} metalness={0.7} emissive="#1d4ed8" emissiveIntensity={0.5} />
+        <meshStandardMaterial color="#4A90D9" roughness={0.25} metalness={0.7} emissive="#4A90D9" emissiveIntensity={0.2} />
       </mesh>
 
       {/* Crown */}
       <mesh ref={crownRef} position={[0, height + height * 0.09, 0]}>
         <cylinderGeometry args={[0.06, 0.28, 1, 4]} />
-        <meshStandardMaterial color="#60a5fa" emissive="#93c5fd" emissiveIntensity={1.6} metalness={0.5} />
+        <meshStandardMaterial color="#6BA3E0" emissive="#4A90D9" emissiveIntensity={0.5} metalness={0.5} />
       </mesh>
       {/* Top beacon */}
       <mesh position={[0, height + height * 0.2, 0]}>
         <sphereGeometry args={[0.055, 8, 8]} />
-        <meshStandardMaterial color="#e0f2fe" emissive="#7dd3fc" emissiveIntensity={3} />
+        <meshStandardMaterial color="#FFF3B0" emissive="#FFF3B0" emissiveIntensity={1.5} />
       </mesh>
-      <pointLight position={[0, height + height * 0.2, 0]} intensity={6} color="#93c5fd" distance={8} decay={2} />
+      <pointLight position={[0, height + height * 0.2, 0]} intensity={3} color="#FFF3B0" distance={8} decay={2} />
     </group>
   );
 }
@@ -280,21 +280,21 @@ function InvestmentTower({ x, z }: { x: number; z: number }) {
 
   return (
     <group position={[x, 0, z]}>
-      {/* Base ring */}
+      {/* Base ring — investment blue */}
       <mesh position={[0, 0.14, 0]}>
         <cylinderGeometry args={[0.75, 0.75, 0.28, 6]} />
-        <meshStandardMaterial color="#064e3b" roughness={0.4} metalness={0.45} />
+        <meshStandardMaterial color="#4A90D9" roughness={0.4} metalness={0.45} />
       </mesh>
       {/* Lobby glass ring */}
       <mesh position={[0, 0.42, 0]}>
         <cylinderGeometry args={[0.62, 0.68, 0.32, 6]} />
-        <meshStandardMaterial color="#ecfdf5" roughness={0.1} metalness={0.3} transparent opacity={0.55} emissive="#a7f3d0" emissiveIntensity={0.5} />
+        <meshStandardMaterial color="#e8f4fc" roughness={0.1} metalness={0.3} transparent opacity={0.55} emissive="#FFF3B0" emissiveIntensity={0.4} />
       </mesh>
 
-      {/* Main hex shaft */}
+      {/* Main hex shaft — investment blue */}
       <mesh ref={mainRef} position={[0, h * 0.5, 0]} castShadow>
         <cylinderGeometry args={[0.38, 0.46, 1, 6]} />
-        <meshStandardMaterial color="#059669" roughness={0.18} metalness={0.55} emissive="#064e3b" emissiveIntensity={0.8} />
+        <meshStandardMaterial color="#4A90D9" roughness={0.18} metalness={0.55} emissive="#3a7bc8" emissiveIntensity={0.25} />
       </mesh>
       {/* Window bands on each hex face; row count scales with tower height */}
       {[0, 1, 2, 3, 4, 5].map((i) => {
@@ -316,9 +316,9 @@ function InvestmentTower({ x, z }: { x: number; z: number }) {
               >
                 <planeGeometry args={[0.13, windowBandHeight]} />
                 <meshStandardMaterial
-                  color="#d1fae5"
-                  emissive="#6ee7b7"
-                  emissiveIntensity={1.1}
+                  color="#FFF3B0"
+                  emissive="#FFF3B0"
+                  emissiveIntensity={1.0}
                   roughness={0.25}
                   metalness={0.2}
                 />
@@ -331,15 +331,15 @@ function InvestmentTower({ x, z }: { x: number; z: number }) {
       {/* Upper taper */}
       <mesh position={[0, h * 0.86, 0]}>
         <cylinderGeometry args={[0.22, 0.38, h * 0.18, 6]} />
-        <meshStandardMaterial color="#10b981" roughness={0.2} metalness={0.5} emissive="#065f46" emissiveIntensity={0.6} />
+        <meshStandardMaterial color="#4A90D9" roughness={0.2} metalness={0.5} emissive="#4A90D9" emissiveIntensity={0.2} />
       </mesh>
 
       {/* Glowing tip */}
       <mesh ref={tipRef} position={[0, h + h * 0.125, 0]}>
         <coneGeometry args={[0.18, 1, 6]} />
-        <meshStandardMaterial color="#34d399" emissive="#6ee7b7" emissiveIntensity={2.0} />
+        <meshStandardMaterial color="#6BA3E0" emissive="#4A90D9" emissiveIntensity={0.8} />
       </mesh>
-      <pointLight position={[0, h + h * 0.2, 0]} intensity={8} color="#34d399" distance={10} decay={2} />
+      <pointLight position={[0, h + h * 0.2, 0]} intensity={4} color="#FFF3B0" distance={10} decay={2} />
     </group>
   );
 }
@@ -550,7 +550,7 @@ function Park({ x, z, w, d }: { x: number; z: number; w: number; d: number }) {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.005, z]} receiveShadow>
       <planeGeometry args={[w, d]} />
-      <meshStandardMaterial color="#14532d" roughness={0.9} />
+      <meshStandardMaterial color="#5A9E35" roughness={0.9} />
     </mesh>
   );
 }
@@ -560,7 +560,7 @@ function Pavement({ x, z, w, d }: { x: number; z: number; w: number; d: number }
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.006, z]} receiveShadow>
       <planeGeometry args={[w, d]} />
-      <meshStandardMaterial color="#374151" roughness={0.85} />
+      <meshStandardMaterial color="#6B6560" roughness={0.85} />
     </mesh>
   );
 }
@@ -647,8 +647,8 @@ function School({ x, z }: { x: number; z: number }) {
         <coneGeometry args={[0.22, 0.35, 4]} />
         <meshStandardMaterial color="#15803d" roughness={0.7} />
       </mesh>
-      {/* Windows */}
-      <WindowGrid cols={3} rows={2} width={1.3} height={0.85} depth={0.51} facingZ baseY={0.12} winColor="#bfdbfe" winEmissive="#dbeafe" winIntensity={0.8} />
+      {/* Windows — warm window lights */}
+      <WindowGrid cols={3} rows={2} width={1.3} height={0.85} depth={0.51} facingZ baseY={0.12} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.8} />
       {/* Flag pole */}
       <mesh position={[0.75, 1.6, 0]}>
         <cylinderGeometry args={[0.014, 0.014, 0.9, 5]} />
@@ -697,8 +697,8 @@ function Hospital({ x, z }: { x: number; z: number }) {
         depth={bodyD / 2}
         facingZ
         baseY={0.16}
-        winColor="#e0f2fe"
-        winEmissive="#bae6fd"
+        winColor="#FFF3B0"
+        winEmissive="#FFF3B0"
         winIntensity={0.9}
       />
       {/* Rooftop helipad */}
@@ -765,23 +765,23 @@ function Fountain({ x, z }: { x: number; z: number }) {
 function Bridge() {
   return (
     <group position={[-0.4, 0, 0.3]}>
-      {/* Deck */}
+      {/* Deck — warm asphalt */}
       <mesh position={[0, 0.62, 0]} receiveShadow castShadow>
         <boxGeometry args={[0.7, 0.08, 1.8]} />
-        <meshStandardMaterial color="#374151" roughness={0.8} />
+        <meshStandardMaterial color="#6B6560" roughness={0.8} />
       </mesh>
       {/* Railings */}
       {[-0.3, 0.3].map((rx) => (
         <mesh key={rx} position={[rx, 0.72, 0]}>
           <boxGeometry args={[0.04, 0.1, 1.8]} />
-          <meshStandardMaterial color="#4b5563" roughness={0.9} />
+          <meshStandardMaterial color="#6B6560" roughness={0.9} />
         </mesh>
       ))}
       {/* Support pillars */}
       {[-0.7, 0.7].map((rz) => (
         <mesh key={rz} position={[0, 0.31, rz]} castShadow>
           <cylinderGeometry args={[0.07, 0.09, 0.62, 8]} />
-          <meshStandardMaterial color="#374151" roughness={0.8} metalness={0.3} />
+          <meshStandardMaterial color="#6B6560" roughness={0.8} metalness={0.2} />
         </mesh>
       ))}
     </group>
@@ -918,19 +918,19 @@ function OfficeBlock({ x, z, idx }: { x: number; z: number; idx: number }) {
     <group position={[x, 0, z]}>
       <mesh position={[0, 0.2, 0]} castShadow receiveShadow>
         <boxGeometry args={[bW + 0.2, 0.4, bD + 0.2]} />
-        <meshStandardMaterial color="#1e293b" roughness={0.5} metalness={0.3} />
+        <meshStandardMaterial color="#4A90D9" roughness={0.5} metalness={0.35} />
       </mesh>
       <mesh ref={mainRef} position={[0, h * 0.5, 0]} castShadow>
         <boxGeometry args={[bW, 1, bD]} />
-        <meshStandardMaterial color="#334155" roughness={0.22} metalness={0.55} emissive="#1e293b" emissiveIntensity={0.4} />
+        <meshStandardMaterial color="#4A90D9" roughness={0.22} metalness={0.5} emissive="#3a7bc8" emissiveIntensity={0.15} />
       </mesh>
-      <WindowGrid cols={cols} rows={rows} width={bW - 0.12} height={Math.max(0.3, h - 0.5)} depth={bD / 2}  facingZ    baseY={0.5}  winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.8} />
-      <WindowGrid cols={cols} rows={rows} width={bW - 0.12} height={Math.max(0.3, h - 0.5)} depth={-bD / 2} facingZ    baseY={0.5}  winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.8} />
-      <WindowGrid cols={cols} rows={rows} width={bD - 0.12} height={Math.max(0.3, h - 0.5)} depth={bW / 2}  facingZ={false} baseY={0.5} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.6} />
-      <WindowGrid cols={cols} rows={rows} width={bD - 0.12} height={Math.max(0.3, h - 0.5)} depth={-bW / 2} facingZ={false} baseY={0.5} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.6} />
+      <WindowGrid cols={cols} rows={rows} width={bW - 0.12} height={Math.max(0.3, h - 0.5)} depth={bD / 2}  facingZ    baseY={0.5}  winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.9} />
+      <WindowGrid cols={cols} rows={rows} width={bW - 0.12} height={Math.max(0.3, h - 0.5)} depth={-bD / 2} facingZ    baseY={0.5}  winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.9} />
+      <WindowGrid cols={cols} rows={rows} width={bD - 0.12} height={Math.max(0.3, h - 0.5)} depth={bW / 2}  facingZ={false} baseY={0.5} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.7} />
+      <WindowGrid cols={cols} rows={rows} width={bD - 0.12} height={Math.max(0.3, h - 0.5)} depth={-bW / 2} facingZ={false} baseY={0.5} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.7} />
       <mesh position={[0, h + 0.06, 0]}>
         <boxGeometry args={[bW - 0.2, 0.12, bD - 0.2]} />
-        <meshStandardMaterial color="#475569" metalness={0.6} roughness={0.3} />
+        <meshStandardMaterial color="#4A90D9" metalness={0.5} roughness={0.3} />
       </mesh>
     </group>
   );
@@ -946,41 +946,41 @@ function ShoppingMall({ x, z }: { x: number; z: number }) {
     <group position={[x, 0, z]}>
       <mesh ref={bodyRef} position={[0, 0.9, 0]} castShadow receiveShadow>
         <boxGeometry args={[3.8, 1.8, 2.2]} />
-        <meshStandardMaterial color="#92400e" roughness={0.5} metalness={0.05} emissive="#7c2d12" emissiveIntensity={0.15} />
+        <meshStandardMaterial color="#E8836A" roughness={0.5} metalness={0.05} emissive="#D4725A" emissiveIntensity={0.08} />
       </mesh>
       {visible && (
         <mesh position={[0, 1.22, 1.12]}>
           <boxGeometry args={[2.2, 0.08, 0.6]} />
-          <meshStandardMaterial color="#d97706" emissive="#92400e" emissiveIntensity={0.5} />
+          <meshStandardMaterial color="#E8A020" emissive="#D4725A" emissiveIntensity={0.4} />
         </mesh>
       )}
-      {visible && <WindowGrid cols={5} rows={2} width={3.6}  height={1.4} depth={1.12}  facingZ       baseY={0.14} winColor="#f8fafc" winEmissive="#e2e8f0" winIntensity={0.3} />}
-      {visible && <WindowGrid cols={2} rows={2} width={2.05} height={1.4} depth={1.92}  facingZ={false} baseY={0.14} winColor="#f8fafc" winEmissive="#e2e8f0" winIntensity={0.25} />}
-      {visible && <WindowGrid cols={2} rows={2} width={2.05} height={1.4} depth={-1.92} facingZ={false} baseY={0.14} winColor="#f8fafc" winEmissive="#e2e8f0" winIntensity={0.25} />}
+      {visible && <WindowGrid cols={5} rows={2} width={3.6}  height={1.4} depth={1.12}  facingZ       baseY={0.14} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.4} />}
+      {visible && <WindowGrid cols={2} rows={2} width={2.05} height={1.4} depth={1.92}  facingZ={false} baseY={0.14} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.35} />}
+      {visible && <WindowGrid cols={2} rows={2} width={2.05} height={1.4} depth={-1.92} facingZ={false} baseY={0.14} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.35} />}
       {visible && (
         <mesh position={[0, 1.95, 1.12]}>
           <boxGeometry args={[2.8, 0.22, 0.04]} />
-          <meshStandardMaterial color="#f59e0b" emissive="#d97706" emissiveIntensity={1.5} />
+          <meshStandardMaterial color="#E8A020" emissive="#D4725A" emissiveIntensity={0.8} />
         </mesh>
       )}
       {[[-1.2, 0], [0, 0], [1.2, 0]].map(([rx, rz], i) => (
         <mesh key={i} position={[rx, 1.88, rz as number]}>
           <boxGeometry args={[0.4, 0.14, 0.35]} />
-          <meshStandardMaterial color="#374151" roughness={0.9} />
+          <meshStandardMaterial color="#6B6560" roughness={0.9} />
         </mesh>
       ))}
     </group>
   );
 }
 
-// ─── Market / Corner Shop ─────────────────────────────────────────────────────
+// ─── Market / Corner Shop (Wants — soft coral & amber) ─────────────────────────
 const MKT_PALETTE = [
-  { wall: "#065f46", sign: "#10b981", awning: "#059669" },
-  { wall: "#1e3a8a", sign: "#60a5fa", awning: "#2563eb" },
-  { wall: "#7f1d1d", sign: "#f87171", awning: "#dc2626" },
-  { wall: "#4c1d95", sign: "#a78bfa", awning: "#7c3aed" },
-  { wall: "#713f12", sign: "#fb923c", awning: "#d97706" },
-  { wall: "#134e4a", sign: "#2dd4bf", awning: "#0d9488" },
+  { wall: "#E8836A", sign: "#E8A020", awning: "#D4725A" },
+  { wall: "#D4725A", sign: "#E8A020", awning: "#E8836A" },
+  { wall: "#E8A020", sign: "#D4725A", awning: "#E8836A" },
+  { wall: "#E8836A", sign: "#D4725A", awning: "#E8A020" },
+  { wall: "#D4725A", sign: "#E8836A", awning: "#E8A020" },
+  { wall: "#E8A020", sign: "#E8836A", awning: "#D4725A" },
 ] as const;
 
 function Market({ x, z, idx }: { x: number; z: number; idx: number }) {
@@ -1000,7 +1000,7 @@ function Market({ x, z, idx }: { x: number; z: number; idx: number }) {
         <boxGeometry args={[0.9, 0.12, 0.025]} />
         <meshStandardMaterial color={pal.sign} emissive={pal.sign} emissiveIntensity={1.2} />
       </mesh>
-      <WindowGrid cols={2} rows={1} width={1.1} height={h * 0.35} depth={0.51} facingZ baseY={0.12} winColor="#f0fdf4" winEmissive="#dcfce7" winIntensity={0.3} />
+      <WindowGrid cols={2} rows={1} width={1.1} height={h * 0.35} depth={0.51} facingZ baseY={0.12} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.4} />
       <mesh position={[0.5, 0.22, 0.6]}>
         <boxGeometry args={[0.45, 0.38, 0.08]} />
         <meshStandardMaterial color={pal.sign} roughness={0.8} />
@@ -1015,24 +1015,24 @@ function Warehouse({ x, z }: { x: number; z: number }) {
     <group position={[x, 0, z]}>
       <mesh position={[0, 0.75, 0]} castShadow receiveShadow>
         <boxGeometry args={[3.0, 1.5, 2.0]} />
-        <meshStandardMaterial color="#374151" roughness={0.8} metalness={0.3} />
+        <meshStandardMaterial color="#6B6560" roughness={0.8} metalness={0.2} />
       </mesh>
       <mesh position={[0, 1.62, 0]}>
         <boxGeometry args={[3.0, 0.24, 0.4]} />
-        <meshStandardMaterial color="#1f2937" roughness={0.9} />
+        <meshStandardMaterial color="#5a5450" roughness={0.9} />
       </mesh>
       <mesh position={[0, 0.22, 1.06]}>
         <boxGeometry args={[1.4, 0.44, 0.12]} />
-        <meshStandardMaterial color="#1f2937" roughness={0.85} />
+        <meshStandardMaterial color="#5a5450" roughness={0.85} />
       </mesh>
-      <WindowGrid cols={3} rows={1} width={2.8} height={0.35} depth={1.02} facingZ baseY={0.95} winColor="#cbd5e1" winEmissive="#94a3b8" winIntensity={0.3} />
-      <WindowGrid cols={2} rows={1} width={1.85} height={0.35} depth={1.02} facingZ={false} baseY={0.95} winColor="#cbd5e1" winEmissive="#94a3b8" winIntensity={0.3} />
+      <WindowGrid cols={3} rows={1} width={2.8} height={0.35} depth={1.02} facingZ baseY={0.95} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.35} />
+      <WindowGrid cols={2} rows={1} width={1.85} height={0.35} depth={1.02} facingZ={false} baseY={0.95} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.35} />
     </group>
   );
 }
 
-// ─── Condo Tower (taller residential variant) ─────────────────────────────────
-const CONDO_COLORS = ["#0c4a6e", "#164e63", "#0e7490", "#075985"] as const;
+// ─── Condo Tower (taller residential — warm sandstone) ───────────────────────
+const CONDO_COLORS = ["#D4A96A", "#C49558", "#D4A96A", "#C49558"] as const;
 
 function CondoTower({ x, z, idx }: { x: number; z: number; idx: number }) {
   const { cityState } = useActiveCityState();
@@ -1048,16 +1048,16 @@ function CondoTower({ x, z, idx }: { x: number; z: number; idx: number }) {
     <group position={[x, 0, z]}>
       <mesh position={[0, 0.18, 0]} castShadow receiveShadow>
         <boxGeometry args={[1.15, 0.36, 1.15]} />
-        <meshStandardMaterial color="#1e293b" roughness={0.4} metalness={0.4} />
+        <meshStandardMaterial color="#C49558" roughness={0.4} metalness={0.2} />
       </mesh>
       <mesh ref={mainRef} position={[0, h * 0.5, 0]} castShadow>
         <boxGeometry args={[0.9, 1, 0.9]} />
-        <meshStandardMaterial color={color} roughness={0.2} metalness={0.55} emissive={color} emissiveIntensity={0.25} />
+        <meshStandardMaterial color={color} roughness={0.2} metalness={0.2} emissive={color} emissiveIntensity={0.08} />
       </mesh>
-      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={0.46}  facingZ       baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={1.0} />}
-      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={-0.46} facingZ       baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={1.0} />}
-      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={0.46}  facingZ={false} baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={0.8} />}
-      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={-0.46} facingZ={false} baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={0.8} />}
+      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={0.46}  facingZ       baseY={0.45} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.0} />}
+      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={-0.46} facingZ       baseY={0.45} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.0} />}
+      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={0.46}  facingZ={false} baseY={0.45} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.8} />}
+      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={-0.46} facingZ={false} baseY={0.45} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.8} />}
       {visible && (
         <mesh position={[0, h + 0.12, 0]}>
           <boxGeometry args={[0.6, 0.25, 0.6]} />
@@ -1153,26 +1153,26 @@ export function CityGenerator() {
 
   return (
     <group>
-      {/* ── Secondary road network ── */}
+      {/* ── Secondary road network — warm asphalt ── */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.007, -5.5]} receiveShadow>
         <planeGeometry args={[40, 0.65]} />
-        <meshStandardMaterial color="#374151" roughness={0.9} />
+        <meshStandardMaterial color="#6B6560" roughness={0.9} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.007, 6.5]} receiveShadow>
         <planeGeometry args={[40, 0.65]} />
-        <meshStandardMaterial color="#374151" roughness={0.9} />
+        <meshStandardMaterial color="#6B6560" roughness={0.9} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-7.5, 0.007, 0]} receiveShadow>
         <planeGeometry args={[0.65, 40]} />
-        <meshStandardMaterial color="#374151" roughness={0.9} />
+        <meshStandardMaterial color="#6B6560" roughness={0.9} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[7.0, 0.007, 0]} receiveShadow>
         <planeGeometry args={[0.65, 40]} />
-        <meshStandardMaterial color="#374151" roughness={0.9} />
+        <meshStandardMaterial color="#6B6560" roughness={0.9} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.007, -10.5]} receiveShadow>
         <planeGeometry args={[40, 0.55]} />
-        <meshStandardMaterial color="#374151" roughness={0.9} />
+        <meshStandardMaterial color="#6B6560" roughness={0.9} />
       </mesh>
 
       {/* ── Parks ── */}
