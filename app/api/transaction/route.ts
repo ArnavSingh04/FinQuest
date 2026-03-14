@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/auth-server";
 import { buildDashboardPayload } from "@/lib/playerState";
+import { generatePersonalizedLesson } from "@/lib/personalizedLessons";
 import type {
   AIInsightPayload,
   DashboardPayload,
@@ -262,6 +263,18 @@ export async function POST(request: Request) {
       transactionId: insertResult.data.id,
       payload,
     });
+
+    // Auto-generate personalized lesson (async, don't block response)
+    generatePersonalizedLesson(user.id)
+      .then((lesson) => {
+        if (lesson) {
+          console.log("Personalized lesson generated successfully");
+        }
+      })
+      .catch((lessonError) => {
+        // Don't fail transaction if lesson generation fails
+        console.error("Lesson generation failed:", lessonError);
+      });
 
     return NextResponse.json(payload);
   } catch (error) {
