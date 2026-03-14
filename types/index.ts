@@ -42,6 +42,32 @@ export interface CityMetrics {
   emergencyWarning: boolean;
 }
 
+export type WeatherType =
+  | "thriving"
+  | "clear"
+  | "overcast"
+  | "rain"
+  | "storm"
+  | "destruction";
+
+export interface Proportions {
+  needs: number;
+  wants: number;
+  treats: number;
+  investments: number;
+}
+
+export interface CityState {
+  bankHeight: number;
+  restaurantCount: number;
+  apartmentCount: number;
+  towerHeight: number;
+  weather: WeatherType;
+  population: number;
+  healthScore: number;
+  budgetUsed: number;
+}
+
 export interface CityStructureInfo {
   id: string;
   title: string;

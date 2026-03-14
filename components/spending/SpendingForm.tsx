@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
 import type {
+  Proportions,
   TransactionApiResponse,
   TransactionCategory,
 } from "@/types";
@@ -12,9 +13,13 @@ const categories: TransactionCategory[] = ["Need", "Want", "Treat", "Invest"];
 
 interface SpendingFormProps {
   onTransactionProcessed?: (response: TransactionApiResponse) => Promise<void> | void;
+  onSubmitted?: (proportions: Proportions) => Promise<void> | void;
 }
 
-export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
+export function SpendingForm({
+  onTransactionProcessed,
+  onSubmitted,
+}: SpendingFormProps) {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<TransactionCategory>("Need");
   const [merchantName, setMerchantName] = useState("");
@@ -60,6 +65,12 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
       localStorage.setItem("finquest-progress", JSON.stringify(payload.progress));
 
       await onTransactionProcessed?.(payload);
+      await onSubmitted?.({
+        needs: payload.ratios.needs_ratio,
+        wants: payload.ratios.wants_ratio,
+        treats: payload.ratios.treat_ratio,
+        investments: payload.ratios.invest_ratio,
+      });
 
       setFeedback(payload.warning || "Transaction saved and your city updated.");
       setAmount("");

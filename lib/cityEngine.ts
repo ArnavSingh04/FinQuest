@@ -1,4 +1,15 @@
-import type { CityState, Proportions, WeatherType } from "@/types";
+import type {
+  CityMetrics,
+  CityState,
+  FinancialScores,
+  Proportions,
+  SpendingRatios,
+  WeatherType,
+} from "@/types";
+
+function clamp(value: number, min = 0, max = 100) {
+  return Math.min(max, Math.max(min, Math.round(value)));
+}
 
 // Pure mapping functions — proportions in %, city values out
 export const mapInvestToBank = (pct: number) => 1 + (pct / 30) * 7;
@@ -26,6 +37,42 @@ export function calculateHealthScore(p: Proportions, budgetUsed = 0): number {
   const budgetPenalty = budgetUsed > 1 ? Math.min(25, (budgetUsed - 1) * 50) : 0;
   const baseline = 20;
   return Math.max(0, Math.min(100, baseline + needsScore + investScore - treatPenalty - budgetPenalty));
+}
+
+export function generateCityMetrics(input: {
+  ratios: SpendingRatios;
+  scores: FinancialScores;
+}): CityMetrics {
+  const { ratios, scores } = input;
+  const infrastructure = clamp(
+    scores.stability * 0.4 + ratios.needs_ratio * 100 * 0.6,
+  );
+  const entertainment = clamp(
+    ratios.wants_ratio * 100 * 0.7 + scores.economyScore * 0.2 + 10,
+  );
+  const growth = clamp(
+    scores.investmentGrowth * 0.55 + ratios.invest_ratio * 100 * 0.35 + 8,
+  );
+  const pollution = clamp(
+    ratios.treat_ratio * 100 * 0.8 +
+      ratios.wants_ratio * 100 * 0.25 -
+      scores.stability * 0.2,
+  );
+  const parks = clamp(
+    ratios.invest_ratio * 100 * 0.5 + ratios.needs_ratio * 100 * 0.25 - 10,
+  );
+
+  return {
+    economyScore: clamp(scores.economyScore),
+    entertainment,
+    pollution,
+    growth,
+    infrastructure,
+    liquidity: clamp(scores.liquidity),
+    stability: clamp(scores.stability),
+    parks,
+    emergencyWarning: scores.liquidity < 35 || scores.stability < 30,
+  };
 }
 
 export function generateCityState(proportions: Proportions, monthlyIncome = 0, totalSpend = 0): CityState {
