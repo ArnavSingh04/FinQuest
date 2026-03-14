@@ -122,7 +122,24 @@ export interface GroupLeaderboardEntry {
   cityGrowth: number;
 }
 
+export interface GroupMemberSummary {
+  userId: string;
+  username: string;
+  role: "owner" | "member";
+  joinedAt: string;
+}
+
 export interface GroupSummary extends Group {
   memberCount: number;
+  members: GroupMemberSummary[];
   leaderboard: GroupLeaderboardEntry[];
+}
+
+export interface GroupMemberProfileResponse {
+  group: {
+    id: string;
+    name: string;
+  };
+  member: GroupMemberSummary;
+  dashboard: DashboardPayload;
 }
