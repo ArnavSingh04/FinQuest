@@ -27,21 +27,34 @@ Landing page. Explains the concept, shows a mock city preview card, and links to
 ### `/dashboard` — Log
 - **Spending form** — enter merchant + amount + category. Tap "Simulate Payment" for a demo transaction.
 - **Budget card** — set your monthly income; shows spent/remaining with a progress bar.
-- **Health ring** — large score (0–100) with weather label.
-- **Spending mix bars** — animated % bars for each category.
+- **Health ring** — score (0–100), city tier badge, daily streak counter, weather label, tier description.
+- **Spending donut chart** — SVG pie chart of current category proportions with total spend.
+- **Weekly summary card** — this week's spend vs last week, with ↑/↓ delta arrows per category.
 - **City snapshot** — weather, population, restaurant count.
 - **AI Advisor** — personalised coaching message (via OpenAI or 5 cached fallbacks).
 - **Recent transactions** — last 5 with link to full history.
 - **Financial Report link** — shortcut to the /learn page.
 
 ### `/city` — 3D City
+- **Editable city name** — click to rename your city (stored in localStorage).
+- **City tier badge** — Shanty Town → Village → Town → City → Metropolis → Utopia.
+- **Daily streak badge** — consecutive days with at least one transaction logged.
+- **🔗 Share City button** — encodes your city (no financial data) as a URL you can send to friends.
 - **Fullscreen-expandable 3D canvas** — click ⛶ Expand for a fullscreen modal.
 - **Camera presets** — Overview · Street Level · Top Down · Finance District.
 - **Drag to orbit** · scroll/pinch to zoom.
-- **Stats strip** — health score, weather emoji, population, restaurant count.
-- **AI Advisor panel** — same advisor message visible here.
+- **Stats strip** — health score with tier, weather emoji, population, restaurant count.
+- **AI Advisor panel** — coaching message visible here.
 - **Building legend** — explains what each structure type means.
 - **Spending form** — log transactions without leaving the city.
+- **Animated traffic** — cars on roads and pedestrians on sidewalks; count and speed scale with city population.
+
+### `/city/view?c=<code>` — Friend's City
+- View any city shared via a URL code.
+- **Full 3D render** of their city using the exact same engine (no personal data sent).
+- **Head-to-head panel** — compare health scores with a diff indicator.
+- **Spending mix comparison bars** — solid = yours, faded = theirs, delta shown.
+- **Fullscreen** button works here too.
 
 ### `/history` — Transaction History
 - All transactions sorted newest first with merchant, amount, date.
@@ -51,8 +64,15 @@ Landing page. Explains the concept, shows a mock city preview card, and links to
 
 ### `/learn` — Financial Report
 - **50/30/20 Rule tracker** — colour-coded pass/fail for Needs ≤ 50%, Wants ≤ 30%, Invest ≥ 20%.
-- **Achievement badges** — City Founder, First Investment, Balanced Budget, Tycoon, etc.
+- **Achievement badges** — City Founder, First Investment, Balanced Budget, Tycoon, Clean Streak, etc.
 - **Daily financial tip** — rotates hourly from a curated set of personal finance concepts.
+
+### `/simulate` — What-If Simulator
+- **4 category sliders** (Needs / Wants / Treats / Invest) capped at 100% total.
+- **Live 3D city preview** — shows exactly what your city would look like with those spending habits.
+- **Health score + tier + weather** update in real time as you drag.
+- **City forecast message** — narrative description of the city state.
+- **50/30/20 quick check** — pass/fail for each rule against current slider values.
 
 ---
 
@@ -94,9 +114,27 @@ All weather transitions are smooth lerps — no sudden jumps.
 - **Restaurants** — count = `floor(wants% / 8)`, min 1, max 6. Each has lit sign board, awning, shop window.
 - **Bank Tower** — height = `1 + (invest% / 30) × 7`. Has podium columns, window grid, crown spire with beacon light.
 - **Investment Tower** — height = `0.5 + (invest% / 20) × 4`. Hexagonal shaft with vertical glowing strips, glowing cone tip.
+- **School** — unlocks when needs ≥ 40% (apartment count ≥ 4). Clock tower, flag pole.
+- **Hospital** — unlocks when invest ≥ 15% (tower height ≥ 1.5). Rooftop helipad, red cross sign.
+- **Park fountain** — always present. Animated glowing water jet with point light.
+- **Bridge** — spans the road intersection.
 - **Pollution clouds** — count = `floor(treats × 14)`, animated floating, opacity driven by treats fraction.
+- **Animated traffic** — cars (with headlights, cabin, 4 wheels) and pedestrians; count scales with population, speed with health score.
 
 All height changes lerp over ~0.4 seconds using `useRef<THREE.Mesh>` + `useFrame`.
+
+### City tiers
+| Score | Tier | Description |
+|---|---|---|
+| 0–19 | 🏚️ Shanty Town | Spending habits are hurting your city |
+| 20–39 | 🏘️ Village | A small settlement is taking shape |
+| 40–54 | 🏙️ Town | Growing steadily |
+| 55–69 | 🌆 City | Proper infrastructure |
+| 70–87 | 🌇 Metropolis | Thriving with impressive habits |
+| 88–100 | ✨ Utopia | Peak financial discipline |
+
+### City share
+The **🔗 Share City** button encodes `CityState + Proportions` (no dollar amounts, no transactions) into a compact base64 URL parameter. Anyone with the link visits `/city/view?c=<code>` to see a full 3D render and compare spending mixes side by side.
 
 ### 50/30/20 Rule
 A classic personal finance budgeting framework:
