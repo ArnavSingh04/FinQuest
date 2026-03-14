@@ -1,0 +1,1 @@
+export const HAMMER_ANIMATION_DURATION = 3000;
