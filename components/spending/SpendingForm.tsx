@@ -146,6 +146,11 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
           );
           heightBoostTimer.current = null;
         }, HAMMER_ANIMATION_DURATION);
+      } else if (category === "Want" && selectedRangeIndex === 0) {
+        increaseHeightMultiplier(-0.1);
+        setFeedback(
+          `Wants should be seen minded; tower heights are reduced by 10%. ${baseFeedbackMessage}`,
+        );
       } else {
         setFeedback(baseFeedbackMessage);
       }
