@@ -1,21 +1,23 @@
 :root {
   /* Backgrounds */
-  --bg-base: #F5F0E8;
-  --bg-surface: #EDE8DC;
+  --bg-base: #F2EDE3;
+  --bg-surface: #E8E0D0;
   --bg-elevated: #FFFFFF;
-  --border: #D4C9B0;
+  --bg-dark: #1C3A2E;
+  --border: #C8BFA8;
 
   /* Text */
-  --text-primary: #2C2416;
-  --text-secondary: #6B5D4F;
-  --text-muted: #9C8E82;
+  --text-primary: #1C3A2E;
+  --text-secondary: #4A6358;
+  --text-muted: #8A9E94;
+  --text-on-dark: #F2EDE3;
 
   /* Accent - primary CTAs */
   --accent-primary: #C17B3F;
   --accent-primary-hover: #A8652E;
   --accent-glow: rgba(193, 123, 63, 0.15);
 
-  /* Category colours - vivid against warm background */
+  /* Category colours - unchanged */
   --cat-need: #3B7DD8;
   --cat-want: #E8A020;
   --cat-treat: #D94F3D;

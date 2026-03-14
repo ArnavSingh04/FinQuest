@@ -5,10 +5,12 @@
   --color-bg-base: var(--bg-base);
   --color-bg-surface: var(--bg-surface);
   --color-bg-elevated: var(--bg-elevated);
+  --color-bg-dark: var(--bg-dark);
   --color-border: var(--border);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
+  --color-text-on-dark: var(--text-on-dark);
   --color-accent-primary: var(--accent-primary);
   --color-accent-primary-hover: var(--accent-primary-hover);
   --color-cat-need: var(--cat-need);
@@ -77,6 +79,21 @@ h3 {
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+}
+
+/* Primary / secondary / destructive buttons (colour only) */
+.btn-primary {
+  background-color: #C17B3F;
+  color: #FFFFFF;
+}
+.btn-secondary {
+  border: 1px solid #1C3A2E;
+  color: #1C3A2E;
+  background-color: transparent;
+}
+.btn-destructive {
+  background-color: #D94F3D;
+  color: #FFFFFF;
 }
 
 .health-gradient {

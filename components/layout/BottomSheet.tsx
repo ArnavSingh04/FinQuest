@@ -70,10 +70,11 @@ export function BottomSheet({
         role="dialog"
         aria-modal
         aria-label={title ?? "Panel"}
-        className="relative z-50 flex max-h-[85vh] flex-col rounded-t-[24px] bg-bg-elevated shadow-card"
+        className="relative z-50 flex max-h-[85vh] flex-col rounded-t-[24px] shadow-card"
         style={{
           maxHeight,
           paddingBottom: "env(safe-area-inset-bottom)",
+          backgroundColor: "#FFFFFF",
         }}
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
@@ -91,10 +92,10 @@ export function BottomSheet({
         onDragEnd={handleDragEnd}
       >
         <div className="flex shrink-0 justify-center pt-3 pb-2">
-          <div className="h-1 w-9 rounded-full bg-border" aria-hidden />
+          <div className="h-1 w-9 rounded-full" style={{ backgroundColor: "#C8BFA8" }} aria-hidden />
         </div>
         {title != null && title !== "" && (
-          <h2 className="px-4 pb-2 font-heading text-lg font-normal text-text-primary">
+          <h2 className="px-4 pb-2 font-heading text-lg font-normal" style={{ color: "#1C3A2E" }}>
             {title}
           </h2>
         )}

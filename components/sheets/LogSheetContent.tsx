@@ -14,6 +14,13 @@ const CATEGORY_COLORS: Record<TransactionCategory, string> = {
   Invest: "#3DAB6A",
 };
 
+const CATEGORY_TILE_BG: Record<TransactionCategory, string> = {
+  Need: "#EBF2FC",
+  Want: "#FDF3E0",
+  Treat: "#FCECEA",
+  Invest: "#E8F7EE",
+};
+
 const CATEGORY_TILES: {
   id: TransactionCategory;
   emoji: string;
@@ -67,20 +74,20 @@ export function LogSheetContent() {
       <button
         type="button"
         onClick={() => setActiveSheet(null)}
-        className="mb-4 text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
-        style={{ fontFamily: "var(--font-sans), sans-serif" }}
+        className="mb-4 text-sm font-medium transition"
+        style={{ fontFamily: "var(--font-sans), sans-serif", color: "#8A9E94" }}
       >
         ← Back to city
       </button>
       <h2
-        className="text-2xl font-normal text-[var(--text-primary)]"
-        style={{ fontFamily: "var(--font-serif), serif" }}
+        className="text-2xl font-normal"
+        style={{ fontFamily: "var(--font-serif), serif", color: "#1C3A2E" }}
       >
         Log a Transaction
       </h2>
       <p
-        className="mt-1 text-sm text-[var(--text-muted)]"
-        style={{ fontFamily: "var(--font-sans), sans-serif" }}
+        className="mt-1 text-sm"
+        style={{ fontFamily: "var(--font-sans), sans-serif", color: "#8A9E94" }}
       >
         Choose what you spent on and roughly how big the purchase was.
       </p>
@@ -88,8 +95,8 @@ export function LogSheetContent() {
       <form onSubmit={handleSubmit} className="mt-6">
         {/* Step 1 — Type of spend */}
         <p
-          className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]"
-          style={{ fontFamily: "var(--font-sans), sans-serif" }}
+          className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em]"
+          style={{ fontFamily: "var(--font-sans), sans-serif", color: "#8A9E94" }}
         >
           Type of spend
         </p>
@@ -97,6 +104,9 @@ export function LogSheetContent() {
           {CATEGORY_TILES.map((cat) => {
             const selected = category === cat.id;
             const color = CATEGORY_COLORS[cat.id];
+            const bgColor = selected ? CATEGORY_TILE_BG[cat.id] : "#E8E0D0";
+            const borderColor = selected ? color : "#C8BFA8";
+            const titleColor = selected ? color : "#1C3A2E";
             return (
               <motion.button
                 key={cat.id}
@@ -105,15 +115,15 @@ export function LogSheetContent() {
                 className="touch-target flex min-h-[44px] flex-col items-start justify-center rounded-2xl border-2 px-4 py-3 text-left transition active:scale-[0.97]"
                 style={{
                   borderRadius: 16,
-                  backgroundColor: selected ? `${color}18` : "var(--bg-surface)",
-                  borderColor: selected ? color : "var(--border)",
+                  backgroundColor: bgColor,
+                  borderColor,
                 }}
                 whileTap={{ scale: 0.97 }}
               >
                 <span className="text-lg leading-tight">
-                  {cat.emoji} <span className="font-semibold text-[var(--text-primary)]" style={{ fontFamily: "var(--font-sans), sans-serif" }}>{cat.title}</span>
+                  {cat.emoji} <span className="font-semibold" style={{ fontFamily: "var(--font-sans), sans-serif", color: titleColor }}>{cat.title}</span>
                 </span>
-                <span className="mt-0.5 text-xs text-[var(--text-muted)]" style={{ fontFamily: "var(--font-sans), sans-serif" }}>
+                <span className="mt-0.5 text-xs" style={{ fontFamily: "var(--font-sans), sans-serif", color: "#8A9E94" }}>
                   {cat.subtitle}
                 </span>
               </motion.button>
@@ -123,15 +133,16 @@ export function LogSheetContent() {
 
         {/* Step 2 — How big was it? */}
         <p
-          className="mt-6 mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]"
-          style={{ fontFamily: "var(--font-sans), sans-serif" }}
+          className="mt-6 mb-3 text-[11px] font-semibold uppercase tracking-[0.08em]"
+          style={{ fontFamily: "var(--font-sans), sans-serif", color: "#8A9E94" }}
         >
           How big was it?
         </p>
         <div className="grid grid-cols-2 gap-3">
           {AMOUNT_RANGES.map((range) => {
             const selected = amountRange?.id === range.id;
-            const color = category ? CATEGORY_COLORS[category] : "var(--border)";
+            const bgColor = selected && category ? CATEGORY_TILE_BG[category] : "#E8E0D0";
+            const borderColor = selected && category ? CATEGORY_COLORS[category] : "#C8BFA8";
             return (
               <motion.button
                 key={range.id}
@@ -140,15 +151,15 @@ export function LogSheetContent() {
                 className="touch-target flex min-h-[44px] flex-col items-start justify-center rounded-2xl border-2 px-4 py-3 text-left transition active:scale-[0.97]"
                 style={{
                   borderRadius: 16,
-                  backgroundColor: selected && category ? `${CATEGORY_COLORS[category]}18` : "var(--bg-surface)",
-                  borderColor: selected && category ? CATEGORY_COLORS[category] : "var(--border)",
+                  backgroundColor: bgColor,
+                  borderColor,
                 }}
                 whileTap={{ scale: 0.97 }}
               >
-                <span className="font-semibold text-[var(--text-primary)]" style={{ fontFamily: "var(--font-sans), sans-serif" }}>
+                <span className="font-semibold" style={{ fontFamily: "var(--font-sans), sans-serif", color: "#1C3A2E" }}>
                   {range.title}
                 </span>
-                <span className="mt-0.5 text-xs text-[var(--text-muted)]" style={{ fontFamily: "var(--font-sans), sans-serif" }}>
+                <span className="mt-0.5 text-xs" style={{ fontFamily: "var(--font-sans), sans-serif", color: "#8A9E94" }}>
                   {range.subtitle}
                 </span>
               </motion.button>
@@ -163,7 +174,7 @@ export function LogSheetContent() {
           className="touch-target mt-8 h-14 w-full rounded-full text-base font-semibold text-white transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
           style={{
             fontFamily: "var(--font-sans), sans-serif",
-            backgroundColor: canSubmit && category ? CATEGORY_COLORS[category] : "var(--text-muted)",
+            backgroundColor: canSubmit && category ? CATEGORY_COLORS[category] : "#C8BFA8",
           }}
         >
           {isSubmitting ? "Saving…" : "Log Transaction →"}

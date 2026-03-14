@@ -25,14 +25,14 @@ export function TopHUD() {
   return (
     <header
       className="absolute left-0 right-0 top-0 z-20 flex flex-col pt-[env(safe-area-inset-top)]"
-      style={{ maxWidth: 390, margin: "0 auto" }}
+      style={{ maxWidth: 390, margin: "0 auto", backgroundColor: "#1C3A2E" }}
     >
       <div className="flex h-[52px] items-center justify-between px-4 backdrop-blur-md">
-        <span className="font-heading text-lg font-normal text-text-primary">
+        <span className="font-heading text-lg font-normal" style={{ color: "#F2EDE3" }}>
           FinQuest
         </span>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-text-primary">
+        <div className="flex items-center gap-2 rounded-full px-3 py-1.5" style={{ backgroundColor: "rgba(255,255,255,0.12)" }}>
+          <span className="text-sm font-medium" style={{ color: "#F2EDE3" }}>
             {cityName} · {healthScore}
           </span>
           <span
@@ -49,20 +49,21 @@ export function TopHUD() {
           />
         </div>
         <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-primary text-sm font-semibold text-white"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+          style={{ backgroundColor: "#C17B3F", color: "#F2EDE3" }}
           aria-label="Profile"
         >
           {cityName[0]?.toUpperCase() ?? "?"}
         </div>
       </div>
       <div className="mt-1 flex justify-center gap-2 px-4">
-        <span className="rounded-full bg-bg-elevated px-3 py-1.5 text-xs font-medium text-text-secondary shadow-card">
+        <span className="rounded-full px-3 py-1.5 text-xs font-medium" style={{ backgroundColor: "rgba(28, 58, 46, 0.88)", color: "#F2EDE3" }}>
           Economy {economy}
         </span>
-        <span className="rounded-full bg-bg-elevated px-3 py-1.5 text-xs font-medium text-text-secondary shadow-card">
+        <span className="rounded-full px-3 py-1.5 text-xs font-medium" style={{ backgroundColor: "rgba(28, 58, 46, 0.88)", color: "#F2EDE3" }}>
           Pollution {pollution}
         </span>
-        <span className="rounded-full bg-bg-elevated px-3 py-1.5 text-xs font-medium text-text-secondary shadow-card">
+        <span className="rounded-full px-3 py-1.5 text-xs font-medium" style={{ backgroundColor: "rgba(28, 58, 46, 0.88)", color: "#F2EDE3" }}>
           Growth {growth}
         </span>
       </div>
