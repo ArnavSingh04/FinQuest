@@ -45,7 +45,13 @@ export interface CityMetrics {
 export interface CityStructureInfo {
   id: string;
   title: string;
-  category: "housing" | "apartment" | "skyscraper" | "entertainment" | "pollution" | "park";
+  category:
+    | "housing"
+    | "apartment"
+    | "office"
+    | "mall"
+    | "pollution"
+    | "park";
   metricValue: number;
   description: string;
 }

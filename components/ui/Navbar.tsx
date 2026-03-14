@@ -4,13 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
-import { signOutUser, useUser } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
+import { signOutUser } from "@/lib/auth";
 
 const authenticatedLinks = [
-  { href: "/dashboard", label: "Dashboard" },
   { href: "/city", label: "City" },
-  { href: "/insights", label: "Insights" },
   { href: "/groups", label: "Groups" },
+  { href: "/#log-spending", label: "Log Spending" },
 ];
 
 function NavLink({
@@ -37,12 +37,16 @@ function NavLink({
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isLoading } = useUser();
+  const { user, loading } = useAuth();
 
   async function handleLogout() {
     await signOutUser();
-    router.push("/login");
+    router.push("/");
     router.refresh();
+  }
+
+  if (loading || !user) {
+    return null;
   }
 
   return (
@@ -58,48 +62,29 @@ export function Navbar() {
 
         <nav className="hidden items-center gap-1 md:flex">
           <NavLink href="/" label="Home" isActive={pathname === "/"} />
-          {!isLoading && user
-            ? authenticatedLinks.map((link) => (
-                <NavLink
-                  key={link.href}
-                  href={link.href}
-                  label={link.label}
-                  isActive={pathname === link.href}
-                />
-              ))
-            : null}
+          {authenticatedLinks.map((link) => (
+            <NavLink
+              key={link.href}
+              href={link.href}
+              label={link.label}
+              isActive={
+                link.href === "/#log-spending"
+                  ? pathname === "/"
+                  : pathname === link.href
+              }
+            />
+          ))}
         </nav>
 
         <div className="flex items-center gap-2">
-          {!isLoading && user ? (
-            <>
-              <span className="hidden text-sm text-slate-300 sm:block">
-                {user.email}
-              </span>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/5"
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/5"
-              >
-                Login
-              </Link>
-              <Link
-                href="/signup"
-                className="rounded-full bg-gradient-to-r from-sky-400 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950"
-              >
-                Sign up
-              </Link>
-            </>
-          )}
+          <span className="hidden text-sm text-slate-300 sm:block">{user.email}</span>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/5"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </motion.header>

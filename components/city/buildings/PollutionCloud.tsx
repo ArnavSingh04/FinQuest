@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import type { Group } from "three";
 
 import type { CityStructureInfo } from "@/types";
@@ -21,6 +21,21 @@ export function PollutionCloud({
 }: PollutionCloudProps) {
   const ref = useRef<Group>(null);
 
+  function handleSelect(event: ThreeEvent<MouseEvent>) {
+    event.stopPropagation();
+    onSelect(structure);
+  }
+
+  function handleHover(event: ThreeEvent<PointerEvent>) {
+    event.stopPropagation();
+    onHover(structure);
+  }
+
+  function handleHoverEnd(event: ThreeEvent<PointerEvent>) {
+    event.stopPropagation();
+    onHover(null);
+  }
+
   useFrame((state) => {
     if (!ref.current) {
       return;
@@ -33,9 +48,10 @@ export function PollutionCloud({
     <group
       ref={ref}
       position={position}
-      onPointerOver={() => onHover(structure)}
-      onPointerOut={() => onHover(null)}
-      onClick={() => onSelect(structure)}
+      userData={{ cityStructure: true, structureId: structure.id }}
+      onPointerOver={handleHover}
+      onPointerOut={handleHoverEnd}
+      onClick={handleSelect}
     >
       <mesh>
         <sphereGeometry args={[0.5, 16, 16]} />

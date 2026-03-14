@@ -1,16 +1,16 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef } from "react";
-import { Object3D, type InstancedMesh } from "three";
+import { useMemo } from "react";
 
 import { useCityStore } from "@/store/useCityStore";
 import type { CityMetrics, CityStructureInfo } from "@/types";
 
 import { Apartment } from "./buildings/Apartment";
-import { EntertainmentBuilding } from "./buildings/EntertainmentBuilding";
 import { House } from "./buildings/House";
+import { Mall } from "./buildings/Mall";
+import { OfficeTower } from "./buildings/OfficeTower";
+import { Park } from "./buildings/Park";
 import { PollutionCloud } from "./buildings/PollutionCloud";
-import { Skyscraper } from "./buildings/Skyscraper";
 
 interface CityGeneratorProps {
   metrics: CityMetrics;
@@ -21,7 +21,6 @@ function createIndexedArray(length: number) {
 }
 
 export function CityGenerator({ metrics }: CityGeneratorProps) {
-  const parkMeshRef = useRef<InstancedMesh>(null);
   const setHoveredStructure = useCityStore((state) => state.setHoveredStructure);
   const setSelectedStructure = useCityStore((state) => state.setSelectedStructure);
 
@@ -58,12 +57,12 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
     [apartmentCount, metrics.stability],
   );
 
-  const skyscrapers = useMemo<CityStructureInfo[]>(
+  const officeTowers = useMemo<CityStructureInfo[]>(
     () =>
       createIndexedArray(growthCount).map((index) => ({
-        id: `skyscraper-${index}`,
-        title: `Growth Tower ${index + 1}`,
-        category: "skyscraper",
+        id: `office-${index}`,
+        title: `Office Tower ${index + 1}`,
+        category: "office",
         metricValue: metrics.growth,
         description:
           "High investment behavior pushes economic growth and unlocks taller skyline structures.",
@@ -71,12 +70,12 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
     [growthCount, metrics.growth],
   );
 
-  const entertainmentStructures = useMemo<CityStructureInfo[]>(
+  const mallStructures = useMemo<CityStructureInfo[]>(
     () =>
       createIndexedArray(entertainmentCount).map((index) => ({
-        id: `entertainment-${index}`,
-        title: `Entertainment Hub ${index + 1}`,
-        category: "entertainment",
+        id: `mall-${index}`,
+        title: `Town Mall ${index + 1}`,
+        category: "mall",
         metricValue: metrics.entertainment,
         description:
           "Wants spending powers social and fun districts, but it works best when balanced with the rest of the budget.",
@@ -97,33 +96,18 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
     [pollutionCount, metrics.pollution],
   );
 
-  const parkPositions = useMemo<[number, number, number][]>(
+  const parks = useMemo<CityStructureInfo[]>(
     () =>
-      createIndexedArray(parkCount).map((index) => [
-        -3.5 + (index % 3) * 2.2,
-        0.06,
-        2.8 + Math.floor(index / 3) * 1.7,
-      ]),
-    [parkCount],
+      createIndexedArray(parkCount).map((index) => ({
+        id: `park-${index}`,
+        title: `Neighborhood Park ${index + 1}`,
+        category: "park",
+        metricValue: metrics.parks,
+        description:
+          "Healthy saving and balanced spending keep neighborhoods greener and more relaxing.",
+      })),
+    [metrics.parks, parkCount],
   );
-
-  useLayoutEffect(() => {
-    if (!parkMeshRef.current) {
-      return;
-    }
-
-    const dummy = new Object3D();
-
-    parkPositions.forEach((position, index) => {
-      dummy.position.set(position[0], position[1], position[2]);
-      dummy.scale.set(1.2, 1, 1.2);
-      dummy.updateMatrix();
-      parkMeshRef.current?.setMatrixAt(index, dummy.matrix);
-    });
-
-    parkMeshRef.current.count = parkPositions.length;
-    parkMeshRef.current.instanceMatrix.needsUpdate = true;
-  }, [parkPositions]);
 
   return (
     <group>
@@ -131,7 +115,11 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
         <House
           key={structure.id}
           structure={structure}
-          position={[-4 + (index % 4) * 1.3, 0.45, -1.8 - Math.floor(index / 4) * 1.15]}
+          position={[
+            -4.6 + (index % 4) * 1.55,
+            0.45,
+            -3.2 - Math.floor(index / 4) * 1.8,
+          ]}
           onHover={setHoveredStructure}
           onSelect={setSelectedStructure}
         />
@@ -141,29 +129,37 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
         <Apartment
           key={structure.id}
           structure={structure}
-          position={[-1.5 + (index % 3) * 1.45, 0.9, -0.4 - Math.floor(index / 3) * 1.2]}
-          height={1.6 + index * 0.25}
+          position={[
+            -1.4 + (index % 3) * 1.9,
+            1.1,
+            -1.5 - Math.floor(index / 3) * 2.1,
+          ]}
+          height={2 + index * 0.2}
           onHover={setHoveredStructure}
           onSelect={setSelectedStructure}
         />
       ))}
 
-      {entertainmentStructures.map((structure, index) => (
-        <EntertainmentBuilding
+      {mallStructures.map((structure, index) => (
+        <Mall
           key={structure.id}
           structure={structure}
-          position={[-1 + index * 1.8, 0.95, 2]}
+          position={[-3 + index * 2.7, 0.56, 2.3]}
           onHover={setHoveredStructure}
           onSelect={setSelectedStructure}
         />
       ))}
 
-      {skyscrapers.map((structure, index) => (
-        <Skyscraper
+      {officeTowers.map((structure, index) => (
+        <OfficeTower
           key={structure.id}
           structure={structure}
-          position={[2 + (index % 3) * 1.5, 1.9 + index * 0.12, -0.6]}
-          height={3.4 + index * 0.6}
+          position={[
+            2.2 + (index % 3) * 2.05,
+            2.2 + index * 0.12,
+            -1.3 - Math.floor(index / 3) * 2,
+          ]}
+          height={4.2 + index * 0.45}
           onHover={setHoveredStructure}
           onSelect={setSelectedStructure}
         />
@@ -173,17 +169,25 @@ export function CityGenerator({ metrics }: CityGeneratorProps) {
         <PollutionCloud
           key={structure.id}
           structure={structure}
-          position={[2 + index * 1.05, 3.1 + index * 0.18, 2 - index * 0.55]}
+          position={[2.2 + index * 1.25, 3.4 + index * 0.14, 2.4 - index * 0.7]}
           onHover={setHoveredStructure}
           onSelect={setSelectedStructure}
         />
       ))}
 
-      {/* Parks are instanced because they repeat often and are visually simple. */}
-      <instancedMesh ref={parkMeshRef} args={[undefined, undefined, parkCount]} receiveShadow>
-        <cylinderGeometry args={[0.55, 0.55, 0.1, 16]} />
-        <meshStandardMaterial color="#4ade80" />
-      </instancedMesh>
+      {parks.map((structure, index) => (
+        <Park
+          key={structure.id}
+          structure={structure}
+          position={[
+            -4 + (index % 4) * 2.7,
+            0.12,
+            4 + Math.floor(index / 4) * 1.9,
+          ]}
+          onHover={setHoveredStructure}
+          onSelect={setSelectedStructure}
+        />
+      ))}
     </group>
   );
 }

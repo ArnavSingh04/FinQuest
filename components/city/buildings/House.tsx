@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import type { Group } from "three";
 
 import type { CityStructureInfo } from "@/types";
@@ -23,6 +23,21 @@ export function House({
 }: HouseProps) {
   const ref = useRef<Group>(null);
 
+  function handleSelect(event: ThreeEvent<MouseEvent>) {
+    event.stopPropagation();
+    onSelect(structure);
+  }
+
+  function handleHover(event: ThreeEvent<PointerEvent>) {
+    event.stopPropagation();
+    onHover(structure);
+  }
+
+  function handleHoverEnd(event: ThreeEvent<PointerEvent>) {
+    event.stopPropagation();
+    onHover(null);
+  }
+
   useFrame((state) => {
     if (!ref.current) {
       return;
@@ -36,17 +51,34 @@ export function House({
       ref={ref}
       position={position}
       scale={scale}
-      onPointerOver={() => onHover(structure)}
-      onPointerOut={() => onHover(null)}
-      onClick={() => onSelect(structure)}
+      userData={{ cityStructure: true, structureId: structure.id }}
+      onPointerOver={handleHover}
+      onPointerOut={handleHoverEnd}
+      onClick={handleSelect}
     >
-      <mesh castShadow receiveShadow>
-        <boxGeometry args={[0.8, 0.8, 0.8]} />
-        <meshStandardMaterial color="#60a5fa" />
+      <mesh position={[0, 0.42, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.9, 0.82, 0.82]} />
+        <meshStandardMaterial color="#f8fafc" roughness={0.88} />
       </mesh>
-      <mesh position={[0, 0.6, 0]} castShadow>
-        <coneGeometry args={[0.65, 0.55, 4]} />
-        <meshStandardMaterial color="#f97316" />
+      <mesh position={[0, 0.97, 0]} castShadow>
+        <coneGeometry args={[0.78, 0.7, 4]} />
+        <meshStandardMaterial color="#b45309" roughness={0.7} />
+      </mesh>
+      <mesh position={[0, 0.08, 0.38]} castShadow receiveShadow>
+        <boxGeometry args={[0.22, 0.3, 0.06]} />
+        <meshStandardMaterial color="#7c2d12" roughness={0.8} />
+      </mesh>
+      <mesh position={[-0.24, 0.42, 0.41]} castShadow receiveShadow>
+        <boxGeometry args={[0.18, 0.18, 0.04]} />
+        <meshStandardMaterial color="#7dd3fc" emissive="#0f172a" emissiveIntensity={0.3} />
+      </mesh>
+      <mesh position={[0.24, 0.42, 0.41]} castShadow receiveShadow>
+        <boxGeometry args={[0.18, 0.18, 0.04]} />
+        <meshStandardMaterial color="#7dd3fc" emissive="#0f172a" emissiveIntensity={0.3} />
+      </mesh>
+      <mesh position={[0, 0.03, 0]} receiveShadow>
+        <boxGeometry args={[1.2, 0.06, 1.15]} />
+        <meshStandardMaterial color="#16a34a" roughness={1} />
       </mesh>
     </group>
   );

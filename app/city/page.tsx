@@ -6,12 +6,12 @@ import { motion } from "framer-motion";
 
 import { CityScene } from "@/components/city/CityScene";
 import { SpendingForm } from "@/components/spending/SpendingForm";
-import { useUser } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
 import { useCityStore } from "@/store/useCityStore";
 import type { DashboardPayload, TransactionApiResponse } from "@/types";
 
 export default function CityPage() {
-  const { user, isLoading: isUserLoading } = useUser();
+  const { user, loading } = useAuth();
   const cityMetrics = useCityStore((state) => state.cityMetrics);
   const setCityMetrics = useCityStore((state) => state.setCityMetrics);
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
@@ -49,7 +49,7 @@ export default function CityPage() {
     setCityMetrics(payload.cityMetrics);
   }
 
-  if (isUserLoading) {
+  if (loading) {
     return (
       <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-6">
         <div className="glass-card rounded-[2rem] p-6 text-slate-300">
@@ -103,16 +103,10 @@ export default function CityPage() {
         </div>
         <div className="flex gap-3">
           <Link
-            href="/dashboard"
+            href="/"
             className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-white"
           >
-            Open Dashboard
-          </Link>
-          <Link
-            href="/insights"
-            className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-white"
-          >
-            Insights
+            Open Home Dashboard
           </Link>
         </div>
       </section>

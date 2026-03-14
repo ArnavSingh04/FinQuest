@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
-import { signUpWithEmail, useUser } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
+import { signUpWithEmail } from "@/lib/auth";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user } = useAuth();
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -19,7 +20,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (user) {
-      router.replace("/dashboard");
+      router.replace("/");
     }
   }, [router, user]);
 
@@ -49,7 +50,7 @@ export default function SignupPage() {
       return;
     }
 
-    router.push("/dashboard");
+    router.push("/");
     router.refresh();
   }
 

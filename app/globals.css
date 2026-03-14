@@ -23,3 +23,15 @@ body {
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px);
 }
+
+.city-scene-shell:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  background: #020617;
+}
+
+.city-scene-shell:fullscreen canvas {
+  width: 100% !important;
+  height: 100% !important;
+}

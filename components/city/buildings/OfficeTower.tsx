@@ -6,7 +6,7 @@ import type { Group } from "three";
 
 import type { CityStructureInfo } from "@/types";
 
-interface ApartmentProps {
+interface OfficeTowerProps {
   structure: CityStructureInfo;
   position: [number, number, number];
   height?: number;
@@ -14,13 +14,13 @@ interface ApartmentProps {
   onSelect: (structure: CityStructureInfo) => void;
 }
 
-export function Apartment({
+export function OfficeTower({
   structure,
   position,
-  height = 1.8,
+  height = 4.2,
   onHover,
   onSelect,
-}: ApartmentProps) {
+}: OfficeTowerProps) {
   const ref = useRef<Group>(null);
 
   function handleSelect(event: ThreeEvent<MouseEvent>) {
@@ -43,7 +43,7 @@ export function Apartment({
       return;
     }
 
-    ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.15 + position[0]) * 0.05;
+    ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.18 + position[0]) * 0.05;
   });
 
   return (
@@ -56,29 +56,29 @@ export function Apartment({
       onClick={handleSelect}
     >
       <mesh castShadow receiveShadow>
-        <boxGeometry args={[1, height, 1]} />
-        <meshStandardMaterial color="#94a3b8" metalness={0.12} roughness={0.58} />
+        <boxGeometry args={[1.2, height, 1.2]} />
+        <meshStandardMaterial color="#475569" metalness={0.35} roughness={0.28} />
       </mesh>
-      <mesh position={[0, height / 2 + 0.05, 0]}>
-        <boxGeometry args={[1.05, 0.1, 1.05]} />
-        <meshStandardMaterial color="#0f172a" />
+      <mesh position={[0, height / 2 + 0.18, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.7, 0.36, 0.7]} />
+        <meshStandardMaterial color="#0f172a" metalness={0.4} roughness={0.2} />
       </mesh>
-      <mesh position={[0, -height / 2 + 0.04, 0]} receiveShadow>
-        <boxGeometry args={[1.2, 0.08, 1.2]} />
-        <meshStandardMaterial color="#334155" />
-      </mesh>
-      {[-0.32, 0, 0.32].map((x) => (
-        <mesh key={`window-row-a-${x}`} position={[x, 0.18, 0.52]} castShadow receiveShadow>
-          <boxGeometry args={[0.16, 0.18, 0.03]} />
-          <meshStandardMaterial color="#fef08a" emissive="#ca8a04" emissiveIntensity={0.24} />
+      {[-0.36, 0, 0.36].map((x) => (
+        <mesh key={`tower-window-top-${x}`} position={[x, 0.85, 0.62]} castShadow receiveShadow>
+          <boxGeometry args={[0.18, 1.5, 0.04]} />
+          <meshStandardMaterial color="#93c5fd" emissive="#1d4ed8" emissiveIntensity={0.2} />
         </mesh>
       ))}
-      {[-0.32, 0, 0.32].map((x) => (
-        <mesh key={`window-row-b-${x}`} position={[x, -0.28, 0.52]} castShadow receiveShadow>
-          <boxGeometry args={[0.16, 0.18, 0.03]} />
-          <meshStandardMaterial color="#bfdbfe" emissive="#1d4ed8" emissiveIntensity={0.18} />
+      {[-0.36, 0, 0.36].map((x) => (
+        <mesh key={`tower-window-bottom-${x}`} position={[x, -0.95, 0.62]} castShadow receiveShadow>
+          <boxGeometry args={[0.18, 1.2, 0.04]} />
+          <meshStandardMaterial color="#bfdbfe" emissive="#1e3a8a" emissiveIntensity={0.16} />
         </mesh>
       ))}
+      <mesh position={[0, -height / 2 + 0.06, 0]} receiveShadow>
+        <boxGeometry args={[1.5, 0.12, 1.5]} />
+        <meshStandardMaterial color="#1e293b" />
+      </mesh>
     </group>
   );
 }
