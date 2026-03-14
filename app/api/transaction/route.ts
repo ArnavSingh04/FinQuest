@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/auth-server";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+} from "@/lib/auth-server";
 import { buildDashboardPayload } from "@/lib/playerState";
 import type {
   AIInsightPayload,
@@ -198,6 +201,62 @@ async function persistDerivedState(params: {
   }
 }
 
+async function resetUserData(userId: string) {
+  const adminSupabase = createSupabaseAdminClient();
+
+  const [
+    insightDeleteResult,
+    achievementDeleteResult,
+    cityDeleteResult,
+    spendingDeleteResult,
+    transactionDeleteResult,
+  ] = await Promise.all([
+    adminSupabase.from("ai_insights").delete().eq("user_id", userId),
+    adminSupabase.from("user_achievements").delete().eq("user_id", userId),
+    adminSupabase.from("city_snapshots").delete().eq("user_id", userId),
+    adminSupabase.from("spending_snapshots").delete().eq("user_id", userId),
+    adminSupabase.from("transactions").delete().eq("user_id", userId),
+  ]);
+
+  if (insightDeleteResult.error) {
+    throw insightDeleteResult.error;
+  }
+
+  if (achievementDeleteResult.error) {
+    throw achievementDeleteResult.error;
+  }
+
+  if (cityDeleteResult.error) {
+    throw cityDeleteResult.error;
+  }
+
+  if (spendingDeleteResult.error) {
+    throw spendingDeleteResult.error;
+  }
+
+  if (transactionDeleteResult.error) {
+    throw transactionDeleteResult.error;
+  }
+
+  const resetPayload = buildDashboardPayload({
+    transactions: [],
+    latestInsight: null,
+  });
+
+  const progressResetResult = await adminSupabase.from("user_progress").upsert({
+    user_id: userId,
+    total_xp: resetPayload.progress.xp,
+    level: resetPayload.progress.level,
+    last_achievement_id: null,
+  });
+
+  if (progressResetResult.error) {
+    throw progressResetResult.error;
+  }
+
+  return resetPayload;
+}
+
 export async function GET() {
   try {
     const { supabase, user, error } = await getAuthenticatedUser();
@@ -271,6 +330,25 @@ export async function POST(request: Request) {
       {
         error: message,
       },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE() {
+  try {
+    const { user, error } = await getAuthenticatedUser();
+
+    if (!user) {
+      return NextResponse.json({ error }, { status: 401 });
+    }
+
+    const payload = await resetUserData(user.id);
+
+    return NextResponse.json(payload);
+  } catch (error) {
+    return NextResponse.json(
+      { error: getErrorMessage(error) },
       { status: 500 },
     );
   }
