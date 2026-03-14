@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
 import * as THREE from "three";
 
 import { useGameStore } from "@/store/useGameStore";
@@ -44,9 +45,9 @@ interface WindowGridProps {
 function WindowGrid({
   cols, rows, width, height, depth,
   facingZ = true,
-  winColor = "#fef9c3",
-  winEmissive = "#fef08a",
-  winIntensity = 1.8,
+  winColor = "#ffffff",
+  winEmissive = "#f8fafc",
+  winIntensity = 0.9,
   baseY = 0,
 }: WindowGridProps) {
   const windows = useMemo(() => {
@@ -63,6 +64,8 @@ function WindowGrid({
 
   const winW = width / (cols + 1) * 0.38;
   const winH = height / (rows + 1) * 0.45;
+  // Keep windows almost flush with wall, but slightly outside to avoid z-fighting.
+  const surfaceDepth = depth >= 0 ? depth + 0.003 : depth - 0.003;
 
   return (
     <>
@@ -72,14 +75,17 @@ function WindowGrid({
         return (
           <mesh
             key={i}
-            position={facingZ ? [x, y, depth + 0.004] : [depth + 0.004, y, x]}
+            position={facingZ ? [x, y, surfaceDepth] : [surfaceDepth, y, x]}
+            rotation={facingZ ? [0, 0, 0] : [0, Math.PI / 2, 0]}
           >
-            <planeGeometry args={[winW, winH]} />
+            <boxGeometry args={[winW, winH, 0.012]} />
             <meshStandardMaterial
-              color={dark ? "#1e293b" : winColor}
+              color={dark ? "#334155" : winColor}
               emissive={dark ? "#000" : winEmissive}
               emissiveIntensity={dark ? 0 : winIntensity}
-              roughness={0.2}
+              roughness={0.35}
+              metalness={0.2}
+              side={THREE.DoubleSide}
             />
           </mesh>
         );
@@ -89,14 +95,16 @@ function WindowGrid({
 }
 
 // ─── Apartment building ───────────────────────────────────────────────────────
-const APT_COLORS = ["#475569", "#52525b", "#44403c", "#3f3f46", "#404040"] as const;
+const APT_COLORS = ["#7c3aed", "#6d28d9", "#5b21b6", "#8b5cf6", "#4c1d95"] as const;
 
 function Apartment({ x, z, idx }: { x: number; z: number; idx: number }) {
   const { cityState } = useActiveCityState();
   const count = cityState.apartmentCount;
   const visible = idx < count;
-  const baseH = 1.2 + (idx % 4) * 0.5;
+  const baseH = 1.9 + (idx % 4) * 0.7;
   const topH  = baseH * 0.5;
+  const baseWindowRows = Math.max(1, Math.floor(baseH * 0.9)); // ~50% fewer than before
+  const baseWindowBandHeight = Math.max(0.35, baseH * 0.35);   // keep windows near the bottom
   const target = visible ? 1 : 0.01;
   const color = APT_COLORS[idx % APT_COLORS.length];
 
@@ -111,55 +119,21 @@ function Apartment({ x, z, idx }: { x: number; z: number; idx: number }) {
       {/* Base block */}
       <mesh ref={baseRef} position={[0, baseH * 0.5, 0]} castShadow receiveShadow>
         <boxGeometry args={[bW, baseH, bD]} />
-        <meshStandardMaterial color={color} roughness={0.65} metalness={0.1} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.18} roughness={0.55} metalness={0.12} />
       </mesh>
-      {/* Window grids on front face (+Z) */}
-      <WindowGrid cols={2} rows={Math.max(2, Math.floor(baseH * 1.8))} width={bW - 0.1} height={baseH - 0.25} depth={bD / 2} facingZ baseY={0.15} />
-      {/* Window grids on side face (+X) */}
-      <WindowGrid cols={2} rows={Math.max(2, Math.floor(baseH * 1.8))} width={bD - 0.1} height={baseH - 0.25} depth={bW / 2} facingZ={false} baseY={0.15} winIntensity={1.2} />
+      {/* Window grids on all 4 faces */}
+      <WindowGrid cols={2} rows={baseWindowRows} width={bW - 0.1} height={baseWindowBandHeight} depth={bD / 2} facingZ baseY={0.04} />
+      <WindowGrid cols={2} rows={baseWindowRows} width={bW - 0.1} height={baseWindowBandHeight} depth={-bD / 2} facingZ baseY={0.04} />
+      <WindowGrid cols={2} rows={baseWindowRows} width={bD - 0.1} height={baseWindowBandHeight} depth={bW / 2} facingZ={false} baseY={0.04} winIntensity={1.2} />
+      <WindowGrid cols={2} rows={baseWindowRows} width={bD - 0.1} height={baseWindowBandHeight} depth={-bW / 2} facingZ={false} baseY={0.04} winIntensity={1.2} />
 
       {/* Upper setback */}
       <mesh ref={upperRef} position={[0, baseH + topH * 0.5, 0]} castShadow>
         <boxGeometry args={[tW, topH, tD]} />
-        <meshStandardMaterial color={color} roughness={0.55} metalness={0.15} emissive={color} emissiveIntensity={0.15} />
+        <meshStandardMaterial color={color} roughness={0.5} metalness={0.16} emissive={color} emissiveIntensity={0.2} />
       </mesh>
-      <WindowGrid cols={1} rows={Math.max(1, Math.floor(topH * 2))} width={tW - 0.1} height={topH - 0.15} depth={tD / 2} facingZ baseY={baseH + 0.1} />
+      {/* Keep apartment windows in the lower/base section only */}
 
-      {/* Roof parapet */}
-      <mesh position={[0, baseH + topH + 0.04, 0]}>
-        <boxGeometry args={[tW + 0.08, 0.08, tD + 0.08]} />
-        <meshStandardMaterial color="#374151" roughness={0.9} />
-      </mesh>
-
-      {/* Roof water tower (on some buildings) */}
-      {idx % 3 === 0 && (
-        <group position={[0.18, baseH + topH + 0.08, 0.18]}>
-          {/* Tank */}
-          <mesh>
-            <cylinderGeometry args={[0.08, 0.1, 0.38, 8]} />
-            <meshStandardMaterial color="#374151" roughness={0.9} />
-          </mesh>
-          {/* Roof cone */}
-          <mesh position={[0, 0.28, 0]}>
-            <coneGeometry args={[0.1, 0.14, 8]} />
-            <meshStandardMaterial color="#292524" roughness={0.95} />
-          </mesh>
-          {/* Legs */}
-          {[0, 1, 2, 3].map((i) => (
-            <mesh key={i} position={[Math.cos(i * Math.PI / 2) * 0.07, -0.15, Math.sin(i * Math.PI / 2) * 0.07]} rotation={[0, 0, 0.3]}>
-              <cylinderGeometry args={[0.012, 0.012, 0.18, 4]} />
-              <meshStandardMaterial color="#374151" roughness={0.9} />
-            </mesh>
-          ))}
-        </group>
-      )}
-      {/* Rooftop HVAC unit */}
-      {idx % 2 === 1 && (
-        <mesh position={[-0.15, baseH + topH + 0.1, 0]}>
-          <boxGeometry args={[0.22, 0.12, 0.18]} />
-          <meshStandardMaterial color="#4b5563" roughness={0.85} />
-        </mesh>
-      )}
       {/* Entrance canopy */}
       <mesh position={[0, 0.22, bD / 2 + 0.14]}>
         <boxGeometry args={[0.5, 0.05, 0.28]} />
@@ -182,20 +156,42 @@ function Restaurant({ x, z, idx }: { x: number; z: number; idx: number }) {
   const { cityState } = useActiveCityState();
   const count = cityState.restaurantCount;
   const visible = idx < count;
-  const h = 0.65 + (idx % 3) * 0.25;
-  const ref = useLerpScale(visible ? 1 : 0.01, 3);
+  const h = 1.05 + (idx % 3) * 0.35;
   const pal = REST_PALETTE[idx % REST_PALETTE.length];
   const bW = 1.1; const bD = 0.95;
+
+  if (!visible) {
+    return null;
+  }
 
   return (
     <group position={[x, 0, z]}>
       {/* Main block */}
-      <mesh ref={ref} position={[0, h * 0.5, 0]} castShadow receiveShadow>
+      <mesh position={[0, h * 0.5, 0]} castShadow receiveShadow>
         <boxGeometry args={[bW, h, bD]} />
-        <meshStandardMaterial color={pal.wall} roughness={0.5} metalness={0.05} />
+        <meshStandardMaterial
+          color={pal.wall}
+          emissive={pal.wall}
+          emissiveIntensity={0.08}
+          roughness={0.5}
+          metalness={0.05}
+          transparent={false}
+          opacity={1}
+        />
       </mesh>
       {/* Shop windows (large lower panes) */}
-      <WindowGrid cols={3} rows={1} width={bW - 0.12} height={h * 0.45} depth={bD / 2} facingZ baseY={0.1} winColor="#bfdbfe" winEmissive="#dbeafe" winIntensity={0.6} />
+      <WindowGrid
+        cols={3}
+        rows={1}
+        width={bW - 0.12}
+        height={h * 0.22}
+        depth={bD / 2}
+        facingZ
+        baseY={0.08}
+        winColor="#f8fafc"
+        winEmissive="#e2e8f0"
+        winIntensity={0.25}
+      />
       {/* Awning */}
       <mesh position={[0, h + 0.06, bD / 2 + 0.04]}>
         <boxGeometry args={[bW, 0.06, 0.28]} />
@@ -223,6 +219,8 @@ function BankTower({ x, z }: { x: number; z: number }) {
   const crownRef = useLerpScale(height * 0.18, 2);
 
   const bW = 0.95; const bD = 0.95;
+  const towerRows = Math.max(3, Math.floor(height * 1.8));
+  const towerCols = Math.max(2, Math.min(5, Math.floor(height * 0.7) + 2));
 
   return (
     <group position={[x, 0, z]}>
@@ -245,8 +243,10 @@ function BankTower({ x, z }: { x: number; z: number }) {
         <meshStandardMaterial color="#1d4ed8" roughness={0.2} metalness={0.65} emissive="#172554" emissiveIntensity={0.7} />
       </mesh>
       {/* Window grids all 4 faces */}
-      <WindowGrid cols={3} rows={Math.max(3, Math.floor(height * 1.6))} width={bW - 0.12} height={height - 0.6} depth={bD / 2} facingZ baseY={0.65} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={1.4} />
-      <WindowGrid cols={3} rows={Math.max(3, Math.floor(height * 1.6))} width={bD - 0.12} height={height - 0.6} depth={bW / 2} facingZ={false} baseY={0.65} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={1.0} />
+      <WindowGrid cols={towerCols} rows={towerRows} width={bW - 0.12} height={height - 0.6} depth={bD / 2} facingZ baseY={0.65} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={1.4} />
+      <WindowGrid cols={towerCols} rows={towerRows} width={bW - 0.12} height={height - 0.6} depth={-bD / 2} facingZ baseY={0.65} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={1.4} />
+      <WindowGrid cols={towerCols} rows={towerRows} width={bD - 0.12} height={height - 0.6} depth={bW / 2} facingZ={false} baseY={0.65} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={1.0} />
+      <WindowGrid cols={towerCols} rows={towerRows} width={bD - 0.12} height={height - 0.6} depth={-bW / 2} facingZ={false} baseY={0.65} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={1.0} />
 
       {/* Mid setback */}
       <mesh position={[0, height * 0.72, 0]} castShadow>
@@ -275,6 +275,8 @@ function InvestmentTower({ x, z }: { x: number; z: number }) {
   const h = cityState.towerHeight;
   const mainRef  = useLerpScale(h, 2);
   const tipRef   = useLerpScale(h * 0.25, 2);
+  const windowRows = Math.max(3, Math.floor(h * 2.4));
+  const windowBandHeight = Math.max(0.12, Math.min(0.22, (h * 0.72) / windowRows * 0.55));
 
   return (
     <group position={[x, 0, z]}>
@@ -294,14 +296,35 @@ function InvestmentTower({ x, z }: { x: number; z: number }) {
         <cylinderGeometry args={[0.38, 0.46, 1, 6]} />
         <meshStandardMaterial color="#059669" roughness={0.18} metalness={0.55} emissive="#064e3b" emissiveIntensity={0.8} />
       </mesh>
-      {/* Vertical window strips on hex faces */}
+      {/* Window bands on each hex face; row count scales with tower height */}
       {[0, 1, 2, 3, 4, 5].map((i) => {
         const angle = (i / 6) * Math.PI * 2;
+        const yStart = Math.max(0.35, h * 0.16);
+        const ySpan = Math.max(0.3, h * 0.68);
+        const rowStep = ySpan / windowRows;
         return (
-          <mesh key={i} position={[Math.cos(angle) * 0.42, h * 0.5, Math.sin(angle) * 0.42]} rotation={[0, -angle, 0]}>
-            <planeGeometry args={[0.14, h * 0.7]} />
-            <meshStandardMaterial color="#d1fae5" emissive="#6ee7b7" emissiveIntensity={1.2} transparent opacity={0.7} />
-          </mesh>
+          <group key={i}>
+            {Array.from({ length: windowRows }, (_, row) => (
+              <mesh
+                key={`${i}-${row}`}
+                position={[
+                  Math.cos(angle) * 0.42,
+                  yStart + row * rowStep,
+                  Math.sin(angle) * 0.42,
+                ]}
+                rotation={[0, -angle, 0]}
+              >
+                <planeGeometry args={[0.13, windowBandHeight]} />
+                <meshStandardMaterial
+                  color="#d1fae5"
+                  emissive="#6ee7b7"
+                  emissiveIntensity={1.1}
+                  roughness={0.25}
+                  metalness={0.2}
+                />
+              </mesh>
+            ))}
+          </group>
         );
       })}
 
@@ -402,14 +425,22 @@ function Rain() {
   const { cityState } = useActiveCityState();
   const weather = cityState.weather;
   const ref = useRef<THREE.Points>(null);
-  const COUNT = 600;
+  const COUNT = 900;
+  const XZ_SPREAD = 28;
+  const Y_MIN = -1;
+  const Y_MAX = 16;
   const positions = useMemo(() => {
     const arr = new Float32Array(COUNT * 3);
     for (let i = 0; i < COUNT; i++) {
-      arr[i * 3]     = (Math.random() - 0.5) * 28;
-      arr[i * 3 + 1] = Math.random() * 16;
-      arr[i * 3 + 2] = (Math.random() - 0.5) * 28;
+      arr[i * 3] = (Math.random() - 0.5) * XZ_SPREAD;
+      arr[i * 3 + 1] = Math.random() * Y_MAX;
+      arr[i * 3 + 2] = (Math.random() - 0.5) * XZ_SPREAD;
     }
+    return arr;
+  }, []);
+  const fallFactors = useMemo(() => {
+    const arr = new Float32Array(COUNT);
+    for (let i = 0; i < COUNT; i++) arr[i] = 0.75 + Math.random() * 0.7;
     return arr;
   }, []);
 
@@ -419,8 +450,13 @@ function Rain() {
     const speed = isStorm ? 12 : weather === "rain" ? 5 : 0;
     const pos = ref.current.geometry.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < COUNT; i++) {
-      (pos.array as Float32Array)[i * 3 + 1] -= dt * speed;
-      if ((pos.array as Float32Array)[i * 3 + 1] < -1) (pos.array as Float32Array)[i * 3 + 1] = 15;
+      (pos.array as Float32Array)[i * 3 + 1] -= dt * speed * fallFactors[i];
+      if ((pos.array as Float32Array)[i * 3 + 1] < Y_MIN) {
+        // Respawn above view with random X/Z so rain feels continuous, not chunked.
+        (pos.array as Float32Array)[i * 3] = (Math.random() - 0.5) * XZ_SPREAD;
+        (pos.array as Float32Array)[i * 3 + 1] = Y_MAX + Math.random() * 6;
+        (pos.array as Float32Array)[i * 3 + 2] = (Math.random() - 0.5) * XZ_SPREAD;
+      }
     }
     pos.needsUpdate = true;
   });
@@ -632,34 +668,49 @@ function Hospital({ x, z }: { x: number; z: number }) {
   const target = visible ? 1 : 0.01;
   const bodyRef = useLerpScale(target);
 
+  const bodyH = 1.8;
+  const bodyW = 1.4;
+  const bodyD = 1.1;
+
   return (
     <group position={[x, 0, z]}>
-      <mesh ref={bodyRef} position={[0, 0.65, 0]} castShadow receiveShadow>
-        <boxGeometry args={[1.2, 1.3, 1.0]} />
+      <mesh ref={bodyRef} position={[0, bodyH * 0.5, 0]} castShadow receiveShadow>
+        <boxGeometry args={[bodyW, bodyH, bodyD]} />
         <meshStandardMaterial color="#f0f9ff" roughness={0.5} metalness={0.1} emissive="#e0f2fe" emissiveIntensity={0.2} />
       </mesh>
       {/* Red cross sign */}
-      <mesh position={[0, 0.82, 0.52]}>
+      <mesh position={[0, bodyH * 0.62, bodyD / 2 + 0.02]}>
         <boxGeometry args={[0.32, 0.09, 0.025]} />
         <meshStandardMaterial color="#ef4444" emissive="#dc2626" emissiveIntensity={2} />
       </mesh>
-      <mesh position={[0, 0.82, 0.52]}>
+      <mesh position={[0, bodyH * 0.62, bodyD / 2 + 0.02]}>
         <boxGeometry args={[0.09, 0.32, 0.025]} />
         <meshStandardMaterial color="#ef4444" emissive="#dc2626" emissiveIntensity={2} />
       </mesh>
       {/* Windows */}
-      <WindowGrid cols={3} rows={3} width={1.1} height={1.1} depth={0.51} facingZ baseY={0.1} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={1.0} />
+      <WindowGrid
+        cols={3}
+        rows={4}
+        width={bodyW - 0.2}
+        height={bodyH - 0.45}
+        depth={bodyD / 2}
+        facingZ
+        baseY={0.16}
+        winColor="#e0f2fe"
+        winEmissive="#bae6fd"
+        winIntensity={0.9}
+      />
       {/* Rooftop helipad */}
-      <mesh position={[0, 1.32, 0]}>
+      <mesh position={[0, bodyH + 0.08, 0]}>
         <cylinderGeometry args={[0.35, 0.35, 0.04, 12]} />
         <meshStandardMaterial color="#fbbf24" emissive="#d97706" emissiveIntensity={0.6} />
       </mesh>
-      <mesh position={[0, 1.35, 0]}>
+      <mesh position={[0, bodyH + 0.11, 0]}>
         <cylinderGeometry args={[0.28, 0.28, 0.02, 12]} />
         <meshStandardMaterial color="#f59e0b" emissive="#f59e0b" emissiveIntensity={1} />
       </mesh>
       {/* Entrance canopy */}
-      <mesh position={[0, 0.18, 0.55]}>
+      <mesh position={[0, 0.24, bodyD / 2 + 0.1]}>
         <boxGeometry args={[0.7, 0.06, 0.3]} />
         <meshStandardMaterial color="#bae6fd" transparent opacity={0.7} />
       </mesh>
@@ -714,21 +765,21 @@ function Bridge() {
   return (
     <group position={[-0.4, 0, 0.3]}>
       {/* Deck */}
-      <mesh position={[0, 0.38, 0]} receiveShadow castShadow>
+      <mesh position={[0, 0.62, 0]} receiveShadow castShadow>
         <boxGeometry args={[0.7, 0.08, 1.8]} />
         <meshStandardMaterial color="#374151" roughness={0.8} />
       </mesh>
       {/* Railings */}
       {[-0.3, 0.3].map((rx) => (
-        <mesh key={rx} position={[rx, 0.46, 0]}>
+        <mesh key={rx} position={[rx, 0.72, 0]}>
           <boxGeometry args={[0.04, 0.1, 1.8]} />
           <meshStandardMaterial color="#4b5563" roughness={0.9} />
         </mesh>
       ))}
       {/* Support pillars */}
       {[-0.7, 0.7].map((rz) => (
-        <mesh key={rz} position={[0, 0.19, rz]} castShadow>
-          <cylinderGeometry args={[0.07, 0.09, 0.38, 8]} />
+        <mesh key={rz} position={[0, 0.31, rz]} castShadow>
+          <cylinderGeometry args={[0.07, 0.09, 0.62, 8]} />
           <meshStandardMaterial color="#374151" roughness={0.8} metalness={0.3} />
         </mesh>
       ))}
@@ -841,6 +892,32 @@ function Pedestrian({ idx }: { idx: number }) {
 // ─── Main city export ──────────────────────────────────────────────────────────
 export function CityGenerator() {
   const { proportions, cityState } = useActiveCityState();
+  const [hoverInfo, setHoverInfo] = useState<{
+    title: string;
+    value: string;
+    position: [number, number, number];
+  } | null>(null);
+
+  const needsPct = Math.round(proportions.needs * 100);
+  const wantsPct = Math.round(proportions.wants * 100);
+  const treatsPct = Math.round(proportions.treats * 100);
+  const investPct = Math.round(proportions.investments * 100);
+  const healthPct = Math.round(cityState.healthScore);
+
+  const hoverProps = useCallback(
+    (title: string, value: string, position: [number, number, number]) => ({
+      onPointerOver: (e: any) => {
+        e.stopPropagation();
+        setHoverInfo({ title, value, position });
+      },
+      onPointerOut: (e: any) => {
+        e.stopPropagation();
+        setHoverInfo(null);
+      },
+    }),
+    [],
+  );
+
   const treats = proportions.treats;
   const cloudCount = Math.min(6, Math.floor(treats * 14));
   const carCount = Math.max(1, Math.min(6, cityState.population));
@@ -858,83 +935,137 @@ export function CityGenerator() {
   return (
     <group>
       {/* ── Parks ── */}
-      <Park x={-3.5} z={-2.5} w={6.5} d={3.5} />
-      <Park x={-1}   z={2.2}  w={9}   d={2.2} />
+      <group {...hoverProps("Parks", `Treats level: ${treatsPct}%`, [-3.5, 0.5, -2.5])}>
+        <Park x={-3.5} z={-2.5} w={6.5} d={3.5} />
+      </group>
+      <group {...hoverProps("Parks", `Treats level: ${treatsPct}%`, [-1, 0.5, 2.2])}>
+        <Park x={-1}   z={2.2}  w={9}   d={2.2} />
+      </group>
 
       {/* ── Pavements ── */}
-      <Pavement x={-3.0} z={-0.45} w={8}    d={0.55} />
-      <Pavement x={-3.0} z={1.05}  w={8}    d={0.55} />
-      <Pavement x={3.6}  z={-1.2}  w={0.55} d={5}    />
+      <group {...hoverProps("Pavements", `Needs level: ${needsPct}%`, [-3.0, 0.35, -0.45])}>
+        <Pavement x={-3.0} z={-0.45} w={8}    d={0.55} />
+      </group>
+      <group {...hoverProps("Pavements", `Needs level: ${needsPct}%`, [-3.0, 0.35, 1.05])}>
+        <Pavement x={-3.0} z={1.05}  w={8}    d={0.55} />
+      </group>
+      <group {...hoverProps("Pavements", `Needs level: ${needsPct}%`, [3.6, 0.35, -1.2])}>
+        <Pavement x={3.6}  z={-1.2}  w={0.55} d={5}    />
+      </group>
 
       {/* ── Benches ── */}
-      <Bench x={-1.8} z={-0.6} />
-      <Bench x={1.2}  z={-0.6} />
-      <Bench x={-4.0} z={1.2}  />
+      <group {...hoverProps("Benches", `Treats level: ${treatsPct}%`, [-1.8, 0.7, -0.6])}>
+        <Bench x={-1.8} z={-0.6} />
+      </group>
+      <group {...hoverProps("Benches", `Treats level: ${treatsPct}%`, [1.2, 0.7, -0.6])}>
+        <Bench x={1.2}  z={-0.6} />
+      </group>
+      <group {...hoverProps("Benches", `Treats level: ${treatsPct}%`, [-4.0, 0.7, 1.2])}>
+        <Bench x={-4.0} z={1.2}  />
+      </group>
 
       {/* ── Apartments ── */}
       {aptPositions.map(([x, z], i) => (
-        <Apartment key={`apt-${i}`} x={x} z={z} idx={i} />
+        <group key={`apt-wrap-${i}`} {...hoverProps("Apartments", `Needs level: ${needsPct}%`, [x, 1.4, z])}>
+          <Apartment key={`apt-${i}`} x={x} z={z} idx={i} />
+        </group>
       ))}
 
       {/* ── Restaurants ── */}
       {restPositions.map(([x, z], i) => (
-        <Restaurant key={`rest-${i}`} x={x} z={z} idx={i} />
+        <group key={`rest-wrap-${i}`} {...hoverProps("Restaurants", `Wants level: ${wantsPct}%`, [x, 1.2, z])}>
+          <Restaurant key={`rest-${i}`} x={x} z={z} idx={i} />
+        </group>
       ))}
 
       {/* ── Financial district ── */}
-      <BankTower x={3.5} z={-2.5} />
-      <InvestmentTower x={5.2} z={0.4} />
+      <group {...hoverProps("Bank Tower", `Investments level: ${investPct}%`, [3.5, 3.5, -2.5])}>
+        <BankTower x={3.5} z={-2.5} />
+      </group>
+      <group {...hoverProps("Investment Tower", `Investments level: ${investPct}%`, [5.3, 3.2, -2.1])}>
+        <InvestmentTower x={5.3} z={-2.1} />
+      </group>
 
       {/* ── Community buildings ── */}
-      <School x={-7.0} z={-2.2} />
-      <Hospital x={-7.0} z={0.8} />
+      <group {...hoverProps("School", `Needs level: ${needsPct}%`, [-7.0, 1.6, -2.2])}>
+        <School x={-7.0} z={-2.2} />
+      </group>
+      <group {...hoverProps("Hospital", `Investments level: ${investPct}%`, [-7.0, 1.6, 0.8])}>
+        <Hospital x={-7.0} z={0.8} />
+      </group>
 
       {/* ── Park features ── */}
-      <Fountain x={-1.0} z={2.5} />
+      <group {...hoverProps("Fountain", `Treats level: ${treatsPct}%`, [-2.1, 1.2, 2.9])}>
+        <Fountain x={-2.1} z={2.9} />
+      </group>
 
       {/* ── Bridge ── */}
-      <Bridge />
+      <group {...hoverProps("Bridge", `City health: ${healthPct}/100`, [-0.4, 1.2, 0.3])}>
+        <Bridge />
+      </group>
 
       {/* ── Trees ── */}
-      <Tree x={-0.6} z={-3.0} scale={1.1} />
-      <Tree x={-0.6} z={-1.5} scale={0.9} />
-      <Tree x={0.7}  z={-2.3} scale={1.0} />
-      <Tree x={-5.8} z={-0.8} scale={0.85} />
-      <Tree x={4.8}  z={-0.8} scale={0.95} />
-      <Tree x={2.2}  z={3.2}  scale={0.9} />
-      <Tree x={5.0}  z={3.0}  scale={1.05} />
-      <Tree x={-4.0} z={3.2}  scale={0.8} />
+      <group {...hoverProps("Trees", `Treats level: ${treatsPct}%`, [0, 2.2, -1.2])}>
+        <Tree x={-0.6} z={-3.0} scale={1.1} />
+        <Tree x={-0.6} z={-1.5} scale={0.9} />
+        <Tree x={0.7}  z={-2.3} scale={1.0} />
+        <Tree x={-5.8} z={-0.8} scale={0.85} />
+        <Tree x={4.8}  z={-0.8} scale={0.95} />
+        <Tree x={2.2}  z={3.2}  scale={0.9} />
+        <Tree x={5.0}  z={3.0}  scale={1.05} />
+        <Tree x={-4.0} z={3.2}  scale={0.8} />
+      </group>
 
       {/* ── Street lamps ── */}
-      <StreetLamp x={-0.6} z={0.6} />
-      <StreetLamp x={2.5}  z={0.6} />
-      <StreetLamp x={-3.5} z={0.6} />
-      <StreetLamp x={-0.6} z={-0.9} />
-      <StreetLamp x={2.5}  z={-0.9} />
+      <group {...hoverProps("Street Lamps", `Needs level: ${needsPct}%`, [-0.6, 1.8, 0.6])}>
+        <StreetLamp x={-0.6} z={0.6} />
+        <StreetLamp x={2.5}  z={0.6} />
+        <StreetLamp x={-3.5} z={0.6} />
+        <StreetLamp x={-0.6} z={-0.9} />
+        <StreetLamp x={2.5}  z={-0.9} />
+      </group>
 
       {/* ── Pollution clouds ── */}
-      {Array.from({ length: cloudCount }, (_, i) => (
-        <PollutionCloud
-          key={i}
-          x={1 + i * 2.1}
-          y={4 + i * 0.4}
-          z={3 - i * 0.6}
-          opacity={0.2 + treats * 0.55}
-        />
-      ))}
+      <group {...hoverProps("Pollution", `Wants pressure: ${wantsPct}%`, [3.5, 5.5, 1])}>
+        {Array.from({ length: cloudCount }, (_, i) => (
+          <PollutionCloud
+            key={i}
+            x={1 + i * 2.1}
+            y={4 + i * 0.4}
+            z={3 - i * 0.6}
+            opacity={0.2 + treats * 0.55}
+          />
+        ))}
+      </group>
 
       {/* ── Traffic ── */}
       {Array.from({ length: carCount }, (_, i) => (
-        <Car key={`car-h-${i}`} idx={i} lane="h" direction={i % 2 === 0 ? 1 : -1} />
+        <group key={`car-wrap-h-${i}`} {...hoverProps("Cars", `Population level: ${cityState.population}/10`, [0, 1.1, 0.3])}>
+          <Car key={`car-h-${i}`} idx={i} lane="h" direction={i % 2 === 0 ? 1 : -1} />
+        </group>
       ))}
       {Array.from({ length: Math.floor(carCount / 2) }, (_, i) => (
-        <Car key={`car-v-${i}`} idx={i + 10} lane="v" direction={i % 2 === 0 ? 1 : -1} />
+        <group key={`car-wrap-v-${i}`} {...hoverProps("Cars", `Population level: ${cityState.population}/10`, [-0.4, 1.1, 0])}>
+          <Car key={`car-v-${i}`} idx={i + 10} lane="v" direction={i % 2 === 0 ? 1 : -1} />
+        </group>
       ))}
 
       {/* ── Pedestrians ── */}
       {Array.from({ length: pedCount }, (_, i) => (
-        <Pedestrian key={`ped-${i}`} idx={i} />
+        <group key={`ped-wrap-${i}`} {...hoverProps("Pedestrians", `Population level: ${cityState.population}/10`, [-1.8, 1.1, -0.6])}>
+          <Pedestrian key={`ped-${i}`} idx={i} />
+        </group>
       ))}
+
+      {/* Hover badge */}
+      {hoverInfo && (
+        <Html position={hoverInfo.position} center distanceFactor={12}>
+          <div className="rounded-lg border border-sky-300/30 bg-slate-950/85 px-3 py-1.5 text-center shadow-xl backdrop-blur-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-sky-300">{hoverInfo.title}</p>
+            <p className="text-xs font-medium text-white">{hoverInfo.value}</p>
+          </div>
+        </Html>
+      )}
 
       {/* ── Weather FX ── */}
       <Rain />
