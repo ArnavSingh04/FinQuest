@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/auth-server";
-import type { Group, GroupLeaderboardEntry, GroupSummary } from "@/types";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+} from "@/lib/auth-server";
+import type {
+  Group,
+  GroupLeaderboardEntry,
+  GroupMemberSummary,
+  GroupSummary,
+} from "@/types";
 
 export async function GET() {
   try {
     const supabase = await createSupabaseServerClient();
+    const adminSupabase = createSupabaseAdminClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -47,10 +56,11 @@ export async function GET() {
 
     const groupIds = groups.map((group) => group.id);
 
-    const membersResult = await supabase
+    const membersResult = await adminSupabase
       .from("group_members")
-      .select("group_id, user_id, profiles(username, full_name)")
-      .in("group_id", groupIds);
+      .select("group_id, user_id, role, joined_at, profiles(username, full_name)")
+      .in("group_id", groupIds)
+      .order("joined_at", { ascending: true });
 
     if (membersResult.error) {
       throw membersResult.error;
@@ -61,11 +71,11 @@ export async function GET() {
     );
 
     const [progressResult, cityResult] = await Promise.all([
-      supabase
+      adminSupabase
         .from("user_progress")
         .select("user_id, total_xp, level")
         .in("user_id", userIds),
-      supabase
+      adminSupabase
         .from("city_snapshots")
         .select("user_id, growth, created_at")
         .in("user_id", userIds)
@@ -103,27 +113,58 @@ export async function GET() {
         (member) => member.group_id === group.id,
       );
 
-      const leaderboard: GroupLeaderboardEntry[] = members
+      const detailedMembers = members
         .map((member) => {
           const progress = progressByUser.get(member.user_id);
           const profile = Array.isArray(member.profiles)
             ? member.profiles[0]
             : member.profiles;
+          const username =
+            profile?.username || profile?.full_name || "Anonymous Mayor";
 
           return {
             userId: member.user_id,
-            username:
-              profile?.username || profile?.full_name || "Anonymous Mayor",
+            username,
+            role: member.role,
+            joinedAt: member.joined_at,
             xp: progress?.xp ?? 0,
             level: progress?.level ?? 1,
             cityGrowth: latestGrowthByUser.get(member.user_id) ?? 0,
           };
         })
+        .sort((a, b) => {
+          if (a.role !== b.role) {
+            return a.role === "owner" ? -1 : 1;
+          }
+
+          return a.username.localeCompare(b.username);
+        });
+
+      const leaderboard: GroupLeaderboardEntry[] = detailedMembers
+        .map((member) => {
+          return {
+            userId: member.userId,
+            username: member.username,
+            xp: member.xp,
+            level: member.level,
+            cityGrowth: member.cityGrowth,
+          };
+        })
         .sort((a, b) => b.xp - a.xp);
+
+      const memberSummaries: GroupMemberSummary[] = detailedMembers.map(
+        ({ userId, username, role, joinedAt }) => ({
+          userId,
+          username,
+          role,
+          joinedAt,
+        }),
+      );
 
       return {
         ...group,
         memberCount: members.length,
+        members: memberSummaries,
         leaderboard,
       };
     });

@@ -206,25 +206,60 @@ export default function GroupsPage() {
               </div>
             </div>
 
-            <div className="mt-4 space-y-3">
-              {group.leaderboard.map((entry, index) => (
-                <div
-                  key={`${group.id}-${entry.userId}`}
-                  className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/30 p-4"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-white">
-                      #{index + 1} {entry.username}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-300">
-                      Level {entry.level} · City Growth {entry.cityGrowth}
-                    </p>
-                  </div>
-                  <p className="text-sm font-semibold text-sky-300">
-                    {entry.xp} XP
-                  </p>
+            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
+              <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/30 p-4">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
+                  Members
+                </h3>
+                <div className="mt-3 space-y-2">
+                  {group.members.map((member) => (
+                    <Link
+                      key={`${group.id}-${member.userId}`}
+                      href={`/groups/${group.id}/members/${member.userId}`}
+                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 transition hover:border-sky-400/40 hover:bg-slate-950/60"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-white">
+                          {member.username}
+                        </p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
+                          {member.role === "owner" ? "Owner" : "Member"}
+                          {member.userId === user.id ? " · You" : ""}
+                        </p>
+                      </div>
+                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">
+                        View
+                      </span>
+                    </Link>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <div>
+                <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
+                  Leaderboard
+                </h3>
+                <div className="space-y-3">
+                  {group.leaderboard.map((entry, index) => (
+                    <div
+                      key={`${group.id}-${entry.userId}`}
+                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/30 p-4"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-white">
+                          #{index + 1} {entry.username}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-300">
+                          Level {entry.level} · City Growth {entry.cityGrowth}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold text-sky-300">
+                        {entry.xp} XP
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         ))}
