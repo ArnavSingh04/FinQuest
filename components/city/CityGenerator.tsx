@@ -121,11 +121,11 @@ function Apartment({ x, z, idx }: { x: number; z: number; idx: number }) {
         <boxGeometry args={[bW, baseH, bD]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.18} roughness={0.55} metalness={0.12} />
       </mesh>
-      {/* Window grids on all 4 faces */}
-      <WindowGrid cols={2} rows={baseWindowRows} width={bW - 0.1} height={baseWindowBandHeight} depth={bD / 2} facingZ baseY={0.04} />
-      <WindowGrid cols={2} rows={baseWindowRows} width={bW - 0.1} height={baseWindowBandHeight} depth={-bD / 2} facingZ baseY={0.04} />
-      <WindowGrid cols={2} rows={baseWindowRows} width={bD - 0.1} height={baseWindowBandHeight} depth={bW / 2} facingZ={false} baseY={0.04} winIntensity={1.2} />
-      <WindowGrid cols={2} rows={baseWindowRows} width={bD - 0.1} height={baseWindowBandHeight} depth={-bW / 2} facingZ={false} baseY={0.04} winIntensity={1.2} />
+      {/* Window grids on all 4 faces — only when building is visible */}
+      {visible && <WindowGrid cols={2} rows={baseWindowRows} width={bW - 0.1} height={baseWindowBandHeight} depth={bD / 2} facingZ baseY={0.04} />}
+      {visible && <WindowGrid cols={2} rows={baseWindowRows} width={bW - 0.1} height={baseWindowBandHeight} depth={-bD / 2} facingZ baseY={0.04} />}
+      {visible && <WindowGrid cols={2} rows={baseWindowRows} width={bD - 0.1} height={baseWindowBandHeight} depth={bW / 2} facingZ={false} baseY={0.04} winIntensity={1.2} />}
+      {visible && <WindowGrid cols={2} rows={baseWindowRows} width={bD - 0.1} height={baseWindowBandHeight} depth={-bW / 2} facingZ={false} baseY={0.04} winIntensity={1.2} />}
 
       {/* Upper setback */}
       <mesh ref={upperRef} position={[0, baseH + topH * 0.5, 0]} castShadow>
@@ -448,6 +448,7 @@ function Rain() {
     if (!ref.current) return;
     const isStorm = weather === "storm" || weather === "destruction";
     const speed = isStorm ? 12 : weather === "rain" ? 5 : 0;
+    if (speed === 0) return;
     const pos = ref.current.geometry.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < COUNT; i++) {
       (pos.array as Float32Array)[i * 3 + 1] -= dt * speed * fallFactors[i];
@@ -755,7 +756,7 @@ function Fountain({ x, z }: { x: number; z: number }) {
         <sphereGeometry args={[0.06, 8, 8]} />
         <meshStandardMaterial color="#7dd3fc" transparent opacity={0.85} emissive="#38bdf8" emissiveIntensity={0.8} />
       </mesh>
-      <pointLight position={[x, 0.55, z]} intensity={2.5} color="#38bdf8" distance={3.5} decay={2} />
+      <pointLight position={[0, 0.55, 0]} intensity={2.5} color="#38bdf8" distance={3.5} decay={2} />
     </group>
   );
 }
@@ -894,7 +895,9 @@ export function CityGenerator() {
   const { proportions, cityState } = useActiveCityState();
   const [hoverInfo, setHoverInfo] = useState<{
     title: string;
-    value: string;
+    stat: string;
+    state: string;
+    tip: string;
     position: [number, number, number];
   } | null>(null);
 
@@ -904,11 +907,18 @@ export function CityGenerator() {
   const investPct = Math.round(proportions.investments * 100);
   const healthPct = Math.round(cityState.healthScore);
 
+  // Contextual state labels
+  const needsState  = needsPct >= 50 ? "Healthy" : needsPct >= 30 ? "Growing" : "Low";
+  const wantsState  = wantsPct <= 30 ? "Balanced" : wantsPct <= 50 ? "High" : "Excessive";
+  const treatsState = treatsPct <= 10 ? "Minimal" : treatsPct <= 20 ? "Moderate" : "Heavy";
+  const investState = investPct >= 20 ? "Strong" : investPct >= 10 ? "Building" : "Weak";
+  const healthState = healthPct >= 75 ? "Thriving" : healthPct >= 50 ? "Stable" : healthPct >= 30 ? "Struggling" : "Critical";
+
   const hoverProps = useCallback(
-    (title: string, value: string, position: [number, number, number]) => ({
+    (title: string, stat: string, state: string, tip: string, position: [number, number, number]) => ({
       onPointerOver: (e: any) => {
         e.stopPropagation();
-        setHoverInfo({ title, value, position });
+        setHoverInfo({ title, stat, state, tip, position });
       },
       onPointerOut: (e: any) => {
         e.stopPropagation();
@@ -935,77 +945,77 @@ export function CityGenerator() {
   return (
     <group>
       {/* ── Parks ── */}
-      <group {...hoverProps("Parks", `Treats level: ${treatsPct}%`, [-3.5, 0.5, -2.5])}>
+      <group {...hoverProps("Parks", `Treats: ${treatsPct}%`, treatsState, "Keep treats under 20% to keep your green spaces clean.", [-3.5, 0.5, -2.5])}>
         <Park x={-3.5} z={-2.5} w={6.5} d={3.5} />
       </group>
-      <group {...hoverProps("Parks", `Treats level: ${treatsPct}%`, [-1, 0.5, 2.2])}>
+      <group {...hoverProps("Parks", `Treats: ${treatsPct}%`, treatsState, "Keep treats under 20% to keep your green spaces clean.", [-1, 0.5, 2.2])}>
         <Park x={-1}   z={2.2}  w={9}   d={2.2} />
       </group>
 
       {/* ── Pavements ── */}
-      <group {...hoverProps("Pavements", `Needs level: ${needsPct}%`, [-3.0, 0.35, -0.45])}>
+      <group {...hoverProps("Sidewalks", `Needs: ${needsPct}%`, needsState, "Spending on needs builds city infrastructure — aim for ~50%.", [-3.0, 0.35, -0.45])}>
         <Pavement x={-3.0} z={-0.45} w={8}    d={0.55} />
       </group>
-      <group {...hoverProps("Pavements", `Needs level: ${needsPct}%`, [-3.0, 0.35, 1.05])}>
+      <group {...hoverProps("Sidewalks", `Needs: ${needsPct}%`, needsState, "Spending on needs builds city infrastructure — aim for ~50%.", [-3.0, 0.35, 1.05])}>
         <Pavement x={-3.0} z={1.05}  w={8}    d={0.55} />
       </group>
-      <group {...hoverProps("Pavements", `Needs level: ${needsPct}%`, [3.6, 0.35, -1.2])}>
+      <group {...hoverProps("Sidewalks", `Needs: ${needsPct}%`, needsState, "Spending on needs builds city infrastructure — aim for ~50%.", [3.6, 0.35, -1.2])}>
         <Pavement x={3.6}  z={-1.2}  w={0.55} d={5}    />
       </group>
 
       {/* ── Benches ── */}
-      <group {...hoverProps("Benches", `Treats level: ${treatsPct}%`, [-1.8, 0.7, -0.6])}>
+      <group {...hoverProps("Park Benches", `Treats: ${treatsPct}%`, treatsState, "Less treats = cleaner parks with more amenities.", [-1.8, 0.7, -0.6])}>
         <Bench x={-1.8} z={-0.6} />
       </group>
-      <group {...hoverProps("Benches", `Treats level: ${treatsPct}%`, [1.2, 0.7, -0.6])}>
+      <group {...hoverProps("Park Benches", `Treats: ${treatsPct}%`, treatsState, "Less treats = cleaner parks with more amenities.", [1.2, 0.7, -0.6])}>
         <Bench x={1.2}  z={-0.6} />
       </group>
-      <group {...hoverProps("Benches", `Treats level: ${treatsPct}%`, [-4.0, 0.7, 1.2])}>
+      <group {...hoverProps("Park Benches", `Treats: ${treatsPct}%`, treatsState, "Less treats = cleaner parks with more amenities.", [-4.0, 0.7, 1.2])}>
         <Bench x={-4.0} z={1.2}  />
       </group>
 
       {/* ── Apartments ── */}
       {aptPositions.map(([x, z], i) => (
-        <group key={`apt-wrap-${i}`} {...hoverProps("Apartments", `Needs level: ${needsPct}%`, [x, 1.4, z])}>
+        <group key={`apt-wrap-${i}`} {...hoverProps("Apartments", `Needs: ${needsPct}%`, needsState, "More needs spending = more apartments and residents.", [x, 1.4, z])}>
           <Apartment key={`apt-${i}`} x={x} z={z} idx={i} />
         </group>
       ))}
 
       {/* ── Restaurants ── */}
       {restPositions.map(([x, z], i) => (
-        <group key={`rest-wrap-${i}`} {...hoverProps("Restaurants", `Wants level: ${wantsPct}%`, [x, 1.2, z])}>
+        <group key={`rest-wrap-${i}`} {...hoverProps("Restaurants", `Wants: ${wantsPct}%`, wantsState, "Wants add variety, but keep them under 30% for a balanced city.", [x, 1.2, z])}>
           <Restaurant key={`rest-${i}`} x={x} z={z} idx={i} />
         </group>
       ))}
 
       {/* ── Financial district ── */}
-      <group {...hoverProps("Bank Tower", `Investments level: ${investPct}%`, [3.5, 3.5, -2.5])}>
+      <group {...hoverProps("Bank Tower", `Investments: ${investPct}%`, investState, "Invest more to grow your financial district — aim for 20%+.", [3.5, 3.5, -2.5])}>
         <BankTower x={3.5} z={-2.5} />
       </group>
-      <group {...hoverProps("Investment Tower", `Investments level: ${investPct}%`, [5.3, 3.2, -2.1])}>
+      <group {...hoverProps("Investment Tower", `Investments: ${investPct}%`, investState, "Higher investment % makes this tower taller and more impressive.", [5.3, 3.2, -2.1])}>
         <InvestmentTower x={5.3} z={-2.1} />
       </group>
 
       {/* ── Community buildings ── */}
-      <group {...hoverProps("School", `Needs level: ${needsPct}%`, [-7.0, 1.6, -2.2])}>
+      <group {...hoverProps("School", `Needs: ${needsPct}%`, needsState, "School appears when needs reach 40% — keep essentials covered.", [-7.0, 1.6, -2.2])}>
         <School x={-7.0} z={-2.2} />
       </group>
-      <group {...hoverProps("Hospital", `Investments level: ${investPct}%`, [-7.0, 1.6, 0.8])}>
+      <group {...hoverProps("Hospital", `Investments: ${investPct}%`, investState, "Hospital unlocks at 15% investment — save for the future!", [-7.0, 1.6, 0.8])}>
         <Hospital x={-7.0} z={0.8} />
       </group>
 
       {/* ── Park features ── */}
-      <group {...hoverProps("Fountain", `Treats level: ${treatsPct}%`, [-2.1, 1.2, 2.9])}>
+      <group {...hoverProps("Fountain", `Health: ${healthPct}/100`, healthState, "A well-funded city keeps its fountain running all year.", [-2.1, 1.2, 2.9])}>
         <Fountain x={-2.1} z={2.9} />
       </group>
 
       {/* ── Bridge ── */}
-      <group {...hoverProps("Bridge", `City health: ${healthPct}/100`, [-0.4, 1.2, 0.3])}>
+      <group {...hoverProps("Bridge", `Health: ${healthPct}/100`, healthState, "City bridges reflect overall financial health — keep the score high!", [-0.4, 1.2, 0.3])}>
         <Bridge />
       </group>
 
       {/* ── Trees ── */}
-      <group {...hoverProps("Trees", `Treats level: ${treatsPct}%`, [0, 2.2, -1.2])}>
+      <group {...hoverProps("Trees", `Treats: ${treatsPct}%`, treatsState, "Cutting treats keeps the air clean and trees green.", [0, 2.2, -1.2])}>
         <Tree x={-0.6} z={-3.0} scale={1.1} />
         <Tree x={-0.6} z={-1.5} scale={0.9} />
         <Tree x={0.7}  z={-2.3} scale={1.0} />
@@ -1017,7 +1027,7 @@ export function CityGenerator() {
       </group>
 
       {/* ── Street lamps ── */}
-      <group {...hoverProps("Street Lamps", `Needs level: ${needsPct}%`, [-0.6, 1.8, 0.6])}>
+      <group {...hoverProps("Street Lamps", `Needs: ${needsPct}%`, needsState, "Needs spending keeps the streets lit and safe.", [-0.6, 1.8, 0.6])}>
         <StreetLamp x={-0.6} z={0.6} />
         <StreetLamp x={2.5}  z={0.6} />
         <StreetLamp x={-3.5} z={0.6} />
@@ -1026,7 +1036,7 @@ export function CityGenerator() {
       </group>
 
       {/* ── Pollution clouds ── */}
-      <group {...hoverProps("Pollution", `Wants pressure: ${wantsPct}%`, [3.5, 5.5, 1])}>
+      <group {...hoverProps("Pollution", `Treats: ${treatsPct}%`, treatsState, "Reduce treats to clear the smog over your city.", [3.5, 5.5, 1])}>
         {Array.from({ length: cloudCount }, (_, i) => (
           <PollutionCloud
             key={i}
@@ -1040,19 +1050,19 @@ export function CityGenerator() {
 
       {/* ── Traffic ── */}
       {Array.from({ length: carCount }, (_, i) => (
-        <group key={`car-wrap-h-${i}`} {...hoverProps("Cars", `Population level: ${cityState.population}/10`, [0, 1.1, 0.3])}>
+        <group key={`car-wrap-h-${i}`} {...hoverProps("Traffic", `Pop: ${cityState.population * 1000}K`, healthState, "More cars appear as your city's health score rises.", [0, 1.1, 0.3])}>
           <Car key={`car-h-${i}`} idx={i} lane="h" direction={i % 2 === 0 ? 1 : -1} />
         </group>
       ))}
       {Array.from({ length: Math.floor(carCount / 2) }, (_, i) => (
-        <group key={`car-wrap-v-${i}`} {...hoverProps("Cars", `Population level: ${cityState.population}/10`, [-0.4, 1.1, 0])}>
+        <group key={`car-wrap-v-${i}`} {...hoverProps("Traffic", `Pop: ${cityState.population * 1000}K`, healthState, "More cars appear as your city's health score rises.", [-0.4, 1.1, 0])}>
           <Car key={`car-v-${i}`} idx={i + 10} lane="v" direction={i % 2 === 0 ? 1 : -1} />
         </group>
       ))}
 
       {/* ── Pedestrians ── */}
       {Array.from({ length: pedCount }, (_, i) => (
-        <group key={`ped-wrap-${i}`} {...hoverProps("Pedestrians", `Population level: ${cityState.population}/10`, [-1.8, 1.1, -0.6])}>
+        <group key={`ped-wrap-${i}`} {...hoverProps("Residents", `Pop: ${cityState.population * 1000}K`, healthState, "A healthier city attracts more residents walking the streets.", [-1.8, 1.1, -0.6])}>
           <Pedestrian key={`ped-${i}`} idx={i} />
         </group>
       ))}
@@ -1060,9 +1070,11 @@ export function CityGenerator() {
       {/* Hover badge */}
       {hoverInfo && (
         <Html position={hoverInfo.position} center distanceFactor={12}>
-          <div className="rounded-lg border border-sky-300/30 bg-slate-950/85 px-3 py-1.5 text-center shadow-xl backdrop-blur-sm">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-sky-300">{hoverInfo.title}</p>
-            <p className="text-xs font-medium text-white">{hoverInfo.value}</p>
+          <div className="rounded-xl border border-sky-300/25 bg-slate-950/90 px-3 py-2 text-center shadow-xl backdrop-blur-sm min-w-[120px]">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-sky-300">{hoverInfo.title}</p>
+            <p className="text-sm font-semibold text-white leading-tight">{hoverInfo.stat}</p>
+            <p className="mt-0.5 text-[10px] font-medium text-emerald-400">{hoverInfo.state}</p>
+            <p className="mt-1 text-[9px] text-slate-400 leading-snug max-w-[140px]">{hoverInfo.tip}</p>
           </div>
         </Html>
       )}

@@ -17,9 +17,11 @@ export function mapHealthToWeather(score: number): WeatherType {
 
 export function calculateHealthScore(p: Proportions, budgetUsed = 0): number {
   // Reward needs + investments, penalise heavy treats and overspending
-  const needsScore   = Math.min(50, p.needs * 100) * 0.4;       // up to 20
-  const investScore  = Math.min(40, p.investments * 100) * 0.8;  // up to 32
-  const treatPenalty = p.treats * 100 * 0.5;
+  // Max possible: 20 + 25 + 60 = 105 → clamped to 100 (needs=50%, invest=40%, treats=0%)
+  // 50/30/20 rule (needs=50%, wants=30%, invest=20%, treats=0%) → ~75
+  const needsScore   = Math.min(50, p.needs * 100) * 0.5;        // up to 25
+  const investScore  = Math.min(40, p.investments * 100) * 1.5;  // up to 60
+  const treatPenalty = p.treats * 100 * 0.6;
   // Budget penalty: 0 if within budget, up to -25 if double over budget
   const budgetPenalty = budgetUsed > 1 ? Math.min(25, (budgetUsed - 1) * 50) : 0;
   const baseline = 20;

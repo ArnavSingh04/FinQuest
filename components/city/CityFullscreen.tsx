@@ -8,6 +8,7 @@ import * as THREE from "three";
 
 import { useGameStore } from "@/store/useGameStore";
 import { CityStateContext, useCityStateOverride } from "@/contexts/CityStateContext";
+import { getCityTier } from "@/lib/cityLevel";
 import { CityGenerator } from "./CityGenerator";
 
 // Re-export the core scene internals so both normal and fullscreen can share them
@@ -181,8 +182,14 @@ export function CityCanvas({ className = "", preset = null, override = null }: C
 export { CAMERA_PRESETS };
 
 // ─── Fullscreen overlay ───────────────────────────────────────────────────────
+const WEATHER_LABELS = { thriving: "Thriving", clear: "Clear", overcast: "Overcast", rain: "Rainy", storm: "Storm", destruction: "Destruction" } as const;
+const WEATHER_ICONS  = { thriving: "✨", clear: "☀️", overcast: "⛅", rain: "🌧️", storm: "⛈️", destruction: "🔥" } as const;
+
 export function CityFullscreen({ onClose }: { onClose: () => void }) {
   const [preset, setPreset] = useState<typeof CAMERA_PRESETS[number] | null>(null);
+  const cityState = useGameStore((s) => s.cityState);
+  const cityName  = useGameStore((s) => s.cityName);
+  const tier      = getCityTier(cityState.healthScore);
 
   // Close on Escape
   useEffect(() => {
@@ -221,8 +228,32 @@ export function CityFullscreen({ onClose }: { onClose: () => void }) {
       {/* Canvas fills screen */}
       <CityCanvas className="flex-1 w-full" preset={preset} />
 
+      {/* City stats HUD */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 flex items-center gap-4 rounded-2xl border border-white/10 bg-black/60 px-5 py-2.5 backdrop-blur-sm pointer-events-none">
+        <div className="text-sm font-bold text-white leading-tight">{cityName}</div>
+        <div className="h-4 w-px bg-white/15" />
+        <div className="flex items-baseline gap-1">
+          <span className={`text-lg font-black tabular-nums leading-none ${tier.color}`}>{cityState.healthScore}</span>
+          <span className="text-[10px] text-slate-400">/100</span>
+        </div>
+        <div className="h-4 w-px bg-white/15" />
+        <div className="flex items-center gap-1.5">
+          <span className="text-base leading-none">{tier.icon}</span>
+          <span className={`text-xs font-semibold ${tier.color}`}>{tier.name}</span>
+        </div>
+        <div className="h-4 w-px bg-white/15" />
+        <div className="flex items-center gap-1">
+          <span className="text-[11px] text-slate-400">Pop</span>
+          <span className="text-xs font-semibold text-white tabular-nums">{cityState.population * 1000}K</span>
+        </div>
+        <div className="h-4 w-px bg-white/15" />
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm leading-none">{WEATHER_ICONS[cityState.weather]}</span>
+          <span className="text-xs text-slate-300">{WEATHER_LABELS[cityState.weather]}</span>
+        </div>
+      </div>
       {/* Bottom hint */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-slate-500 pointer-events-none">
+      <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 text-xs text-slate-500 pointer-events-none">
         Drag to rotate · Scroll to zoom · Pinch on mobile
       </div>
     </div>
