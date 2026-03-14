@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { CityScene } from "@/components/city/CityScene";
 import { TopHUD } from "@/components/layout/TopHUD";
 import { BottomActionCard } from "@/components/layout/BottomActionCard";
-import { BottomSheet } from "@/components/layout/BottomSheet";
+import { BottomSheet, LOG_SHEET_TRANSITION } from "@/components/layout/BottomSheet";
 import { useGameStore } from "@/store/useGameStore";
 import { useUIStore } from "@/store/useUIStore";
 
@@ -15,6 +15,7 @@ import { HistorySheetContent } from "@/components/sheets/HistorySheetContent";
 import { LearnSheetContent } from "@/components/sheets/LearnSheetContent";
 import { GroupsSheetContent } from "@/components/sheets/GroupsSheetContent";
 import { StatsSheetContent } from "@/components/sheets/StatsSheetContent";
+import { QuestsSheetContent } from "@/components/sheets/QuestsSheetContent";
 
 const SHEET_TITLES: Record<NonNullable<ReturnType<typeof useUIStore.getState>["activeSheet"]>, string> = {
   log: "Log Spend",
@@ -24,6 +25,34 @@ const SHEET_TITLES: Record<NonNullable<ReturnType<typeof useUIStore.getState>["a
   stats: "City Stats",
   quests: "Quests",
 };
+
+/** Brief pulse/ripple overlay on the city canvas (e.g. after logging a transaction). Non-city: overlay only. */
+function CityPulseOverlay() {
+  const cityPulseTrigger = useUIStore((s) => s.cityPulseTrigger);
+  if (cityPulseTrigger === 0) return null;
+  return (
+    <motion.div
+      key={cityPulseTrigger}
+      className="pointer-events-none fixed inset-0 z-25 flex items-center justify-center"
+      style={{ maxWidth: 390, left: "50%", transform: "translateX(-50%)" }}
+      initial={{ opacity: 0 }}
+      animate={{
+        opacity: [0, 0.2, 0],
+        scale: [0.5, 1.8, 2],
+        x: [0, -3, 3, -2, 2, 0],
+      }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
+      <div
+        className="h-32 w-32 rounded-full"
+        style={{
+          background: "radial-gradient(circle, rgba(193,123,63,0.25) 0%, transparent 70%)",
+          boxShadow: "0 0 80px 40px rgba(193,123,63,0.1)",
+        }}
+      />
+    </motion.div>
+  );
+}
 
 function SheetContent() {
   const activeSheet = useUIStore((s) => s.activeSheet);
@@ -40,11 +69,7 @@ function SheetContent() {
     case "stats":
       return <StatsSheetContent />;
     case "quests":
-      return (
-        <div className="px-4 py-8 text-center text-text-muted">
-          Quests coming soon.
-        </div>
-      );
+      return <QuestsSheetContent />;
     default:
       return null;
   }
@@ -63,9 +88,9 @@ export function CityLayout() {
       className="relative h-screen w-full overflow-hidden bg-bg-base"
       style={{ maxWidth: 390, margin: "0 auto" }}
     >
-      {/* 1. Persistent city layer — full viewport, behind everything */}
-      <div className="absolute inset-0 z-0">
-        <CityScene embedded={false} />
+      {/* 1. Persistent city layer — full viewport, behind everything (full-bleed via .city-canvas-fullbleed in globals) */}
+      <div className="absolute inset-0 z-0 city-canvas-fullbleed">
+        <CityScene height="h-full" />
       </div>
 
       {/* Bottom vignette so UI is readable over the city */}
@@ -87,13 +112,23 @@ export function CityLayout() {
         {activeSheet != null && (
           <BottomSheet
             key={activeSheet}
-            title={SHEET_TITLES[activeSheet]}
-            maxHeight="85vh"
+            title={activeSheet === "log" ? "" : SHEET_TITLES[activeSheet]}
+            maxHeight={
+              activeSheet === "log"
+                ? "75vh"
+                : activeSheet === "stats" || activeSheet === "group"
+                  ? "80vh"
+                  : "85vh"
+            }
+            transition={activeSheet === "log" ? LOG_SHEET_TRANSITION : undefined}
           >
             <SheetContent />
           </BottomSheet>
         )}
       </AnimatePresence>
+
+      {/* City pulse overlay (after successful log) — non-city overlay only */}
+      <CityPulseOverlay />
     </div>
   );
 }

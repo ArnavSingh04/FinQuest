@@ -55,7 +55,7 @@ export function Navbar() {
     <motion.header
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl"
+      className="sticky top-0 z-50 hidden border-b border-white/10 bg-slate-950/70 backdrop-blur-xl md:block"
     >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-4">
         <Link

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Serif_Display } from "next/font/google";
 
+import { MobileMeta } from "@/components/MobileMeta";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -36,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${dmSans.variable} ${dmSerif.variable}`}>
       <body className="min-h-screen bg-bg-base text-text-primary" suppressHydrationWarning>
+        <MobileMeta />
         {children}
       </body>
     </html>

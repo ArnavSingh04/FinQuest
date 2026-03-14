@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useUIStore } from "@/store/useUIStore";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { Lesson, LessonsListResponse } from "@/types";
 
 export function LearnSheetContent() {
   const { user, loading } = useAuth();
+  const setActiveSheet = useUIStore((s) => s.setActiveSheet);
   const [lessons, setLessons] = useState<Lesson[]>([]);
 
   useEffect(() => {
@@ -48,9 +51,12 @@ export function LearnSheetContent() {
         ))}
       </ul>
       {lessons.length === 0 && (
-        <p className="py-8 text-center text-sm text-text-muted">
-          No lessons yet. Complete transactions to unlock personalized lessons.
-        </p>
+        <EmptyState
+          heading="No lessons yet"
+          subtext="Complete transactions to unlock personalized lessons, or log a purchase to get started."
+          ctaLabel="Log Spend"
+          onCta={() => setActiveSheet("log")}
+        />
       )}
     </div>
   );

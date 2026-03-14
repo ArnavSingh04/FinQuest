@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useGameStore } from "@/store/useGameStore";
 import { useUIStore } from "@/store/useUIStore";
 
@@ -10,10 +11,34 @@ const SHORTCUTS: { id: "stats" | "quests" | "group" | "learn"; label: string; ic
   { id: "learn", label: "Learn", icon: "📚" },
 ];
 
+const DURATION_MS = 400;
+
+function useAnimatedHealthScore(target: number) {
+  const [display, setDisplay] = useState(target);
+
+  useEffect(() => {
+    if (display === target) return;
+    const start = display;
+    const startTime = performance.now();
+    let rafId: number;
+
+    function tick(now: number) {
+      const t = Math.min((now - startTime) / DURATION_MS, 1);
+      const eased = t * (2 - t);
+      setDisplay(Math.round(start + (target - start) * eased));
+      if (t < 1) rafId = requestAnimationFrame(tick);
+    }
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [target, display]);
+
+  return display;
+}
+
 export function BottomActionCard() {
   const cityState = useGameStore((s) => s.cityState);
   const setActiveSheet = useUIStore((s) => s.setActiveSheet);
-  const healthScore = cityState.healthScore;
+  const healthScore = useAnimatedHealthScore(cityState.healthScore);
 
   return (
     <div
@@ -26,7 +51,7 @@ export function BottomActionCard() {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl font-semibold text-text-primary">
+            <span className="font-heading text-2xl font-normal text-text-primary">
               {healthScore}
             </span>
             <span className="text-sm text-text-muted">City Health</span>
@@ -34,7 +59,7 @@ export function BottomActionCard() {
           <button
             type="button"
             onClick={() => setActiveSheet("log")}
-            className="rounded-full bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-primary-hover"
+            className="touch-target min-h-[44px] min-w-[44px] rounded-full bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition active:scale-[0.97] hover:bg-accent-primary-hover"
           >
             Log Spend
           </button>
@@ -45,7 +70,7 @@ export function BottomActionCard() {
               key={id}
               type="button"
               onClick={() => setActiveSheet(id)}
-              className="flex flex-col items-center gap-1 text-text-muted transition hover:text-text-primary"
+              className="touch-target flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 text-text-muted transition active:scale-[0.97] hover:text-text-primary"
               aria-label={label}
             >
               <span className="text-xl" aria-hidden>

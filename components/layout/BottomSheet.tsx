@@ -7,17 +7,26 @@ import { useUIStore } from "@/store/useUIStore";
 
 const OVERLAY_OPACITY = 0.3;
 
+export const LOG_SHEET_TRANSITION = {
+  type: "tween" as const,
+  duration: 0.3,
+  ease: [0.32, 0.72, 0, 1] as const,
+};
+
 interface BottomSheetProps {
   children: React.ReactNode;
   title?: string;
   /** Max height of the sheet panel (default 85vh). Overlay matches this so city remains visible above. */
   maxHeight?: string;
+  /** Optional transition override (e.g. for Log sheet: 300ms cubic-bezier). */
+  transition?: { type: "tween"; duration: number; ease: readonly [number, number, number, number] };
 }
 
 export function BottomSheet({
   children,
   title,
   maxHeight = "85vh",
+  transition: transitionOverride,
 }: BottomSheetProps) {
   const setActiveSheet = useUIStore((s) => s.setActiveSheet);
 
@@ -27,7 +36,7 @@ export function BottomSheet({
 
   const handleDragEnd = useCallback(
     (_: unknown, info: PanInfo) => {
-      if (info.velocity.y > 300 || info.offset.y > 120) {
+      if (info.velocity.y > 300 || info.offset.y > 80) {
         close();
       }
     },
@@ -68,15 +77,21 @@ export function BottomSheet({
         }}
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 28, stiffness: 300 }}
+        exit={{ y: "100%", transition: { duration: 0.25, ease: "easeIn" } }}
+        transition={
+          transitionOverride ?? {
+            type: "tween" as const,
+            duration: 0.3,
+            ease: [0.32, 0.72, 0, 1] as const,
+          }
+        }
         drag="y"
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={{ top: 0.1, bottom: 0.5 }}
         onDragEnd={handleDragEnd}
       >
         <div className="flex shrink-0 justify-center pt-3 pb-2">
-          <div className="h-1 w-10 rounded-full bg-border" aria-hidden />
+          <div className="h-1 w-9 rounded-full bg-border" aria-hidden />
         </div>
         {title != null && title !== "" && (
           <h2 className="px-4 pb-2 font-heading text-lg font-normal text-text-primary">

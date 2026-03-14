@@ -64,6 +64,12 @@ h3 {
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .glass-card {
@@ -75,6 +81,15 @@ h3 {
 
 .health-gradient {
   background: var(--health-gradient);
+}
+
+/* Full-bleed city canvas in CityLayout (no border/radius so city fills viewport) */
+.city-canvas-fullbleed > div {
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  height: 100% !important;
+  width: 100% !important;
 }
 
 .city-scene-shell:fullscreen {

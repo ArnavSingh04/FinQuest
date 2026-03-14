@@ -599,13 +599,13 @@ export function FinanceLogsDashboard() {
         <div className="flex flex-wrap gap-3">
           <Link
             href="/pay"
-            className="rounded-2xl bg-gradient-to-r from-sky-400 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:scale-[1.01]"
+            className="hidden rounded-2xl bg-gradient-to-r from-sky-400 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:scale-[1.01] md:inline-block"
           >
             Tap to Pay
           </Link>
           <Link
             href="/city"
-            className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/5"
+            className="hidden rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/5 md:inline-block"
           >
             Open City
           </Link>

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useUIStore } from "@/store/useUIStore";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { DashboardPayload, Transaction } from "@/types";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -19,6 +21,7 @@ const categoryColors: Record<Transaction["category"], string> = {
 
 export function HistorySheetContent() {
   const { user, loading } = useAuth();
+  const setActiveSheet = useUIStore((s) => s.setActiveSheet);
   const [payload, setPayload] = useState<DashboardPayload | null>(null);
 
   useEffect(() => {
@@ -68,9 +71,12 @@ export function HistorySheetContent() {
         ))}
       </ul>
       {transactions.length === 0 && (
-        <p className="mt-6 text-center text-sm text-text-muted">
-          No transactions yet. Use Log Spend to add one.
-        </p>
+        <EmptyState
+          heading="No transactions yet"
+          subtext="Log your first purchase to see it here and watch your city grow."
+          ctaLabel="Log Spend"
+          onCta={() => setActiveSheet("log")}
+        />
       )}
     </div>
   );
