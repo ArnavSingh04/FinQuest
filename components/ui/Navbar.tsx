@@ -10,7 +10,6 @@ import { signOutUser } from "@/lib/auth";
 const authenticatedLinks = [
   { href: "/city", label: "City" },
   { href: "/groups", label: "Groups" },
-  { href: "/#log-spending", label: "Log Spending" },
 ];
 
 function NavLink({
@@ -67,11 +66,7 @@ export function Navbar() {
               key={link.href}
               href={link.href}
               label={link.label}
-              isActive={
-                link.href === "/#log-spending"
-                  ? pathname === "/"
-                  : pathname === link.href
-              }
+              isActive={pathname === link.href}
             />
           ))}
         </nav>

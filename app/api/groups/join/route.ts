@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/auth-server";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+} from "@/lib/auth-server";
 
 export async function POST(request: Request) {
   try {
     const supabase = await createSupabaseServerClient();
+    const adminSupabase = createSupabaseAdminClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -23,7 +27,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const groupResult = await supabase
+    // Invite lookups must bypass member-only group read policies.
+    const groupResult = await adminSupabase
       .from("groups")
       .select("id, name, invite_code, owner_id, created_at")
       .eq("invite_code", inviteCode)
