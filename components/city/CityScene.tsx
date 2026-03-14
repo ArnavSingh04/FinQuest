@@ -5,6 +5,7 @@ import { ContactShadows, OrbitControls, Sky, Stars } from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
 import type { Group } from "three";
 
+import { HAMMER_ANIMATION_DURATION } from "@/components/city/constants";
 import { useCityStore } from "@/store/useCityStore";
 import { CityGenerator } from "./CityGenerator";
 
@@ -27,7 +28,7 @@ export function CityScene() {
       }
       hammerTimeout.current = setTimeout(() => {
         setHammerActive(false);
-      }, 3000);
+      }, HAMMER_ANIMATION_DURATION);
     }
 
     boostRef.current = needsBoostVersion;
@@ -40,7 +41,7 @@ export function CityScene() {
     };
   }, [needsBoostVersion]);
 
-  const hammerBaseHeight = 1.6 + (heightMultiplier - 1) * 2.2;
+  const hammerBaseHeight = 10.6 + (heightMultiplier - 1) * 2.2;
   const isNight = skyMode === "night";
   const backgroundColor = isNight ? "#01040d" : "#91cdee";
   const skyProps = isNight
@@ -109,9 +110,7 @@ export function CityScene() {
 
         <CityGenerator metrics={cityMetrics} />
 
-        {hammerActive && (
-          <HammerActor baseHeight={hammerBaseHeight} />
-        )}
+        {hammerActive && <HammerActor baseHeight={hammerBaseHeight} />}
 
         <ContactShadows
           position={[0, -0.02, 0]}
@@ -139,28 +138,70 @@ interface HammerActorProps {
 
 function HammerActor({ baseHeight }: HammerActorProps) {
   const ref = useRef<Group>(null);
+  const startRef = useRef<number>(Date.now());
 
-  useFrame((state) => {
+  useEffect(() => {
+    startRef.current = Date.now();
+  }, []);
+
+  useFrame(() => {
     if (!ref.current) {
       return;
     }
 
-    const elapsed = state.clock.elapsedTime;
-    const sway = Math.sin(elapsed * 22);
-    ref.current.position.y = baseHeight + Math.abs(sway) * 0.2;
-    ref.current.rotation.z = Math.sin(elapsed * 14) * 0.35;
-    ref.current.rotation.x = -Math.abs(sway) * 0.1;
+    const elapsed = (Date.now() - startRef.current) / 1000;
+    const knockCycle = 0.6;
+    const cycleProgress = (elapsed % knockCycle) / knockCycle;
+    const impact = Math.sin(cycleProgress * Math.PI);
+    const sway = Math.sin(elapsed * 3.1);
+    const rise = Math.abs(Math.sin(elapsed * 1.4)) * 0.35;
+    const horizontalKnock = Math.sin(elapsed * 1.2);
+    const knockPush = -impact * 1.3;
+
+    ref.current.position.set(
+      sway * 0.45 + horizontalKnock * (0.25 + impact * 0.35) + knockPush,
+      baseHeight + 4.5 + rise - impact * 0.7,
+      -1.3 + Math.sin(elapsed * 1.3) * 0.25,
+    );
+    ref.current.rotation.z = Math.sin(elapsed * 2.6) * 0.45;
+    ref.current.rotation.x = -0.6 + impact * 0.5;
   });
 
   return (
-    <group ref={ref} position={[0, baseHeight, 0]} rotation={[0, 0, 0.2]}>
-      <mesh>
-        <boxGeometry args={[0.4, 0.2, 1.2]} />
-        <meshStandardMaterial color="#f97316" />
+    <group ref={ref} position={[0, baseHeight + 4.8, -1.3]} rotation={[0.35, 0.4, 0]} scale={1.6}>
+      <mesh position={[0, -1.2, 0]}>
+        <cylinderGeometry args={[0.18, 0.24, 4.8, 18]} />
+        <meshStandardMaterial color="#6b4e2c" />
       </mesh>
-      <mesh position={[0.25, -0.25, 0]}>
-        <boxGeometry args={[0.18, 0.4, 0.18]} />
-        <meshStandardMaterial color="#fde68a" />
+
+      <mesh position={[0, 0.8, 0]}>
+        <boxGeometry args={[2.2, 0.85, 1]} />
+        <meshStandardMaterial color="#9ca3af" metalness={0.5} roughness={0.15} />
+      </mesh>
+
+      <mesh rotation={[0, 0, Math.PI / 2]} position={[1.3, 0.9, 0]}>
+        <cylinderGeometry args={[0.26, 0.26, 0.4, 16]} />
+        <meshStandardMaterial color="#9ca3af" />
+      </mesh>
+
+      <mesh rotation={[0, 0, Math.PI / 2]} position={[-1.3, 0.9, 0]}>
+        <coneGeometry args={[0.26, 1, 16]} />
+        <meshStandardMaterial color="#9ca3af" />
+      </mesh>
+
+      <mesh
+        position={[0, -0.05, -0.8]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        scale={1.4}
+      >
+        <circleGeometry args={[0.8, 32]} />
+        <meshStandardMaterial
+          color="#fecdd3"
+          transparent
+          opacity={0.45}
+          emissive="#f97316"
+          emissiveIntensity={0.8}
+        />
       </mesh>
     </group>
   );

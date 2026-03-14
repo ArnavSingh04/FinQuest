@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useCityStore } from "@/store/useCityStore";
+import { HAMMER_ANIMATION_DURATION } from "@/components/city/constants";
 import type {
   TransactionApiResponse,
   TransactionCategory,
@@ -76,8 +77,17 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
   const [category, setCategory] = useState<TransactionCategory>("Need");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const heightBoostTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isDisabled = isSubmitting;
+
+  useEffect(() => {
+    return () => {
+      if (heightBoostTimer.current) {
+        clearTimeout(heightBoostTimer.current);
+      }
+    };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,20 +123,32 @@ export function SpendingForm({ onTransactionProcessed }: SpendingFormProps) {
 
       await onTransactionProcessed?.(payload);
 
-      let feedbackMessage =
+      const baseFeedbackMessage =
         payload.mode === "supabase"
           ? "Transaction saved and city updated."
           : "Running in local preview mode until Supabase is configured.";
 
       if (category === "Need") {
-        increaseHeightMultiplier(selectedRange.boost);
         incrementNeedsBoostVersion();
-        feedbackMessage = `${selectedRange.message} Tower heights increased by ${
-          selectedRange.boost * 100
-        }%. ${feedbackMessage}`;
-      }
 
-      setFeedback(feedbackMessage);
+        setFeedback("Hammer crews are prepping the skyline...");
+
+        if (heightBoostTimer.current) {
+          clearTimeout(heightBoostTimer.current);
+        }
+
+        heightBoostTimer.current = setTimeout(() => {
+          increaseHeightMultiplier(selectedRange.boost);
+          setFeedback(
+            `${selectedRange.message} Tower heights increased by ${
+              selectedRange.boost * 100
+            }%. ${baseFeedbackMessage}`,
+          );
+          heightBoostTimer.current = null;
+        }, HAMMER_ANIMATION_DURATION);
+      } else {
+        setFeedback(baseFeedbackMessage);
+      }
     } catch (error) {
       setFeedback(
         error instanceof Error ? error.message : "Something went wrong.",
