@@ -853,8 +853,8 @@ function Car({ idx, lane, direction }: { idx: number; lane: "h" | "v"; direction
   );
 }
 
-// ─── Pedestrian ───────────────────────────────────────────────────────────────
-function Pedestrian({ idx }: { idx: number }) {
+// ─── Bunny Rabbit ─────────────────────────────────────────────────────────────
+function BunnyRabbit({ idx }: { idx: number }) {
   const { cityState } = useActiveCityState();
   const ref = useRef<THREE.Group>(null);
   const speed = (0.3 + (idx % 4) * 0.12) * (idx % 2 === 0 ? 1 : -1) * (0.5 + cityState.healthScore / 150);
@@ -866,25 +866,40 @@ function Pedestrian({ idx }: { idx: number }) {
     ref.current.position.x += dt * speed;
     if (ref.current.position.x > 10) ref.current.position.x = -10;
     if (ref.current.position.x < -10) ref.current.position.x = 10;
-    // Bob up and down slightly while walking
+    // Light hop motion
     ref.current.position.y = 0.1 + Math.abs(Math.sin(ref.current.position.x * 8)) * 0.02;
+    ref.current.rotation.y = speed > 0 ? 0 : Math.PI;
   });
 
-  const PERSON_COLORS = ["#f97316","#22d3ee","#f472b6","#a3e635","#fb923c","#818cf8"];
-  const color = PERSON_COLORS[idx % PERSON_COLORS.length];
+  const BUNNY_COLORS = ["#f3f4f6", "#d1d5db", "#e5e7eb", "#d6d3d1"];
+  const color = BUNNY_COLORS[idx % BUNNY_COLORS.length];
   const startX = (idx * 2.1) % 20 - 10;
 
   return (
     <group ref={ref} position={[startX, 0.1, zPos]}>
-      {/* Body */}
-      <mesh position={[0, 0.12, 0]}>
-        <capsuleGeometry args={[0.04, 0.14, 4, 6]} />
+      {/* Bunny body */}
+      <mesh position={[0, 0.1, 0]}>
+        <sphereGeometry args={[0.1, 12, 12]} />
         <meshStandardMaterial color={color} roughness={0.8} />
       </mesh>
       {/* Head */}
-      <mesh position={[0, 0.28, 0]}>
-        <sphereGeometry args={[0.05, 6, 6]} />
-        <meshStandardMaterial color="#fde68a" roughness={0.9} />
+      <mesh position={[0.11, 0.16, 0]}>
+        <sphereGeometry args={[0.07, 10, 10]} />
+        <meshStandardMaterial color={color} roughness={0.82} />
+      </mesh>
+      {/* Ears */}
+      <mesh position={[0.14, 0.27, 0.025]}>
+        <capsuleGeometry args={[0.015, 0.1, 4, 6]} />
+        <meshStandardMaterial color={color} roughness={0.85} />
+      </mesh>
+      <mesh position={[0.14, 0.27, -0.025]}>
+        <capsuleGeometry args={[0.015, 0.1, 4, 6]} />
+        <meshStandardMaterial color={color} roughness={0.85} />
+      </mesh>
+      {/* Tail */}
+      <mesh position={[-0.09, 0.12, 0]}>
+        <sphereGeometry args={[0.03, 8, 8]} />
+        <meshStandardMaterial color="#ffffff" roughness={0.9} />
       </mesh>
     </group>
   );
@@ -1364,10 +1379,10 @@ export function CityGenerator() {
         </group>
       ))}
 
-      {/* ── Pedestrians ── */}
+      {/* ── Bunny rabbits (replacing pedestrians) ── */}
       {Array.from({ length: pedCount }, (_, i) => (
         <group key={`ped-wrap-${i}`} {...hoverProps("Residents", `Pop: ${cityState.population * 1000}K`, healthState, "A healthier city attracts more residents walking the streets.", [-1.8, 1.1, -0.6])}>
-          <Pedestrian idx={i} />
+          <BunnyRabbit idx={i} />
         </group>
       ))}
 
