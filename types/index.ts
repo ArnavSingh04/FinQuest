@@ -68,6 +68,27 @@ export interface AIInsightPayload {
   lesson: TriggeredLesson;
 }
 
+export interface Lesson {
+  id: string;
+  triggerId: string;
+  title: string;
+  concept: string;
+  previewText: string;
+  explanation: string;
+  examples: string[];
+  advice: string[];
+  createdAt: string;
+  completed: boolean;
+  generatedBy: string;
+}
+
+export interface LessonTrigger {
+  id: string;
+  concept: string;
+  reason: string;
+  priority: number;
+}
+
 export interface AchievementState {
   id: string;
   title: string;
@@ -104,6 +125,20 @@ export interface TransactionApiResponse extends DashboardPayload {
 export interface InsightApiResponse {
   insight: string;
   lesson: TriggeredLesson;
+}
+
+export interface LessonsListResponse {
+  lessons: Lesson[];
+}
+
+export interface LessonDetailResponse {
+  lesson: Lesson;
+}
+
+export interface LessonGenerateResponse {
+  lesson: Lesson;
+  created: boolean;
+  reused: boolean;
 }
 
 export interface Group {

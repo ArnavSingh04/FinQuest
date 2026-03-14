@@ -11,6 +11,7 @@ const authenticatedLinks = [
   { href: "/", label: "Home" },
   { href: "/city", label: "My City" },
   { href: "/history", label: "History" },
+  { href: "/lessons", label: "Lessons" },
   { href: "/groups", label: "Groups" },
 ];
 

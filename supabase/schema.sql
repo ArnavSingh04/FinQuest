@@ -126,6 +126,27 @@ create table if not exists public.ai_insights (
   created_at timestamptz not null default timezone('utc', now())
 );
 
+create table if not exists public.lessons (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  spending_snapshot_id uuid references public.spending_snapshots (id) on delete set null,
+  city_snapshot_id uuid references public.city_snapshots (id) on delete set null,
+  trigger_id text not null,
+  trigger_version text not null default 'v1',
+  title text not null,
+  concept text not null,
+  preview_text text not null default '',
+  explanation text not null,
+  examples jsonb not null default '[]'::jsonb check (jsonb_typeof(examples) = 'array'),
+  advice jsonb not null default '[]'::jsonb check (jsonb_typeof(advice) = 'array'),
+  source_metrics jsonb,
+  source_transaction_ids jsonb not null default '[]'::jsonb check (jsonb_typeof(source_transaction_ids) = 'array'),
+  completed boolean not null default false,
+  generated_by text not null default 'fallback',
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
 create table if not exists public.user_progress (
   user_id uuid primary key references public.profiles (id) on delete cascade,
   total_xp integer not null default 0 check (total_xp >= 0),
@@ -193,6 +214,23 @@ alter table public.ai_insights
   add column if not exists lesson_text text default '',
   add column if not exists city_snapshot_id uuid references public.city_snapshots (id) on delete set null;
 
+alter table public.lessons
+  add column if not exists spending_snapshot_id uuid references public.spending_snapshots (id) on delete set null,
+  add column if not exists city_snapshot_id uuid references public.city_snapshots (id) on delete set null,
+  add column if not exists trigger_id text,
+  add column if not exists trigger_version text default 'v1',
+  add column if not exists title text,
+  add column if not exists concept text,
+  add column if not exists preview_text text default '',
+  add column if not exists explanation text,
+  add column if not exists examples jsonb default '[]'::jsonb,
+  add column if not exists advice jsonb default '[]'::jsonb,
+  add column if not exists source_metrics jsonb,
+  add column if not exists source_transaction_ids jsonb default '[]'::jsonb,
+  add column if not exists completed boolean not null default false,
+  add column if not exists generated_by text not null default 'fallback',
+  add column if not exists updated_at timestamptz not null default timezone('utc', now());
+
 alter table public.user_progress
   add column if not exists last_achievement_id text,
   add column if not exists updated_at timestamptz not null default timezone('utc', now());
@@ -211,6 +249,12 @@ create index if not exists idx_city_snapshots_user_id_created_at
 
 create index if not exists idx_ai_insights_user_id_created_at
   on public.ai_insights (user_id, created_at desc);
+
+create index if not exists idx_lessons_user_id_created_at
+  on public.lessons (user_id, created_at desc);
+
+create index if not exists idx_lessons_user_id_trigger_id_created_at
+  on public.lessons (user_id, trigger_id, created_at desc);
 
 create index if not exists idx_group_members_group_id
   on public.group_members (group_id);
@@ -233,6 +277,12 @@ execute function public.set_updated_at();
 drop trigger if exists user_progress_set_updated_at on public.user_progress;
 create trigger user_progress_set_updated_at
 before update on public.user_progress
+for each row
+execute function public.set_updated_at();
+
+drop trigger if exists lessons_set_updated_at on public.lessons;
+create trigger lessons_set_updated_at
+before update on public.lessons
 for each row
 execute function public.set_updated_at();
 
@@ -307,6 +357,7 @@ alter table public.transactions enable row level security;
 alter table public.spending_snapshots enable row level security;
 alter table public.city_snapshots enable row level security;
 alter table public.ai_insights enable row level security;
+alter table public.lessons enable row level security;
 alter table public.user_progress enable row level security;
 alter table public.user_achievements enable row level security;
 alter table public.groups enable row level security;
@@ -381,6 +432,28 @@ create policy "Users can insert own ai insights"
 on public.ai_insights
 for insert
 to authenticated
+with check (auth.uid() = user_id);
+
+drop policy if exists "Users can view own lessons" on public.lessons;
+create policy "Users can view own lessons"
+on public.lessons
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own lessons" on public.lessons;
+create policy "Users can insert own lessons"
+on public.lessons
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update own lessons" on public.lessons;
+create policy "Users can update own lessons"
+on public.lessons
+for update
+to authenticated
+using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
 drop policy if exists "Users can view own progress" on public.user_progress;
@@ -478,6 +551,9 @@ comment on table public.city_snapshots is
 
 comment on table public.ai_insights is
   'Stored AI-generated coaching responses and linked lesson content.';
+
+comment on table public.lessons is
+  'Personalized financial micro-lessons generated from a user''s real spending behavior.';
 
 comment on table public.user_progress is
   'XP and level progression for the gamified dashboard.';

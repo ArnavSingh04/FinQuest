@@ -2,6 +2,7 @@ import {
   createSupabaseAdminClient,
   createSupabaseServerClient,
 } from "@/lib/auth-server";
+import { ensureLessonForUser } from "@/lib/server/lessonService";
 import { buildDashboardPayload } from "@/lib/playerState";
 import type {
   AIInsightPayload,
@@ -260,6 +261,7 @@ export async function createTransaction(params: {
     transactionId: insertResult.data.id,
     payload,
   });
+  await ensureLessonForUser(userId, supabase);
 
   return payload;
 }
@@ -294,18 +296,24 @@ export async function resetUserData(userId: string) {
   const adminSupabase = createSupabaseAdminClient();
 
   const [
+    lessonDeleteResult,
     insightDeleteResult,
     achievementDeleteResult,
     cityDeleteResult,
     spendingDeleteResult,
     transactionDeleteResult,
   ] = await Promise.all([
+    adminSupabase.from("lessons").delete().eq("user_id", userId),
     adminSupabase.from("ai_insights").delete().eq("user_id", userId),
     adminSupabase.from("user_achievements").delete().eq("user_id", userId),
     adminSupabase.from("city_snapshots").delete().eq("user_id", userId),
     adminSupabase.from("spending_snapshots").delete().eq("user_id", userId),
     adminSupabase.from("transactions").delete().eq("user_id", userId),
   ]);
+
+  if (lessonDeleteResult.error) {
+    throw lessonDeleteResult.error;
+  }
 
   if (insightDeleteResult.error) {
     throw insightDeleteResult.error;
