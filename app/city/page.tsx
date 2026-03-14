@@ -103,6 +103,12 @@ export default function CityPage() {
         </div>
         <div className="flex gap-3">
           <Link
+            href="/pay"
+            className="rounded-2xl bg-gradient-to-r from-sky-400 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950"
+          >
+            Tap to Pay
+          </Link>
+          <Link
             href="/"
             className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-white"
           >

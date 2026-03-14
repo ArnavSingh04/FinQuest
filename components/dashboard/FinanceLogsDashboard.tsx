@@ -600,12 +600,20 @@ export function FinanceLogsDashboard() {
           </p>
           <h1 className="mt-2 text-4xl font-semibold text-white">Dashboard</h1>
         </div>
-        <Link
-          href="/city"
-          className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/5"
-        >
-          Open City
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/pay"
+            className="rounded-2xl bg-gradient-to-r from-sky-400 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:scale-[1.01]"
+          >
+            Tap to Pay
+          </Link>
+          <Link
+            href="/city"
+            className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/5"
+          >
+            Open City
+          </Link>
+        </div>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">

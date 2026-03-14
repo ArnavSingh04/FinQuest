@@ -46,7 +46,7 @@ export function Navbar() {
     router.refresh();
   }
 
-  if (loading || !user) {
+  if (loading || !user || pathname === "/pay") {
     return null;
   }
 
