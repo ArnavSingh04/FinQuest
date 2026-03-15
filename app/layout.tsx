@@ -16,16 +16,17 @@ const dmSerif = DM_Serif_Display({
 });
 
 export const metadata: Metadata = {
-  title: "FinQuest",
+  title: "FinCity",
   description:
     "A mobile-first financial literacy app that turns spending into a living 3D city.",
-  applicationName: "FinQuest",
+  applicationName: "FinCity",
   manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
   themeColor: "#F5F0E8",
 };
 

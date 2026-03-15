@@ -77,7 +77,7 @@ export default function SignupPage() {
           Start your city
         </p>
         <h1 className="mt-3 font-heading text-3xl font-normal" style={{ color: "#1C3A2E" }}>
-          Create your FinQuest account
+          Create your FinCity account
         </h1>
         <p className="mt-3 text-sm leading-6" style={{ color: "#4A6358", fontFamily: "var(--font-body), DM Sans, sans-serif", fontSize: 14 }}>
           Every user gets their own city, insights, achievements, and group progress.

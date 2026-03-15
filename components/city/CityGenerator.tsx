@@ -952,6 +952,107 @@ function PollutionCloud({ x, y, z, opacity }: { x: number; y: number; z: number;
   );
 }
 
+// ─── Cloud ────────────────────────────────────────────────────────────────────
+function Cloud({
+  x, y, z, scale = 1, speed = 0.3, isMobile = false,
+}: {
+  x: number; y: number; z: number;
+  scale?: number; speed?: number; isMobile?: boolean;
+}) {
+  const ref = useRef<THREE.Group>(null);
+  useFrame((_, dt) => {
+    if (!ref.current) return;
+    ref.current.position.x += dt * speed;
+    if (ref.current.position.x > 30) ref.current.position.x = -30;
+  });
+  const seg = isMobile ? 7 : 10;
+  return (
+    <group ref={ref} position={[x, y, z]} scale={scale}>
+      <mesh position={[0, 0, 0]}>
+        <sphereGeometry args={[0.9, seg, seg]} />
+        <meshStandardMaterial color="#FFFFFF" roughness={1} transparent opacity={0.92} />
+      </mesh>
+      <mesh position={[-0.7, -0.15, 0]}>
+        <sphereGeometry args={[0.65, seg, seg]} />
+        <meshStandardMaterial color="#FFFFFF" roughness={1} transparent opacity={0.88} />
+      </mesh>
+      <mesh position={[0.7, -0.1, 0]}>
+        <sphereGeometry args={[0.7, seg, seg]} />
+        <meshStandardMaterial color="#FFFFFF" roughness={1} transparent opacity={0.88} />
+      </mesh>
+      <mesh position={[0.2, 0.5, 0]}>
+        <sphereGeometry args={[0.55, seg, seg]} />
+        <meshStandardMaterial color="#FFFFFF" roughness={1} transparent opacity={0.85} />
+      </mesh>
+      {!isMobile && (
+        <>
+          <mesh position={[-1.2, -0.25, 0.1]}>
+            <sphereGeometry args={[0.45, 8, 8]} />
+            <meshStandardMaterial color="#F8F8F8" roughness={1} transparent opacity={0.80} />
+          </mesh>
+          <mesh position={[1.3, -0.2, -0.1]}>
+            <sphereGeometry args={[0.5, 8, 8]} />
+            <meshStandardMaterial color="#F8F8F8" roughness={1} transparent opacity={0.80} />
+          </mesh>
+        </>
+      )}
+      <mesh position={[0, -0.4, 0]}>
+        <sphereGeometry args={[0.75, seg, seg]} />
+        <meshStandardMaterial color="#FFFFFF" roughness={1} transparent opacity={0.82} />
+      </mesh>
+    </group>
+  );
+}
+
+// ─── Bird ─────────────────────────────────────────────────────────────────────
+function Bird({
+  x, y, z, speed = 0.8, radius = 6, idx = 0,
+}: {
+  x: number; y: number; z: number;
+  speed?: number; radius?: number; idx?: number;
+}) {
+  const ref     = useRef<THREE.Group>(null);
+  const wingRef1 = useRef<THREE.Mesh>(null);
+  const wingRef2 = useRef<THREE.Mesh>(null);
+
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    const t = clock.elapsedTime * speed + idx * 1.5;
+    ref.current.position.x = x + Math.cos(t) * radius;
+    ref.current.position.z = z + Math.sin(t) * (radius * 0.6);
+    ref.current.position.y = y + Math.sin(t * 2.5) * 0.4;
+    ref.current.rotation.y = -t + Math.PI / 2;
+    const flapAngle = Math.sin(clock.elapsedTime * 3.5 + idx) * 0.4;
+    if (wingRef1.current) wingRef1.current.rotation.z =  flapAngle;
+    if (wingRef2.current) wingRef2.current.rotation.z = -flapAngle;
+  });
+
+  return (
+    <group ref={ref} position={[x, y, z]}>
+      <mesh position={[0, 0, 0]}>
+        <sphereGeometry args={[0.08, 8, 6]} />
+        <meshStandardMaterial color="#2C2416" roughness={0.8} />
+      </mesh>
+      <mesh position={[0.12, 0.02, 0]}>
+        <sphereGeometry args={[0.055, 8, 6]} />
+        <meshStandardMaterial color="#2C2416" roughness={0.8} />
+      </mesh>
+      <mesh position={[-0.14, -0.01, 0]} rotation={[0, 0, 0.2]}>
+        <boxGeometry args={[0.1, 0.02, 0.06]} />
+        <meshStandardMaterial color="#2C2416" roughness={0.8} />
+      </mesh>
+      <mesh ref={wingRef1} position={[0, 0.01, 0.12]} rotation={[0, 0.2, 0]}>
+        <boxGeometry args={[0.18, 0.015, 0.14]} />
+        <meshStandardMaterial color="#3D3228" roughness={0.8} />
+      </mesh>
+      <mesh ref={wingRef2} position={[0, 0.01, -0.12]} rotation={[0, -0.2, 0]}>
+        <boxGeometry args={[0.18, 0.015, 0.14]} />
+        <meshStandardMaterial color="#3D3228" roughness={0.8} />
+      </mesh>
+    </group>
+  );
+}
+
 // ─── Rain ─────────────────────────────────────────────────────────────────────
 function Rain() {
   const { cityState } = useActiveCityState();
@@ -2424,6 +2525,10 @@ export function CityGenerator() {
   const treatsPct = Math.round(proportions.treats * 100);
   const investPct = Math.round(proportions.investments * 100);
   const healthPct = Math.round(cityState.healthScore);
+  const weather = cityState.weather;
+
+  // Checked once on mount for performance tuning
+  const isMobile = useRef(typeof window !== "undefined" && window.innerWidth < 768).current;
 
   // Contextual state labels
   const needsState  = needsPct >= 50 ? "Healthy" : needsPct >= 30 ? "Growing" : "Low";
@@ -3175,6 +3280,64 @@ export function CityGenerator() {
             <p className="mt-1 text-[9px] text-slate-400 leading-snug max-w-[140px]">{hoverInfo.tip}</p>
           </div>
         </Html>
+      )}
+
+      {/* ── Clouds ── */}
+      {weather !== "rain" && weather !== "storm" && weather !== "destruction" && (
+        <>
+          {/* Base clouds — always show in clear/overcast/thriving */}
+          <Cloud x={-20} y={12} z={-8}  scale={1.8} speed={0.25} isMobile={isMobile} />
+          <Cloud x={-8}  y={14} z={-15} scale={1.2} speed={0.18} isMobile={isMobile} />
+          <Cloud x={5}   y={11} z={-12} scale={2.2} speed={0.30} isMobile={isMobile} />
+          <Cloud x={15}  y={13} z={-6}  scale={1.5} speed={0.22} isMobile={isMobile} />
+          <Cloud x={0}   y={16} z={-18} scale={1.6} speed={0.20} isMobile={isMobile} />
+          {!isMobile && (
+            <>
+              <Cloud x={-15} y={15} z={-20} scale={1.0} speed={0.15} isMobile={false} />
+              <Cloud x={20}  y={12} z={-10} scale={1.9} speed={0.28} isMobile={false} />
+              <Cloud x={-5}  y={10} z={-5}  scale={1.3} speed={0.35} isMobile={false} />
+            </>
+          )}
+          {/* Extra dark overcast clouds */}
+          {weather === "overcast" && (
+            <>
+              <Cloud x={-10} y={13} z={-14} scale={2.0} speed={0.12} isMobile={isMobile} />
+              <Cloud x={8}   y={15} z={-22} scale={1.7} speed={0.14} isMobile={isMobile} />
+              {!isMobile && (
+                <>
+                  <Cloud x={-22} y={14} z={-5}  scale={2.1} speed={0.10} isMobile={false} />
+                  <Cloud x={18}  y={12} z={-18} scale={1.4} speed={0.16} isMobile={false} />
+                </>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {/* ── Birds ── */}
+      {weather !== "rain" && weather !== "storm" && weather !== "destruction" && (
+        <>
+          {/* Flock 1 — low, lively (always shown) */}
+          <Bird x={-3} y={10}   z={-5} speed={weather === "overcast" ? 0.35 : 0.5}  radius={8}  idx={0.0} />
+          <Bird x={-2} y={10.3} z={-4} speed={weather === "overcast" ? 0.35 : 0.5}  radius={8}  idx={0.3} />
+          <Bird x={-4} y={10.1} z={-6} speed={weather === "overcast" ? 0.35 : 0.5}  radius={8}  idx={0.6} />
+          <Bird x={-3} y={9.8}  z={-3} speed={weather === "overcast" ? 0.35 : 0.5}  radius={8}  idx={0.9} />
+
+          {/* Flock 2 + solos — only in clear/thriving and on desktop */}
+          {weather !== "overcast" && (
+            <>
+              <Bird x={5}  y={13}   z={-10} speed={0.35} radius={10} idx={1.0} />
+              <Bird x={6}  y={13.4} z={-9}  speed={0.35} radius={10} idx={1.4} />
+              <Bird x={4}  y={12.8} z={-11} speed={0.35} radius={10} idx={1.8} />
+              {!isMobile && (
+                <>
+                  <Bird x={8}  y={11} z={2} speed={0.6}  radius={6} idx={2.5} />
+                  <Bird x={-8} y={12} z={5} speed={0.45} radius={7} idx={3.2} />
+                </>
+              )}
+            </>
+          )}
+        </>
       )}
 
       {/* ── Weather FX ── */}

@@ -55,7 +55,7 @@ export default function LoginPage() {
           Welcome back
         </p>
         <h1 className="mt-3 font-heading text-3xl font-normal" style={{ color: "#1C3A2E" }}>
-          Log in to FinQuest
+          Log in to FinCity
         </h1>
         <p className="mt-3 text-sm leading-6" style={{ color: "#4A6358", fontFamily: "var(--font-body), DM Sans, sans-serif", fontSize: 14 }}>
           Pick up where you left off and continue growing your personal city.

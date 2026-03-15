@@ -21,7 +21,7 @@ export function CityHeader() {
   return (
     <div className="flex items-center gap-3 flex-wrap">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-400">FinQuest</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-400">FinCity</p>
         {editing ? (
           <div className="flex items-center gap-2 mt-1">
             <input

@@ -160,7 +160,7 @@ export default function LessonsPage() {
         <section className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: "#8A9E94", fontFamily: "var(--font-body), DM Sans, sans-serif" }}>
-              FinQuest Academy
+              FinCity Academy
             </p>
             <h1 className="mt-2 font-heading text-4xl font-normal" style={{ color: "#1C3A2E" }}>
               Lessons
@@ -200,7 +200,7 @@ export default function LessonsPage() {
               No lessons yet
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6" style={{ color: "#4A6358" }}>
-              Log a few transactions first, then FinQuest will turn those money habits
+              Log a few transactions first, then FinCity will turn those money habits
               into personalized micro lessons.
             </p>
             <button

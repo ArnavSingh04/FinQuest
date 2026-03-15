@@ -592,7 +592,7 @@ export function FinanceLogsDashboard() {
       <section className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-            FinQuest
+            FinCity
           </p>
           <h1 className="mt-2 text-4xl font-semibold text-white">Dashboard</h1>
         </div>
@@ -925,7 +925,7 @@ export function FinanceLogsDashboard() {
 
       <section id="financial-report" className="mt-8">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-          FinQuest
+          FinCity
         </p>
         <h2 className="mt-2 text-4xl font-semibold text-white">Financial Report</h2>
         <p className="mt-2 text-xl text-slate-300">

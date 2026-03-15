@@ -43,8 +43,12 @@ export function BottomActionCard() {
 
   return (
     <div
-      className="absolute bottom-0 left-0 right-0 z-30 px-3 pb-[max(12px,env(safe-area-inset-bottom))]"
-      style={{ maxWidth: 390, margin: "0 auto" }}
+      className="absolute bottom-0 left-0 right-0 z-30 px-3"
+      style={{
+        maxWidth: 390,
+        margin: "0 auto",
+        paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
+      }}
     >
       <div
         className="rounded-[24px] p-4"
