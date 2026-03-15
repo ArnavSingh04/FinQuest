@@ -1,6 +1,6 @@
-# FinQuest
+# FinCity
 
-FinQuest is a mobile-first hackathon MVP that teaches financial literacy by
+FinCity is a mobile-first hackathon MVP that teaches financial literacy by
 turning spending habits into a living 3D city.
 
 Core loop:
@@ -86,7 +86,7 @@ types/
 
 ### `app/page.tsx`
 
-Landing page for the MVP. It introduces FinQuest and links users into the
+Landing page for the MVP. It introduces FinCity and links users into the
 dashboard or city view.
 
 ### `components/spending/SpendingForm.tsx`

@@ -1,4 +1,4 @@
-# FinQuest is currently a Next.js application and does not require
+# FinCity is currently a Next.js application and does not require
 # any Python runtime dependencies yet.
 #
 # Add Python packages here if you later introduce scripts, data jobs,

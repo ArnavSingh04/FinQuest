@@ -68,7 +68,7 @@ export default function HomePage() {
     return (
       <main className="flex min-h-screen w-full items-center justify-center px-5" style={{ background: "#F2EDE3" }}>
         <div className="rounded-2xl border p-6" style={{ background: "#FFFFFF", borderColor: "#C8BFA8", color: "#4A6358" }}>
-          Loading FinQuest...
+          Loading FinCity...
         </div>
       </main>
     );
@@ -88,7 +88,7 @@ export default function HomePage() {
           style={{ background: "#1C3A2E" }}
         >
           <Link href="/" className="font-heading text-xl font-normal tracking-tight" style={{ color: "#F2EDE3" }}>
-            FinQuest
+            FinCity
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">
@@ -125,7 +125,7 @@ export default function HomePage() {
           >
             Every purchase you make shapes a living 3D skyline. Spend wisely and
             watch towers rise. Overspend on impulses and storm clouds roll in.
-            FinQuest turns daily money decisions into something you can actually see.
+            FinCity turns daily money decisions into something you can actually see.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -278,7 +278,7 @@ export default function HomePage() {
               className="rounded-full px-8 py-4 text-sm font-semibold text-white transition hover:opacity-90"
               style={{ background: "#C17B3F" }}
             >
-              Start FinQuest
+              Start FinCity
             </Link>
             <Link
               href="/login"

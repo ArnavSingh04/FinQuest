@@ -1,6 +1,6 @@
 {
-  "name": "FinQuest",
-  "short_name": "FinQuest",
+  "name": "FinCity",
+  "short_name": "FinCity",
   "description": "Learn finance by watching your spending shape a 3D city.",
   "start_url": "/",
   "display": "standalone",

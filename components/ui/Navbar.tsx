@@ -62,7 +62,7 @@ export function Navbar() {
           href="/"
           className="text-lg font-semibold tracking-tight text-white"
         >
-          FinQuest
+          FinCity
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">

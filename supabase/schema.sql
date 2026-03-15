@@ -1,4 +1,4 @@
--- FinQuest full database schema
+-- FinCity full database schema
 -- Multi-user, social, and progression-ready Supabase schema.
 
 create extension if not exists "pgcrypto";
@@ -538,7 +538,7 @@ to authenticated
 with check (user_id = auth.uid());
 
 comment on table public.profiles is
-  'Supabase auth-linked profile data for each FinQuest user.';
+  'Supabase auth-linked profile data for each FinCity user.';
 
 comment on table public.transactions is
   'Raw user spending events that drive financial metrics and city changes.';

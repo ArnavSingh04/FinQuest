@@ -82,7 +82,7 @@ export function TopHUD() {
       >
         <div className="flex h-[52px] items-center justify-between px-4 backdrop-blur-md">
           <span className="font-heading text-lg font-normal" style={{ color: "#F2EDE3" }}>
-            FinQuest
+            FinCity
           </span>
           <div className="flex items-center gap-2 rounded-full px-3 py-1.5" style={{ backgroundColor: "rgba(255,255,255,0.12)" }}>
             <span className="text-sm font-medium" style={{ color: "#F2EDE3" }}>

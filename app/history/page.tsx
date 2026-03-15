@@ -264,7 +264,7 @@ export default function HistoryPage() {
         <div className="glass-card rounded-[2rem] p-6">
           <h1 className="text-3xl font-semibold text-white">Login to view your history</h1>
           <p className="mt-3 text-sm leading-6 text-slate-300">
-            Your transaction timeline is tied to your FinQuest account.
+            Your transaction timeline is tied to your FinCity account.
           </p>
           <div className="mt-6 flex gap-3">
             <Link
@@ -314,7 +314,7 @@ export default function HistoryPage() {
         className="mb-6"
       >
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-          FinQuest
+          FinCity
         </p>
         <h1 className="mt-2 text-3xl font-semibold text-white">Transaction History</h1>
         <p className="mt-2 text-sm text-slate-300">
