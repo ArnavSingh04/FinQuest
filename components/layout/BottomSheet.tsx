@@ -73,7 +73,7 @@ export function BottomSheet({
         className="relative z-50 flex max-h-[85vh] flex-col rounded-t-[24px] shadow-card"
         style={{
           maxHeight,
-          paddingBottom: "env(safe-area-inset-bottom)",
+          paddingBottom: "calc(24px + env(safe-area-inset-bottom))",
           backgroundColor: "#FFFFFF",
         }}
         initial={{ y: "100%" }}
