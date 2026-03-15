@@ -19,6 +19,8 @@ export interface GameStore {
   cityName: string;
   rewardBuildings: RewardBuilding[];
   lastAffectedCategory: TransactionCategory | null;
+  lastTransactionCategory: TransactionCategory | null;
+  lastTransactionTimestamp: number | null;
   resetCameraTrigger: number;
   addTransaction: (t: Omit<Transaction, "id" | "created_at">) => Transaction[];
   clearAll: () => void;
@@ -31,6 +33,7 @@ export interface GameStore {
   clearRewardBuildings: () => void;
   setRewardBuildingPosition: (id: string, position: { x: number; z: number }) => void;
   setResetCameraTrigger: () => void;
+  clearLastTransaction: () => void;
 }
 
 function persist(key: string, value: unknown) {
@@ -60,6 +63,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   cityName: "My City",
   rewardBuildings: [],
   lastAffectedCategory: null,
+  lastTransactionCategory: null,
+  lastTransactionTimestamp: null,
   resetCameraTrigger: 0,
 
   addTransaction: (incoming) => {
@@ -77,7 +82,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     persist("fq-proportions", proportions);
     persist("fq-city-state", cityState);
 
-    set({ transactions: newTxs, proportions, cityState, lastAffectedCategory: incoming.category });
+    set({
+      transactions: newTxs,
+      proportions,
+      cityState,
+      lastAffectedCategory: incoming.category,
+      lastTransactionCategory: incoming.category,
+      lastTransactionTimestamp: Date.now(),
+    });
     setTimeout(() => {
       get().lastAffectedCategory === incoming.category && set({ lastAffectedCategory: null });
     }, 700);
@@ -95,6 +107,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       advisorMessage: "Log a transaction and your city will come to life.",
       rewardBuildings: [],
       lastAffectedCategory: null,
+      lastTransactionCategory: null,
+      lastTransactionTimestamp: null,
     });
   },
 
@@ -165,6 +179,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   setResetCameraTrigger: () => set((s) => ({ resetCameraTrigger: s.resetCameraTrigger + 1 })),
+
+  clearLastTransaction: () =>
+    set({ lastTransactionCategory: null, lastTransactionTimestamp: null }),
 }));
 
 /** Use inside R3F Canvas so store updates trigger re-renders. */

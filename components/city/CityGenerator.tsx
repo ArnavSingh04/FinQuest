@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
 
-import { useGameStoreInCanvas } from "@/store/useGameStore";
+import { useGameStore, useGameStoreInCanvas } from "@/store/useGameStore";
 import { useCityStateOverride } from "@/contexts/CityStateContext";
 import type { RewardBuilding, RewardBuildingType, TransactionCategory } from "@/types";
 
@@ -1271,36 +1271,47 @@ function RewardGarden() {
   );
 }
 
-// ─── Pulse on transaction (scale 1 → 1.08 → 1 over 600ms when category matches) ─
-function PulseGroup({
-  category,
-  activeCategory,
-  children,
-}: {
-  category: TransactionCategory;
-  activeCategory: TransactionCategory | null;
-  children: ReactNode;
-}) {
-  const ref = useRef<THREE.Group>(null);
-  const startTime = useRef<number | null>(null);
-  useFrame(({ clock }) => {
-    if (!ref.current) return;
-    if (activeCategory === category) {
-      if (startTime.current === null) startTime.current = clock.elapsedTime;
-      const t = (clock.elapsedTime - startTime.current) * 1000; // ms
-      if (t < 600) {
-        const s = t < 300 ? 1 + (0.08 * t) / 300 : 1 + (0.08 * (600 - t)) / 300;
-        ref.current.scale.setScalar(s);
-      } else {
-        ref.current.scale.setScalar(1);
-        startTime.current = null;
-      }
+// ─── Pulse on transaction (scale 1 → 1.12 → 1 over 600ms when category matches) ─
+function usePulseOnTransaction(category: string) {
+  const lastCategory = useGameStore((s) => s.lastTransactionCategory);
+  const clearLastTransaction = useGameStore((s) => s.clearLastTransaction);
+  const scaleRef = useRef(1);
+  const pulseRef = useRef(false);
+  const startRef = useRef(0);
+
+  useEffect(() => {
+    if (lastCategory?.toLowerCase() === category.toLowerCase()) {
+      pulseRef.current = true;
+      startRef.current = performance.now();
+    }
+  }, [lastCategory, category]);
+
+  useFrame(() => {
+    if (!pulseRef.current) return;
+    const elapsed = (performance.now() - startRef.current) / 1000;
+    if (elapsed < 0.3) {
+      scaleRef.current = 1 + (elapsed / 0.3) * 0.12;
+    } else if (elapsed < 0.6) {
+      scaleRef.current = 1.12 - ((elapsed - 0.3) / 0.3) * 0.12;
     } else {
-      startTime.current = null;
-      ref.current.scale.setScalar(1);
+      scaleRef.current = 1;
+      pulseRef.current = false;
+      clearLastTransaction();
     }
   });
-  return <group ref={ref}>{children}</group>;
+
+  return scaleRef;
+}
+
+function ScaleGroup({ category, children }: { category: string; children: ReactNode }) {
+  const scaleRef = usePulseOnTransaction(category);
+  const groupRef = useRef<THREE.Group>(null);
+  useFrame(() => {
+    if (groupRef.current) {
+      groupRef.current.scale.setScalar(scaleRef.current);
+    }
+  });
+  return <group ref={groupRef}>{children}</group>;
 }
 
 // ─── Long-press ring (expands from point over 500ms) ───────────────────────────
@@ -1344,7 +1355,6 @@ export function CityGenerator() {
   const { proportions, cityState } = useActiveCityState();
   const rewardBuildings = useGameStoreInCanvas((s) => s.rewardBuildings);
   const setRewardBuildingPosition = useGameStoreInCanvas((s) => s.setRewardBuildingPosition);
-  const lastAffectedCategory = useGameStoreInCanvas((s) => s.lastAffectedCategory);
   const [hoverInfo, setHoverInfo] = useState<{
     title: string;
     stat: string;
@@ -1597,31 +1607,31 @@ export function CityGenerator() {
       </group>
 
       {/* ── Apartments (24 positions) ── */}
-      <PulseGroup category="Need" activeCategory={lastAffectedCategory}>
+      <ScaleGroup category="need">
         {aptPositions.map(([x, z], i) => (
           <group key={`apt-wrap-${i}`} {...hoverProps("Apartments", `Needs: ${needsPct}%`, needsState, "More needs spending = more apartments and residents.", [x, 1.4, z])} {...buildingTapProps("Residential District", "Need", needsState, "Keep needs between 40-50% to grow this district.", [x, 1.4, z])}>
             <Apartment x={x} z={z} idx={i} />
           </group>
         ))}
-      </PulseGroup>
+      </ScaleGroup>
 
       {/* ── Condo Towers (4 tall residential towers) ── */}
-      <PulseGroup category="Need" activeCategory={lastAffectedCategory}>
+      <ScaleGroup category="need">
         {condoPositions.map(([x, z], i) => (
           <group key={`condo-${i}`} {...hoverProps("Condo Tower", `Needs: ${needsPct}%`, needsState, "Condos rise as residential spending grows — aim for 50% needs.", [x, 3.5, z])} {...buildingTapProps("Condo Tower", "Need", needsState, "Keep needs between 40-50% to grow this district.", [x, 3.5, z])}>
             <CondoTower x={x} z={z} idx={i} />
           </group>
         ))}
-      </PulseGroup>
+      </ScaleGroup>
 
       {/* ── Restaurants (12 positions) ── */}
-      <PulseGroup category="Want" activeCategory={lastAffectedCategory}>
-      {restPositions.map(([x, z], i) => (
-        <group key={`rest-wrap-${i}`} {...hoverProps("Restaurants", `Wants: ${wantsPct}%`, wantsState, "Wants add variety, but keep them under 30% for a balanced city.", [x, 1.2, z])} {...buildingTapProps("Restaurants", "Want", wantsState, "Keep wants under 30% for a balanced city.", [x, 1.2, z])}>
-          <Restaurant x={x} z={z} idx={i} />
-        </group>
-      ))}
-      </PulseGroup>
+      <ScaleGroup category="want">
+        {restPositions.map(([x, z], i) => (
+          <group key={`rest-wrap-${i}`} {...hoverProps("Restaurants", `Wants: ${wantsPct}%`, wantsState, "Wants add variety, but keep them under 30% for a balanced city.", [x, 1.2, z])} {...buildingTapProps("Restaurants", "Want", wantsState, "Keep wants under 30% for a balanced city.", [x, 1.2, z])}>
+            <Restaurant x={x} z={z} idx={i} />
+          </group>
+        ))}
+      </ScaleGroup>
 
       {/* ── Office Blocks (scale with investment) ── */}
       {officePositions.slice(0, officeCount).map(([x, z], i) => (
@@ -1651,14 +1661,14 @@ export function CityGenerator() {
       </group>
 
       {/* ── Financial district ── */}
-      <PulseGroup category="Invest" activeCategory={lastAffectedCategory}>
-      <group {...hoverProps("Bank Tower", `Investments: ${investPct}%`, investState, "Invest more to grow your financial district — aim for 20%+.", [3.5, 3.5, -2.5])} {...buildingTapProps("Bank Tower", "Invest", investState, "Invest more to grow your financial district — aim for 20%+.", [3.5, 3.5, -2.5])}>
-        <BankTower x={3.5} z={-2.5} />
-      </group>
-      <group {...hoverProps("Investment Tower", `Investments: ${investPct}%`, investState, "Higher investment % makes this tower taller and more impressive.", [5.3, 3.2, -2.1])} {...buildingTapProps("Investment Tower", "Invest", investState, "Aim for 20%+ investment to grow this tower.", [5.3, 3.2, -2.1])}>
-        <InvestmentTower x={5.3} z={-2.1} />
-      </group>
-      </PulseGroup>
+      <ScaleGroup category="invest">
+        <group {...hoverProps("Bank Tower", `Investments: ${investPct}%`, investState, "Invest more to grow your financial district — aim for 20%+.", [3.5, 3.5, -2.5])} {...buildingTapProps("Bank Tower", "Invest", investState, "Invest more to grow your financial district — aim for 20%+.", [3.5, 3.5, -2.5])}>
+          <BankTower x={3.5} z={-2.5} />
+        </group>
+        <group {...hoverProps("Investment Tower", `Investments: ${investPct}%`, investState, "Higher investment % makes this tower taller and more impressive.", [5.3, 3.2, -2.1])} {...buildingTapProps("Investment Tower", "Invest", investState, "Aim for 20%+ investment to grow this tower.", [5.3, 3.2, -2.1])}>
+          <InvestmentTower x={5.3} z={-2.1} />
+        </group>
+      </ScaleGroup>
 
       {/* ── Community buildings ── */}
       <group {...hoverProps("School", `Needs: ${needsPct}%`, needsState, "School appears when needs reach 40% — keep essentials covered.", [-7.0, 1.6, -2.2])} {...buildingTapProps("School", "Need", needsState, "Keep needs between 40-50% to support schools.", [-7.0, 1.6, -2.2])}>
@@ -1744,17 +1754,19 @@ export function CityGenerator() {
       </group>
 
       {/* ── Pollution clouds ── */}
-      <group {...hoverProps("Pollution", `Treats: ${treatsPct}%`, treatsState, "Reduce treats to clear the smog over your city.", [3.5, 5.5, 1])} {...buildingTapProps("Pollution", "Treat", treatsState, "Reduce treats to clear the smog.", [3.5, 5.5, 1])}>
-        {Array.from({ length: cloudCount }, (_, i) => (
-          <PollutionCloud
-            key={i}
-            x={1 + (i % 4) * 2.5}
-            y={4 + (i % 3) * 0.5}
-            z={3 - (i % 3) * 1.5}
-            opacity={0.2 + treats * 0.55}
-          />
-        ))}
-      </group>
+      <ScaleGroup category="treat">
+        <group {...hoverProps("Pollution", `Treats: ${treatsPct}%`, treatsState, "Reduce treats to clear the smog over your city.", [3.5, 5.5, 1])} {...buildingTapProps("Pollution", "Treat", treatsState, "Reduce treats to clear the smog.", [3.5, 5.5, 1])}>
+          {Array.from({ length: cloudCount }, (_, i) => (
+            <PollutionCloud
+              key={i}
+              x={1 + (i % 4) * 2.5}
+              y={4 + (i % 3) * 0.5}
+              z={3 - (i % 3) * 1.5}
+              opacity={0.2 + treats * 0.55}
+            />
+          ))}
+        </group>
+      </ScaleGroup>
 
       {/* ── Traffic ── */}
       {Array.from({ length: carCount }, (_, i) => (
