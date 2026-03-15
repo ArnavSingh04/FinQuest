@@ -75,6 +75,7 @@ export function generateCityMetrics(input: {
   };
 }
 
+
 export function generateCityState(proportions: Proportions, monthlyIncome = 0, totalSpend = 0): CityState {
   const needsPct    = proportions.needs * 100;
   const wantsPct    = proportions.wants * 100;

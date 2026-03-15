@@ -35,7 +35,7 @@ const CAMERA_PRESETS = [
   { label: "West Side",   icon: "🏘️", pos: [-14, 6, 2]   as [number,number,number], target: [-8, 1, -3]  as [number,number,number] },
 ];
 
-const DEFAULT_CAMERA = { pos: [0, 18, 22] as [number, number, number], target: [0, 0, 0] as [number, number, number], fov: 45 };
+const DEFAULT_CAMERA = { pos: [0, 22, 28] as [number, number, number], target: [0, 0, 0] as [number, number, number], fov: 45 };
 
 function Lights() {
   const c = WARM_AFTERNOON;
@@ -80,8 +80,8 @@ function SkyBackground() {
 function CameraController({ preset }: { preset: typeof CAMERA_PRESETS[number] | null }) {
   const { camera } = useThree();
   const controlsRef = useRef<OrbitControlsImpl>(null);
-  const targetPos = useRef(new THREE.Vector3(...(preset?.pos ?? DEFAULT_CAMERA.pos)));
-  const targetLook = useRef(new THREE.Vector3(...(preset?.target ?? DEFAULT_CAMERA.target)));
+  const targetPos = useRef(new THREE.Vector3(...DEFAULT_CAMERA.pos));
+  const targetLook = useRef(new THREE.Vector3(...DEFAULT_CAMERA.target));
   const resetCameraTrigger = useGameStoreInCanvas((s) => s.resetCameraTrigger);
   const prevResetRef = useRef(resetCameraTrigger);
 
@@ -114,15 +114,16 @@ function CameraController({ preset }: { preset: typeof CAMERA_PRESETS[number] | 
   return (
     <OrbitControls
       ref={controlsRef}
+      enabled
       enableDamping
-      dampingFactor={0.08}
+      dampingFactor={0.05}
       enablePan
       minPolarAngle={0}
       maxPolarAngle={Math.PI / 3.5}
-      minDistance={20}
-      maxDistance={80}
+      minDistance={10}
+      maxDistance={60}
       autoRotate={false}
-      zoomSpeed={0.45}
+      zoomSpeed={0.6}
       rotateSpeed={0.85}
     />
   );
@@ -131,7 +132,7 @@ function CameraController({ preset }: { preset: typeof CAMERA_PRESETS[number] | 
 export function SceneContents({ preset }: { preset: typeof CAMERA_PRESETS[number] | null }) {
   return (
     <>
-      <PerspectiveCamera makeDefault position={[0, 18, 22]} fov={45} />
+      <PerspectiveCamera makeDefault position={[0, 22, 28]} fov={45} />
       <SceneFog />
       <SkyBackground />
       <Lights />

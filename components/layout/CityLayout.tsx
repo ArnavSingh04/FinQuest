@@ -16,6 +16,7 @@ import { LearnSheetContent } from "@/components/sheets/LearnSheetContent";
 import { GroupsSheetContent } from "@/components/sheets/GroupsSheetContent";
 import { StatsSheetContent } from "@/components/sheets/StatsSheetContent";
 import { QuestsSheetContent } from "@/components/sheets/QuestsSheetContent";
+import { RewardChoiceModal } from "@/components/rewards/RewardChoiceModal";
 
 const SHEET_TITLES: Record<NonNullable<ReturnType<typeof useUIStore.getState>["activeSheet"]>, string> = {
   log: "Log Spend",
@@ -75,7 +76,8 @@ function SheetContent() {
 }
 
 export function CityLayout() {
-  const activeSheet = useUIStore((s) => s.activeSheet);
+  const activeSheet   = useUIStore((s) => s.activeSheet);
+  const pendingReward = useGameStore((s) => s.pendingRewardQuestId);
 
   useEffect(() => {
     const state = useGameStore.getState();
@@ -129,6 +131,9 @@ export function CityLayout() {
 
       {/* City pulse overlay (after successful log) — non-city overlay only */}
       <CityPulseOverlay />
+
+      {/* Quest reward choice modal — shown when a quest unlocks a pending reward */}
+      {pendingReward && <RewardChoiceModal />}
     </div>
   );
 }
