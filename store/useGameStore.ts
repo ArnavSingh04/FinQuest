@@ -5,7 +5,7 @@ import { create } from "zustand";
 
 import { generateCityState, defaultCityState } from "@/lib/cityEngine";
 import { calculateSpendingRatios } from "@/lib/financeEngine";
-import type { CityState, Proportions, RewardBuilding, Transaction, TransactionCategory } from "@/types";
+import type { CityState, Proportions, RewardBuilding, RewardBuildingType, Transaction, TransactionCategory } from "@/types";
 
 const defaultProportions: Proportions = { needs: 0, wants: 0, treats: 0, investments: 0 };
 
@@ -18,6 +18,8 @@ export interface GameStore {
   monthlyIncome: number;
   cityName: string;
   rewardBuildings: RewardBuilding[];
+  pendingRewardQuestId: string | null;
+  pendingRewardQuestTitle: string | null;
   lastAffectedCategory: TransactionCategory | null;
   lastTransactionCategory: TransactionCategory | null;
   lastTransactionTimestamp: number | null;
@@ -29,9 +31,19 @@ export interface GameStore {
   setAdvisorLoading: (loading: boolean) => void;
   setMonthlyIncome: (income: number) => void;
   setCityName: (name: string) => void;
+  // Legacy reward building actions (kept for backwards compat)
   unlockRewardBuilding: (building: RewardBuilding) => void;
-  clearRewardBuildings: () => void;
   setRewardBuildingPosition: (id: string, position: { x: number; z: number }) => void;
+  // New quest reward flow
+  unlockReward: (questId: string, questTitle: string) => void;
+  chooseReward: (
+    type: RewardBuildingType,
+    position: { x: number; z: number },
+    heightMultiplier?: number,
+    parkSize?: "small" | "large",
+  ) => void;
+  dismissPendingReward: () => void;
+  clearRewardBuildings: () => void;
   setResetCameraTrigger: () => void;
   clearLastTransaction: () => void;
 }
@@ -62,6 +74,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   monthlyIncome: 0,
   cityName: "My City",
   rewardBuildings: [],
+  pendingRewardQuestId: null,
+  pendingRewardQuestTitle: null,
   lastAffectedCategory: null,
   lastTransactionCategory: null,
   lastTransactionTimestamp: null,
@@ -97,7 +111,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   clearAll: () => {
-    ["fq-transactions", "fq-proportions", "fq-city-state", "fq-advisor", "fq-reward-buildings"].forEach((k) => {
+    [
+      "fq-transactions", "fq-proportions", "fq-city-state", "fq-advisor",
+      "fq-reward-buildings", "fq-pending-reward",
+    ].forEach((k) => {
       if (typeof window !== "undefined") localStorage.removeItem(k);
     });
     set({
@@ -106,6 +123,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       cityState: defaultCityState,
       advisorMessage: "Log a transaction and your city will come to life.",
       rewardBuildings: [],
+      pendingRewardQuestId: null,
+      pendingRewardQuestTitle: null,
       lastAffectedCategory: null,
       lastTransactionCategory: null,
       lastTransactionTimestamp: null,
@@ -115,22 +134,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
   loadFromStorage: () => {
     if (typeof window === "undefined") return;
     try {
-      const txRaw      = localStorage.getItem("fq-transactions");
-      const pRaw       = localStorage.getItem("fq-proportions");
-      const csRaw      = localStorage.getItem("fq-city-state");
-      const msgRaw     = localStorage.getItem("fq-advisor");
-      const incomeRaw  = localStorage.getItem("fq-income");
-      const nameRaw    = localStorage.getItem("fq-city-name");
-      const rbRaw      = localStorage.getItem("fq-reward-buildings");
+      const txRaw         = localStorage.getItem("fq-transactions");
+      const pRaw          = localStorage.getItem("fq-proportions");
+      const csRaw         = localStorage.getItem("fq-city-state");
+      const msgRaw        = localStorage.getItem("fq-advisor");
+      const incomeRaw     = localStorage.getItem("fq-income");
+      const nameRaw       = localStorage.getItem("fq-city-name");
+      const rbRaw         = localStorage.getItem("fq-reward-buildings");
+      const pendingRaw    = localStorage.getItem("fq-pending-reward");
 
       const updates: Partial<GameStore> = {};
-      if (txRaw)     updates.transactions   = JSON.parse(txRaw);
-      if (pRaw)      updates.proportions    = JSON.parse(pRaw);
-      if (csRaw)     updates.cityState      = JSON.parse(csRaw);
-      if (msgRaw)    updates.advisorMessage = msgRaw;
-      if (incomeRaw) updates.monthlyIncome  = JSON.parse(incomeRaw);
-      if (nameRaw)   updates.cityName       = nameRaw;
-      if (rbRaw)     updates.rewardBuildings = JSON.parse(rbRaw);
+      if (txRaw)      updates.transactions          = JSON.parse(txRaw);
+      if (pRaw)       updates.proportions           = JSON.parse(pRaw);
+      if (csRaw)      updates.cityState             = JSON.parse(csRaw);
+      if (msgRaw)     updates.advisorMessage        = msgRaw;
+      if (incomeRaw)  updates.monthlyIncome         = JSON.parse(incomeRaw);
+      if (nameRaw)    updates.cityName              = nameRaw;
+      if (rbRaw)      updates.rewardBuildings       = JSON.parse(rbRaw);
+      if (pendingRaw) updates.pendingRewardQuestId  = pendingRaw;
       set(updates);
     } catch {
       // ignore corrupt storage
@@ -176,6 +197,43 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
     persist("fq-reward-buildings", next);
     set({ rewardBuildings: next });
+  },
+
+  unlockReward: (questId, questTitle) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("fq-pending-reward", questId);
+    }
+    set({ pendingRewardQuestId: questId, pendingRewardQuestTitle: questTitle });
+  },
+
+  chooseReward: (type, position, heightMultiplier, parkSize) => {
+    const { pendingRewardQuestId, pendingRewardQuestTitle } = get();
+    const now = new Date().toISOString();
+    const building: RewardBuilding = {
+      id: crypto.randomUUID(),
+      questId: pendingRewardQuestId ?? "unknown",
+      questTitle: pendingRewardQuestTitle ?? "Quest Reward",
+      type,
+      status: "placed",
+      unlockedAt: now,
+      placedAt: now,
+      position,
+      ...(heightMultiplier !== undefined && { heightMultiplier }),
+      ...(parkSize !== undefined && { parkSize }),
+    };
+    const next = [...get().rewardBuildings, building];
+    persist("fq-reward-buildings", next);
+    if (typeof window !== "undefined") localStorage.removeItem("fq-pending-reward");
+    set({
+      rewardBuildings: next,
+      pendingRewardQuestId: null,
+      pendingRewardQuestTitle: null,
+    });
+  },
+
+  dismissPendingReward: () => {
+    if (typeof window !== "undefined") localStorage.removeItem("fq-pending-reward");
+    set({ pendingRewardQuestId: null, pendingRewardQuestTitle: null });
   },
 
   setResetCameraTrigger: () => set((s) => ({ resetCameraTrigger: s.resetCameraTrigger + 1 })),

@@ -8,6 +8,7 @@ import * as THREE from "three";
 import { useGameStore, useGameStoreInCanvas } from "@/store/useGameStore";
 import { useCityStateOverride } from "@/contexts/CityStateContext";
 import type { RewardBuilding, RewardBuildingType, TransactionCategory } from "@/types";
+import { REWARD_TOWER_POSITIONS, REWARD_PARK_POSITIONS } from "@/lib/rewardPositions";
 
 const CATEGORY_COLORS: Record<TransactionCategory, string> = {
   Need: "#3B7DD8",
@@ -17,12 +18,8 @@ const CATEGORY_COLORS: Record<TransactionCategory, string> = {
 };
 
 const REWARD_BUILDING_LABELS: Record<RewardBuildingType, string> = {
-  library: "Library",
-  stadium: "Stadium",
-  solar_tower: "Solar Tower",
-  market: "Reward Market",
-  monument: "Monument",
-  garden: "Community Garden",
+  gold_tower: "Gold Tower",
+  park:       "City Park",
 };
 
 // ─── Unified city state hook (respects shared-city context override) ──────────
@@ -2048,6 +2045,8 @@ const CIVIC_DISTRICT_POSITIONS: [number, number][] = [
   [-17, 3], [-17, 0], [-17, -2], [-14, 3], [-14, 0], [-14, -2],
 ];
 
+// REWARD_TOWER_POSITIONS and REWARD_PARK_POSITIONS are imported from @/lib/rewardPositions
+
 // ─── Reward building glow (golden halo beneath) ─────────────────────────────────
 function RewardGlow() {
   return (
@@ -2292,15 +2291,99 @@ function LongPressRing({ position }: { position: THREE.Vector3 }) {
   );
 }
 
+// ─── Reward Park ──────────────────────────────────────────────────────────────
+function RewardPark({
+  x, z, size, idx,
+}: {
+  x: number; z: number;
+  size: "small" | "large";
+  idx: number;
+}) {
+  const w = size === "large" ? 4.5 : 2.8;
+  const d = size === "large" ? 4.0 : 2.4;
+  const centralTreeRef = useIdlePulse(0.8, 0.015, idx * 0.6);
+
+  return (
+    <group position={[x, 0, z]}>
+      {/* Grass base */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.009, 0]} receiveShadow>
+        <planeGeometry args={[w, d]} />
+        <meshStandardMaterial color="#4A7C59" roughness={0.9} />
+      </mesh>
+
+      {/* Gravel paths — front/back */}
+      {([-d / 2 + 0.2, d / 2 - 0.2] as number[]).map((pz, i) => (
+        <mesh key={`fp-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, pz]}>
+          <planeGeometry args={[w - 0.2, 0.35]} />
+          <meshStandardMaterial color="#C8BFA8" roughness={0.8} />
+        </mesh>
+      ))}
+      {/* Gravel paths — sides */}
+      {([-w / 2 + 0.2, w / 2 - 0.2] as number[]).map((px, i) => (
+        <mesh key={`sp-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[px, 0.01, 0]}>
+          <planeGeometry args={[0.35, d - 0.2]} />
+          <meshStandardMaterial color="#C8BFA8" roughness={0.8} />
+        </mesh>
+      ))}
+
+      {/* Trees */}
+      {size === "large" ? (
+        <group ref={centralTreeRef}>
+          <Tree x={-1.2} z={-1.2} scale={1.2} />
+          <Tree x={ 1.2} z={-1.2} scale={1.0} />
+          <Tree x={-1.2} z={ 1.2} scale={1.1} />
+          <Tree x={ 1.2} z={ 1.2} scale={0.9} />
+          <Tree x={   0} z={   0} scale={1.3} />
+        </group>
+      ) : (
+        <group ref={centralTreeRef}>
+          <Tree x={-0.7} z={-0.6} scale={0.9} />
+          <Tree x={ 0.7} z={-0.6} scale={0.85} />
+          <Tree x={   0} z={ 0.6} scale={1.0} />
+        </group>
+      )}
+
+      {/* Flower beds */}
+      {([
+        { x: -0.3, z:    0, color: "#FCA5A5" },
+        { x:  0.3, z:    0, color: "#FDE68A" },
+        { x:    0, z: -0.3, color: "#A7F3D0" },
+      ]).map((f, i) => (
+        <mesh key={`fl-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[f.x, 0.011, f.z]}>
+          <circleGeometry args={[0.18, 12]} />
+          <meshStandardMaterial color={f.color} emissive={f.color} emissiveIntensity={0.3} />
+        </mesh>
+      ))}
+
+      {/* Benches */}
+      <Bench x={0} z={size === "large" ? 1.4 : 0.9} />
+      {size === "large" && <Bench x={0} z={-1.4} />}
+
+      {/* Entry lamps */}
+      <StreetLamp x={ w / 2 - 0.3} z={d / 2 - 0.3} />
+      <StreetLamp x={-w / 2 + 0.3} z={d / 2 - 0.3} />
+
+      {/* Golden quest plaque at park entrance */}
+      <mesh position={[0, 0.3, d / 2 + 0.05]} castShadow>
+        <boxGeometry args={[0.6, 0.2, 0.04]} />
+        <meshStandardMaterial
+          color="#C9A84C"
+          metalness={0.8}
+          roughness={0.1}
+          emissive="#C9A84C"
+          emissiveIntensity={0.4}
+        />
+      </mesh>
+    </group>
+  );
+}
+
 function RewardBuildingByType({ type }: { type: RewardBuildingType }) {
   switch (type) {
-    case "library": return <RewardLibrary />;
-    case "stadium": return <RewardStadium />;
-    case "solar_tower": return <RewardSolarTower />;
-    case "market": return <RewardMarket />;
-    case "monument": return <RewardMonument />;
-    case "garden": return <RewardGarden />;
-    default: return null;
+    // New reward types (quest reward system)
+    case "gold_tower": return null; // rendered separately via GoldTower
+    case "park":       return null; // rendered separately via RewardPark
+    default:           return null;
   }
 }
 
@@ -2470,22 +2553,7 @@ export function CityGenerator() {
     [-13.5,-3.2], [-13.5,-1.8], [-13.5,-9.5], [4.5,-3.2],
   ];
 
-  // Gold Tower positions — "Financial Crown" district, NE corner (up to 7)
-  // Shifted x-1.5 to move inward from map edge (centre at 9.5, -8.0)
-  const goldTowerPositions: [number, number, number][] = [
-    // [x, z, heightMultiplier]
-    // Centre landmark - tallest, most prominent
-    [ 9.5, -8.0, 2.2],
-    // Inner ring around centre
-    [ 7.5, -7.0, 1.6],
-    [11.5, -7.0, 1.4],
-    [ 7.5, -9.5, 1.5],
-    [11.5, -9.5, 1.3],
-    // Outer positions
-    [ 9.5, -5.5, 1.2],
-    [ 9.5, -11.5, 1.1],
-  ];
-  const goldCount = cityState.goldTowerCount ?? 0;
+  // Gold towers are now quest rewards — rendered via the reward buildings block below
 
   // 6 market positions — commercial strips
   const marketPositions: [number, number][] = [
@@ -2718,73 +2786,39 @@ export function CityGenerator() {
           <InvestmentTower x={5.3} z={-2.1} />
         </group>
 
-        {/* ── Financial Crown district — golden plaza floor ── */}
-        {goldCount >= 3 && (
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[9.5, 0.008, -8.0]} receiveShadow>
-            <circleGeometry args={[3.5, 32]} />
-            <meshStandardMaterial
-              color="#C9A84C"
-              transparent
-              opacity={0.15}
-              roughness={0.8}
-              metalness={0.3}
-            />
-          </mesh>
-        )}
+        {/* ── Financial Crown district — golden plaza floor (always present) ── */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[9.5, 0.008, -8.0]} receiveShadow>
+          <circleGeometry args={[3.5, 32]} />
+          <meshStandardMaterial
+            color="#C9A84C"
+            transparent
+            opacity={0.15}
+            roughness={0.8}
+            metalness={0.3}
+          />
+        </mesh>
 
-        {/* ── "FINANCIAL CROWN" district label ── */}
-        {goldCount >= 1 && (
-          <Html position={[9.5, 0.1, -5.8]} center>
-            <div
-              style={{
-                color: "#C9A84C",
-                fontSize: 9,
-                fontFamily: "DM Sans, sans-serif",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                background: "rgba(0,0,0,0.3)",
-                padding: "2px 6px",
-                borderRadius: 4,
-                whiteSpace: "nowrap",
-                pointerEvents: "none",
-              }}
-            >
-              Financial Crown
-            </div>
-          </Html>
-        )}
-
-        {/* ── Gold Towers (tiered: 5% → 1 tower … 35%+ → 7 towers) ── */}
-        {goldTowerPositions.slice(0, goldCount).map(([gx, gz, hm], i) => (
-          <group
-            key={`gold-${i}`}
-            {...hoverProps(
-              "Gold Tower",
-              `Investments: ${investPct}%`,
-              investState,
-              i === 0
-                ? "Your landmark tower — keep investing to grow the Financial Crown!"
-                : "Investment towers rise as you save and invest more.",
-              [gx, 4, gz],
-            )}
-            {...buildingTapProps(
-              "Gold Tower",
-              "Invest",
-              investState,
-              "Keep investing to unlock more Gold Towers in the Financial Crown district.",
-              [gx, 4, gz],
-            )}
+        {/* ── "FINANCIAL CROWN" district label (always present) ── */}
+        <Html position={[9.5, 0.1, -5.8]} center>
+          <div
+            style={{
+              color: "#C9A84C",
+              fontSize: 9,
+              fontFamily: "DM Sans, sans-serif",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              background: "rgba(0,0,0,0.3)",
+              padding: "2px 6px",
+              borderRadius: 4,
+              whiteSpace: "nowrap",
+              pointerEvents: "none",
+            }}
           >
-            <GoldTower
-              x={gx}
-              z={gz}
-              idx={i}
-              heightMultiplier={hm}
-              isNew={i === goldCount - 1}
-            />
-          </group>
-        ))}
+            Financial Crown
+          </div>
+        </Html>
+        {/* Gold Towers now fill this district as quest rewards — see reward rendering below */}
       </ScaleGroup>
 
       {/* ── Community buildings ── */}
@@ -3074,26 +3108,62 @@ export function CityGenerator() {
       ))}
 
       {/* ── Reward buildings (civic district, top-left) ── */}
-      {rewardBuildings.map((building, idx) => {
-        const slot = CIVIC_DISTRICT_POSITIONS[idx % CIVIC_DISTRICT_POSITIONS.length]!;
-        const pos = building.position ?? { x: slot[0], z: slot[1] };
-        return (
-          <group
-            key={building.id}
-            position={[pos.x, 0, pos.z]}
-            scale={1.2}
-            onPointerDown={(e: any) => {
-              e.stopPropagation();
-              setBuildingPopup({
-                position: e.point.clone().add(0, 1.5, 0),
-                data: { type: "reward", building },
-              });
-            }}
-          >
-            <RewardBuildingByType type={building.type} />
-          </group>
-        );
-      })}
+      {/* ── Quest reward: Gold Towers (placed by the player) ── */}
+      {rewardBuildings
+        .filter((r) => r.type === "gold_tower" && r.status === "placed")
+        .map((reward, i) => {
+          const fallback = REWARD_TOWER_POSITIONS[i % REWARD_TOWER_POSITIONS.length]!;
+          const pos = reward.position ?? { x: fallback.x, z: fallback.z };
+          const hm  = reward.heightMultiplier ?? fallback.heightMultiplier ?? 1.5;
+          const isNew = !!reward.placedAt && Date.now() - new Date(reward.placedAt).getTime() < 5000;
+          return (
+            <group
+              key={reward.id}
+              {...hoverProps(
+                "Quest Reward Tower",
+                `Unlocked: ${new Date(reward.unlockedAt).toLocaleDateString()}`,
+                "Achievement",
+                `Earned by completing: "${reward.questTitle}"`,
+                [pos.x, 5, pos.z],
+              )}
+            >
+              <GoldTower
+                x={pos.x}
+                z={pos.z}
+                idx={i + 20}
+                heightMultiplier={hm}
+                isNew={isNew}
+              />
+            </group>
+          );
+        })}
+
+      {/* ── Quest reward: Parks (placed by the player) ── */}
+      {rewardBuildings
+        .filter((r) => r.type === "park" && r.status === "placed")
+        .map((reward, i) => {
+          const fallback = REWARD_PARK_POSITIONS[i % REWARD_PARK_POSITIONS.length]!;
+          const pos = reward.position ?? { x: fallback.x, z: fallback.z };
+          return (
+            <group
+              key={reward.id}
+              {...hoverProps(
+                "Quest Reward Park",
+                `Planted: ${new Date(reward.unlockedAt).toLocaleDateString()}`,
+                "Achievement",
+                `Grown by completing: "${reward.questTitle}"`,
+                [pos.x, 2, pos.z],
+              )}
+            >
+              <RewardPark
+                x={pos.x}
+                z={pos.z}
+                size={reward.parkSize ?? "small"}
+                idx={i}
+              />
+            </group>
+          );
+        })}
 
       {/* Hover badge — only render when hoverInfo is not null */}
       {hoverInfo != null && (

@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { useGameStore } from "@/store/useGameStore";
 
 export type QuestStatus = "active" | "completed" | "failed";
 
@@ -57,7 +58,9 @@ interface QuestsStore {
   quests: Quest[];
   lessons: MockLesson[];
   completedLessonIds: Set<string>;
+  completedQuestIds: Set<string>;
   completeLesson: (lessonId: string) => void;
+  completeQuest: (questId: string) => void;
 }
 
 function createQuestFromLesson(lesson: MockLesson): Quest {
@@ -72,10 +75,11 @@ function createQuestFromLesson(lesson: MockLesson): Quest {
   };
 }
 
-export const useQuestsStore = create<QuestsStore>((set) => ({
+export const useQuestsStore = create<QuestsStore>((set, get) => ({
   quests: [],
   lessons: MOCK_LESSONS,
   completedLessonIds: new Set(),
+  completedQuestIds: new Set(),
 
   completeLesson: (lessonId: string) => {
     set((state) => {
@@ -88,5 +92,23 @@ export const useQuestsStore = create<QuestsStore>((set) => ({
         quests: [newQuest, ...state.quests],
       };
     });
+  },
+
+  completeQuest: (questId: string) => {
+    const state = get();
+    if (state.completedQuestIds.has(questId)) return;
+    const quest = state.quests.find((q) => q.id === questId);
+    if (!quest) return;
+
+    // Mark quest as completed in this store
+    set((s) => ({
+      completedQuestIds: new Set([...s.completedQuestIds, questId]),
+      quests: s.quests.map((q) =>
+        q.id === questId ? { ...q, status: "completed" as QuestStatus } : q,
+      ),
+    }));
+
+    // Trigger reward modal via game store
+    useGameStore.getState().unlockReward(questId, quest.title);
   },
 }));
