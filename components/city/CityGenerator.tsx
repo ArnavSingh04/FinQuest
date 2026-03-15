@@ -144,7 +144,10 @@ function Apartment({ x, z, idx }: { x: number; z: number; idx: number }) {
   const { cityState } = useActiveCityState();
   const count = cityState.apartmentCount;
   const visible = idx < count;
-  const baseH = 1.9 + (idx % 4) * 0.7;
+  // Buildings closer to the financial district are taller — creates a graduated skyline
+  const distFromFinancial = Math.sqrt(Math.pow(x - 9.5, 2) + Math.pow(z + 8, 2));
+  const heightBonus = Math.max(0, (20 - distFromFinancial) / 20) * 0.4;
+  const baseH = (1.9 + (idx % 4) * 0.7) * (1 + heightBonus);
   const topH  = baseH * 0.5;
   const baseWindowRows = Math.max(1, Math.floor(baseH * 0.9));
   const baseWindowBandHeight = Math.max(0.35, baseH * 0.35);
@@ -2467,16 +2470,20 @@ export function CityGenerator() {
     [-13.5,-3.2], [-13.5,-1.8], [-13.5,-9.5], [4.5,-3.2],
   ];
 
-  // Gold Tower positions — "Financial Crown" district, NE cluster (up to 7)
+  // Gold Tower positions — "Financial Crown" district, NE corner (up to 7)
+  // Shifted x-1.5 to move inward from map edge (centre at 9.5, -8.0)
   const goldTowerPositions: [number, number, number][] = [
-    // x, z, heightMultiplier — centre landmark is tallest
-    [6.5, -4.5, 2.2],
-    [4.8, -3.2, 1.6],
-    [8.2, -3.2, 1.4],
-    [4.8, -5.8, 1.5],
-    [8.2, -5.8, 1.3],
-    [6.5, -2.0, 1.2],
-    [6.5, -7.0, 1.1],
+    // [x, z, heightMultiplier]
+    // Centre landmark - tallest, most prominent
+    [ 9.5, -8.0, 2.2],
+    // Inner ring around centre
+    [ 7.5, -7.0, 1.6],
+    [11.5, -7.0, 1.4],
+    [ 7.5, -9.5, 1.5],
+    [11.5, -9.5, 1.3],
+    // Outer positions
+    [ 9.5, -5.5, 1.2],
+    [ 9.5, -11.5, 1.1],
   ];
   const goldCount = cityState.goldTowerCount ?? 0;
 
@@ -2532,6 +2539,28 @@ export function CityGenerator() {
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.007, -10.5]} receiveShadow>
         <planeGeometry args={[40, 0.55]} />
         <meshStandardMaterial color="#6B6560" roughness={0.9} />
+      </mesh>
+
+      {/* ── District ground planes — subtle zone colouring just above grass ── */}
+      {/* Residential district (northwest) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-8, 0.008, -5]} receiveShadow>
+        <planeGeometry args={[14, 12]} />
+        <meshStandardMaterial color="#D4C5A9" transparent opacity={0.4} roughness={1} depthWrite={false} />
+      </mesh>
+      {/* Commercial district (south strip) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-2, 0.008, 4]} receiveShadow>
+        <planeGeometry args={[18, 6]} />
+        <meshStandardMaterial color="#C4B49A" transparent opacity={0.35} roughness={1} depthWrite={false} />
+      </mesh>
+      {/* Civic/park district (centre) — light green tint */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-1, 0.008, -1]} receiveShadow>
+        <planeGeometry args={[7, 7]} />
+        <meshStandardMaterial color="#A8C5A0" transparent opacity={0.3} roughness={1} depthWrite={false} />
+      </mesh>
+      {/* Financial district (northeast) — very subtle gold tint */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[9.5, 0.008, -8]} receiveShadow>
+        <planeGeometry args={[8, 8]} />
+        <meshStandardMaterial color="#C9A84C" transparent opacity={0.08} roughness={1} depthWrite={false} />
       </mesh>
 
       {/* ── Parks ── */}
@@ -2608,6 +2637,18 @@ export function CityGenerator() {
         </group>
       ))}
 
+      {/* ── Mid-rise transition zone — residential → financial gradient ── */}
+      {/* Always visible; these offices form a height-bridge between apartments and gold towers */}
+      {([
+        [5, -4, 6],
+        [6, -6, 7],
+        [5, -2, 8],
+      ] as [number, number, number][]).map(([tx, tz, ti]) => (
+        <group key={`midrise-${ti}`} {...hoverProps("Mid-Rise Office", `Investments: ${investPct}%`, investState, "Transition offices connect the residential and financial districts.", [tx, 2.5, tz])} {...buildingTapProps("Mid-Rise Office", "Invest", investState, "Invest more to grow your business district.", [tx, 2.5, tz])}>
+          <OfficeBlock x={tx} z={tz} idx={ti} />
+        </group>
+      ))}
+
       {/* ── Markets (always visible) ── */}
       {marketPositions.map(([x, z], i) => (
         <group key={`market-${i}`} {...hoverProps("Market", `Wants: ${wantsPct}%`, wantsState, "Markets serve the community's daily needs.", [x, 1.0, z])} {...buildingTapProps("Market", "Want", wantsState, "Keep wants under 30% for a balanced city.", [x, 1.0, z])}>
@@ -2621,8 +2662,48 @@ export function CityGenerator() {
       </group>
 
       {/* ── Warehouses (industrial east) ── */}
+      {/* First warehouse — taller variant with logo sign and parked truck */}
       <group {...hoverProps("Warehouse", `Health: ${healthPct}/100`, healthState, "Industrial buildings anchor the far edge of your city.", [10.5, 1.2, 3.5])} {...buildingTapProps("Warehouse", "Invest", healthState, "City health affects industrial growth.", [10.5, 1.2, 3.5])}>
-        <Warehouse x={10.5} z={3.5} />
+        {/* Scale y by 1.4 to make this warehouse taller */}
+        <group scale={[1, 1.4, 1]}>
+          <Warehouse x={10.5} z={3.5} />
+        </group>
+        {/* Company logo sign — east side face (x = 10.5 + 1.5 = 12.0) */}
+        <mesh position={[12.01, 1.0, 3.5]}>
+          <boxGeometry args={[0.05, 0.4, 2.0]} />
+          <meshStandardMaterial color="#374151" emissive="#60A5FA" emissiveIntensity={0.8} roughness={0.4} metalness={0.3} />
+        </mesh>
+        {/* Parked truck — in front of loading bays (front face z = 3.5 + 1.0 = 4.5, truck at z = 6.0) */}
+        <group position={[10.5, 0, 6.0]}>
+          {/* Truck body */}
+          <mesh position={[0, 0.175, 0]} castShadow>
+            <boxGeometry args={[0.8, 0.35, 0.4]} />
+            <meshStandardMaterial color="#374151" roughness={0.7} metalness={0.2} />
+          </mesh>
+          {/* Cab */}
+          <mesh position={[-0.25, 0.32, 0]} castShadow>
+            <boxGeometry args={[0.28, 0.22, 0.36]} />
+            <meshStandardMaterial color="#1F2937" roughness={0.6} metalness={0.3} />
+          </mesh>
+          {/* Headlights */}
+          <mesh position={[-0.4, 0.22, 0.1]}>
+            <boxGeometry args={[0.02, 0.08, 0.1]} />
+            <meshStandardMaterial color="#FEF08A" emissive="#FEF08A" emissiveIntensity={1.5} roughness={0.1} />
+          </mesh>
+          <mesh position={[-0.4, 0.22, -0.1]}>
+            <boxGeometry args={[0.02, 0.08, 0.1]} />
+            <meshStandardMaterial color="#FEF08A" emissive="#FEF08A" emissiveIntensity={1.5} roughness={0.1} />
+          </mesh>
+          {/* Wheels */}
+          {([-0.25, 0.3] as number[]).map((wx) =>
+            ([-0.16, 0.16] as number[]).map((wz) => (
+              <mesh key={`w-${wx}-${wz}`} position={[wx, 0.08, wz]} rotation={[Math.PI / 2, 0, 0]}>
+                <cylinderGeometry args={[0.07, 0.07, 0.06, 8]} />
+                <meshStandardMaterial color="#111827" roughness={0.9} />
+              </mesh>
+            ))
+          )}
+        </group>
       </group>
       <group {...hoverProps("Warehouse", `Health: ${healthPct}/100`, healthState, "Industrial buildings anchor the far edge of your city.", [10.5, 1.2, 7.5])} {...buildingTapProps("Warehouse", "Invest", healthState, "City health affects industrial growth.", [10.5, 1.2, 7.5])}>
         <Warehouse x={10.5} z={7.5} />
@@ -2639,7 +2720,7 @@ export function CityGenerator() {
 
         {/* ── Financial Crown district — golden plaza floor ── */}
         {goldCount >= 3 && (
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[6.5, 0.008, -4.5]} receiveShadow>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[9.5, 0.008, -8.0]} receiveShadow>
             <circleGeometry args={[3.5, 32]} />
             <meshStandardMaterial
               color="#C9A84C"
@@ -2653,7 +2734,7 @@ export function CityGenerator() {
 
         {/* ── "FINANCIAL CROWN" district label ── */}
         {goldCount >= 1 && (
-          <Html position={[6.5, 0.1, -1.5]} center>
+          <Html position={[9.5, 0.1, -5.8]} center>
             <div
               style={{
                 color: "#C9A84C",
@@ -2722,6 +2803,34 @@ export function CityGenerator() {
         <Fountain x={4.5} z={-7.5} />
       </group>
 
+      {/* ── Town Square — heart of the city at [0, 0, 0] ── */}
+      {/* Paved plaza ground */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.009, 0]} receiveShadow>
+        <planeGeometry args={[3.0, 3.0]} />
+        <meshStandardMaterial color="#C8BFA8" roughness={0.7} metalness={0.05} />
+      </mesh>
+      {/* Corner lamp posts (existing StreetLamp component) */}
+      <StreetLamp x={ 1.2} z={ 1.2} />
+      <StreetLamp x={-1.2} z={ 1.2} />
+      <StreetLamp x={ 1.2} z={-1.2} />
+      <StreetLamp x={-1.2} z={-1.2} />
+      {/* Central obelisk monument — 3 stacked boxes narrowing upward */}
+      {/* Base plinth */}
+      <mesh position={[0, 0.1, 0]} castShadow>
+        <boxGeometry args={[0.3, 0.2, 0.3]} />
+        <meshStandardMaterial color="#E8E0D0" emissive="#C9A84C" emissiveIntensity={0.2} roughness={0.3} metalness={0.1} />
+      </mesh>
+      {/* Middle shaft */}
+      <mesh position={[0, 0.6, 0]} castShadow>
+        <boxGeometry args={[0.18, 0.8, 0.18]} />
+        <meshStandardMaterial color="#E8E0D0" emissive="#C9A84C" emissiveIntensity={0.2} roughness={0.3} metalness={0.1} />
+      </mesh>
+      {/* Top spire */}
+      <mesh position={[0, 1.3, 0]} castShadow>
+        <boxGeometry args={[0.1, 0.6, 0.1]} />
+        <meshStandardMaterial color="#E8E0D0" emissive="#C9A84C" emissiveIntensity={0.25} roughness={0.2} metalness={0.2} />
+      </mesh>
+
       {/* ── Bridge ── */}
       <group {...hoverProps("Bridge", `Health: ${healthPct}/100`, healthState, "City bridges reflect overall financial health — keep the score high!", [-0.4, 1.2, 0.3])} {...buildingTapProps("Bridge", "Invest", healthState, "City health keeps infrastructure strong.", [-0.4, 1.2, 0.3])}>
         <Bridge />
@@ -2756,6 +2865,147 @@ export function CityGenerator() {
         <Tree x={10.5} z={-1.0} scale={0.9} />
         <Tree x={-7.5} z={-5.8} scale={0.8} />
         <Tree x={7.0}  z={-5.8} scale={0.85} />
+        {/* Top-left nature reserve — larger forest trees */}
+        <Tree x={-14} z={-8}  scale={1.4} />
+        <Tree x={-12} z={-10} scale={1.3} />
+        <Tree x={-15} z={-11} scale={1.5} />
+        <Tree x={-13} z={-13} scale={1.2} />
+        <Tree x={-11} z={-8}  scale={1.35} />
+        <Tree x={-16} z={-9}  scale={1.45} />
+      </group>
+
+      {/* ── Top-left nature reserve — lake and hedge boundary ── */}
+      {/* Lake / pond */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-14, 0.01, -10]}>
+        <planeGeometry args={[3.0, 2.0]} />
+        <meshStandardMaterial color="#60A5FA" transparent opacity={0.7} metalness={0.3} roughness={0.2} depthWrite={false} />
+      </mesh>
+      {/* Park boundary hedge — rectangle border [-16→-10 x, -7→-14 z] */}
+      {/* North edge (z=-7): length=6 along X */}
+      <mesh position={[-13, 0.2, -7]}>
+        <boxGeometry args={[6, 0.4, 0.3]} />
+        <meshStandardMaterial color="#166534" roughness={0.8} />
+      </mesh>
+      {/* South edge (z=-14): length=6 along X */}
+      <mesh position={[-13, 0.2, -14]}>
+        <boxGeometry args={[6, 0.4, 0.3]} />
+        <meshStandardMaterial color="#166534" roughness={0.8} />
+      </mesh>
+      {/* West edge (x=-16): length=7 along Z */}
+      <mesh position={[-16, 0.2, -10.5]}>
+        <boxGeometry args={[0.3, 0.4, 7]} />
+        <meshStandardMaterial color="#166534" roughness={0.8} />
+      </mesh>
+      {/* East edge (x=-10): length=7 along Z */}
+      <mesh position={[-10, 0.2, -10.5]}>
+        <boxGeometry args={[0.3, 0.4, 7]} />
+        <meshStandardMaterial color="#166534" roughness={0.8} />
+      </mesh>
+
+      {/* ── Top-centre suburb — small outer houses growing beyond the city core ── */}
+      {/* Simple static mini-houses: body + pitched roof, no visibility dependency */}
+      {([
+        [2,  0, -12, "#D4A96A", "#8B5E3C"],
+        [4,  0, -12, "#C49558", "#7A4F30"],
+        [6,  0, -12, "#D4A96A", "#8B5E3C"],
+        [2,  0, -14, "#BF8C4A", "#6B4226"],
+        [4,  0, -14, "#C49558", "#7A4F30"],
+      ] as [number, number, number, string, string][]).map(([hx, hy, hz, wallCol, roofCol], hi) => (
+        <group key={`suburb-${hi}`} position={[hx, hy, hz]}>
+          {/* House body */}
+          <mesh position={[0, 0.45, 0]} castShadow receiveShadow>
+            <boxGeometry args={[0.75, 0.9, 0.65]} />
+            <meshStandardMaterial color={wallCol} roughness={0.65} metalness={0.05} />
+          </mesh>
+          {/* Pitched roof (cone with 4 sides) */}
+          <mesh position={[0, 1.0, 0]} castShadow>
+            <coneGeometry args={[0.58, 0.45, 4]} />
+            <meshStandardMaterial color={roofCol} roughness={0.75} metalness={0.05} />
+          </mesh>
+          {/* Small front window */}
+          <mesh position={[0, 0.5, 0.33]}>
+            <boxGeometry args={[0.22, 0.2, 0.02]} />
+            <meshStandardMaterial color="#FFF3B0" emissive="#FFF3B0" emissiveIntensity={0.6} roughness={0.2} />
+          </mesh>
+          {/* Tiny door */}
+          <mesh position={[0.15, 0.27, 0.33]}>
+            <boxGeometry args={[0.14, 0.34, 0.02]} />
+            <meshStandardMaterial color={roofCol} roughness={0.8} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* ── Construction site [6, 0, -12] — city still growing ── */}
+      <group position={[6, 0, -12]}>
+        {/* Foundation slab */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.009, 0]} receiveShadow>
+          <planeGeometry args={[3, 3]} />
+          <meshStandardMaterial color="#9CA3AF" roughness={0.9} metalness={0.1} />
+        </mesh>
+
+        {/* Scaffolding corner towers */}
+        {([[-1.2, -1.2], [1.2, -1.2], [-1.2, 1.2], [1.2, 1.2]] as [number, number][]).map(([sx, sz], si) => (
+          <mesh key={`scaf-post-${si}`} position={[sx, 1.25, sz]} castShadow>
+            <cylinderGeometry args={[0.06, 0.06, 2.5, 4]} />
+            <meshStandardMaterial color="#F59E0B" roughness={0.5} metalness={0.3} emissive="#D97706" emissiveIntensity={0.2} />
+          </mesh>
+        ))}
+
+        {/* Horizontal scaffolding bars — 3 levels */}
+        {([0.8, 1.5, 2.2] as number[]).map((barY) => (
+          <group key={`scaf-bars-${barY}`}>
+            {/* Front/back bars (along X) */}
+            <mesh position={[0, barY, -1.2]}>
+              <boxGeometry args={[2.4, 0.04, 0.04]} />
+              <meshStandardMaterial color="#F59E0B" roughness={0.5} metalness={0.3} emissive="#D97706" emissiveIntensity={0.2} />
+            </mesh>
+            <mesh position={[0, barY, 1.2]}>
+              <boxGeometry args={[2.4, 0.04, 0.04]} />
+              <meshStandardMaterial color="#F59E0B" roughness={0.5} metalness={0.3} emissive="#D97706" emissiveIntensity={0.2} />
+            </mesh>
+            {/* Side bars (along Z) */}
+            <mesh position={[-1.2, barY, 0]}>
+              <boxGeometry args={[0.04, 0.04, 2.4]} />
+              <meshStandardMaterial color="#F59E0B" roughness={0.5} metalness={0.3} emissive="#D97706" emissiveIntensity={0.2} />
+            </mesh>
+            <mesh position={[1.2, barY, 0]}>
+              <boxGeometry args={[0.04, 0.04, 2.4]} />
+              <meshStandardMaterial color="#F59E0B" roughness={0.5} metalness={0.3} emissive="#D97706" emissiveIntensity={0.2} />
+            </mesh>
+          </group>
+        ))}
+
+        {/* Construction crane — mast at x=+1.2 offset from site centre */}
+        <mesh position={[1.2, 1.75, 0]} castShadow>
+          <cylinderGeometry args={[0.05, 0.05, 3.5, 6]} />
+          <meshStandardMaterial color="#F59E0B" roughness={0.45} metalness={0.35} emissive="#D97706" emissiveIntensity={0.4} />
+        </mesh>
+        {/* Crane jib (horizontal arm) — extends left from mast top */}
+        <mesh position={[-0.05, 3.5, 0]} castShadow>
+          <boxGeometry args={[2.5, 0.05, 0.05]} />
+          <meshStandardMaterial color="#F59E0B" roughness={0.45} metalness={0.35} emissive="#D97706" emissiveIntensity={0.4} />
+        </mesh>
+        {/* Crane counter-jib (short arm right) */}
+        <mesh position={[0.9, 3.5, 0]}>
+          <boxGeometry args={[0.7, 0.05, 0.05]} />
+          <meshStandardMaterial color="#F59E0B" roughness={0.45} metalness={0.35} emissive="#D97706" emissiveIntensity={0.3} />
+        </mesh>
+        {/* Hanging cable from jib end */}
+        <mesh position={[-1.05, 3.0, 0]}>
+          <boxGeometry args={[0.02, 1.0, 0.02]} />
+          <meshStandardMaterial color="#374151" roughness={0.8} metalness={0.4} />
+        </mesh>
+        {/* Hook block at cable end */}
+        <mesh position={[-1.05, 2.45, 0]}>
+          <boxGeometry args={[0.08, 0.06, 0.08]} />
+          <meshStandardMaterial color="#6B7280" roughness={0.6} metalness={0.6} />
+        </mesh>
+
+        {/* "COMING SOON" site fence sign */}
+        <mesh position={[0, 0.5, 1.52]} castShadow>
+          <boxGeometry args={[1.0, 0.3, 0.04]} />
+          <meshStandardMaterial color="#1C3A2E" emissive="#C17B3F" emissiveIntensity={1.0} roughness={0.5} metalness={0.1} />
+        </mesh>
       </group>
 
       {/* ── Street lamps (full network) ── */}
