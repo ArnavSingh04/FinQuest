@@ -42,7 +42,7 @@ export function TopHUD() {
 
   useEffect(() => {
     if (!dropdownOpen) return;
-    function handleClickOutside(e: MouseEvent) {
+    function handleClickOutside(e: MouseEvent | TouchEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
