@@ -1,38 +1,185 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 
-import { CityCanvas, CityFullscreen, CAMERA_PRESETS } from "@/components/city/CityFullscreen";
+import { CityCanvas, CAMERA_PRESETS } from "@/components/city/CityFullscreen";
 import { useGameStore } from "@/store/useGameStore";
 import { decodeCityShare } from "@/lib/cityShare";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const WEATHER_EMOJI: Record<string, string> = {
   thriving: "✨", clear: "☀️", overcast: "⛅", rain: "🌧", storm: "⛈", destruction: "💥",
 };
 
-const CAT_COLORS: Record<string, string> = {
-  needs: "bg-sky-400", wants: "bg-orange-400", treats: "bg-pink-400", investments: "bg-emerald-400",
-};
+function healthColor(score: number): string {
+  if (score > 70) return "#3DAB6A";
+  if (score >= 40) return "#E8A020";
+  return "#D94F3D";
+}
 
-function CompareBar({ label, mine, theirs, color }: { label: string; mine: number; theirs: number; color: string }) {
+function healthLabel(score: number): string {
+  if (score > 70) return "Healthy";
+  if (score >= 40) return "Growing";
+  return "At Risk";
+}
+
+// ── Back Button ───────────────────────────────────────────────────────────────
+
+function BackButton() {
+  const router = useRouter();
+  return (
+    <button
+      onClick={() => router.push("/")}
+      style={{
+        position: "fixed",
+        top: 16,
+        left: 16,
+        zIndex: 50,
+        background: "#1C3A2E",
+        color: "#F2EDE3",
+        borderRadius: 999,
+        padding: "10px 20px",
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 14,
+        fontWeight: 500,
+        border: "none",
+        cursor: "pointer",
+        boxShadow: "0 2px 8px rgba(28,58,46,0.3)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      ← Back to my city
+    </button>
+  );
+}
+
+// ── Ratio Cards ───────────────────────────────────────────────────────────────
+
+interface RatioCardProps {
+  label: string;
+  pct: number;
+  description: string;
+  bg: string;
+  accent: string;
+}
+
+function RatioCard({ label, pct, description, bg, accent }: RatioCardProps) {
+  return (
+    <div
+      style={{
+        background: bg,
+        borderLeft: `4px solid ${accent}`,
+        borderRadius: 12,
+        padding: "14px 16px",
+        flex: 1,
+        minWidth: 0,
+      }}
+    >
+      <p
+        style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 10,
+          fontWeight: 600,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: accent,
+          margin: "0 0 4px",
+        }}
+      >
+        {label}
+      </p>
+      <p
+        style={{
+          fontFamily: "'DM Serif Display', serif",
+          fontSize: 28,
+          color: "#1C3A2E",
+          lineHeight: 1,
+          margin: "0 0 4px",
+        }}
+      >
+        {Math.round(pct)}%
+      </p>
+      <p
+        style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 12,
+          color: "#4A6358",
+          margin: 0,
+        }}
+      >
+        {description}
+      </p>
+    </div>
+  );
+}
+
+// ── Compare Bar ───────────────────────────────────────────────────────────────
+
+function CompareBar({
+  label, mine, theirs, accent,
+}: {
+  label: string; mine: number; theirs: number; accent: string;
+}) {
   const diff = mine - theirs;
   return (
     <div>
-      <div className="flex justify-between mb-1">
-        <span className="text-xs text-slate-400">{label}</span>
-        <span className="text-xs text-slate-500">
-          {diff > 0 ? <span className="text-sky-400">+{Math.round(diff)}%</span> :
-           diff < 0 ? <span className="text-rose-400">{Math.round(diff)}%</span> :
-           <span className="text-slate-500">Same</span>}
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#4A6358" }}>
+          {label}
+        </span>
+        <span
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 12,
+            fontWeight: 600,
+            color: diff > 0 ? "#3DAB6A" : diff < 0 ? "#D94F3D" : "#8A9E94",
+          }}
+        >
+          {diff > 0 ? `+${Math.round(diff)}%` : diff < 0 ? `${Math.round(diff)}%` : "Same"}
         </span>
       </div>
-      <div className="relative h-2 rounded-full bg-slate-800 overflow-hidden">
-        <div className={`absolute h-full rounded-full opacity-40 ${color}`} style={{ width: `${Math.round(theirs * 100)}%` }} />
-        <div className={`absolute h-full rounded-full ${color}`} style={{ width: `${Math.round(mine * 100)}%` }} />
+      <div
+        style={{
+          position: "relative",
+          height: 8,
+          borderRadius: 999,
+          background: "#E8E0D0",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            height: "100%",
+            borderRadius: 999,
+            background: accent,
+            opacity: 0.3,
+            width: `${Math.round(theirs * 100)}%`,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            height: "100%",
+            borderRadius: 999,
+            background: accent,
+            width: `${Math.round(mine * 100)}%`,
+          }}
+        />
       </div>
-      <div className="flex justify-between text-[10px] mt-0.5 text-slate-600">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: 2,
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 10,
+          color: "#8A9E94",
+        }}
+      >
         <span>Mine: {Math.round(mine * 100)}%</span>
         <span>Theirs: {Math.round(theirs * 100)}%</span>
       </div>
@@ -40,11 +187,147 @@ function CompareBar({ label, mine, theirs, color }: { label: string; mine: numbe
   );
 }
 
+// ── Achievement Card ──────────────────────────────────────────────────────────
+
+function AchievementCard({
+  title, description, xp, unlocked,
+}: {
+  title: string; description: string; xp: number; unlocked: boolean;
+}) {
+  return (
+    <div
+      style={{
+        background: unlocked ? "#FFFFFF" : "#F2EDE3",
+        border: "1px solid #C8BFA8",
+        borderRadius: 12,
+        padding: "12px 14px",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
+        opacity: unlocked ? 1 : 0.75,
+      }}
+    >
+      <div style={{ fontSize: 22, lineHeight: 1.2, flexShrink: 0 }}>
+        {unlocked ? "🏅" : "🔒"}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p
+          style={{
+            fontFamily: "'DM Serif Display', serif",
+            fontSize: 15,
+            color: unlocked ? "#1C3A2E" : "#8A9E94",
+            margin: "0 0 2px",
+          }}
+        >
+          {title}
+        </p>
+        <p
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 12,
+            color: unlocked ? "#4A6358" : "#8A9E94",
+            margin: "0 0 6px",
+            lineHeight: 1.4,
+          }}
+        >
+          {description}
+        </p>
+        <div style={{ display: "flex", gap: 6 }}>
+          <span
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 10,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+              background: unlocked ? "#C17B3F" : "#E8E0D0",
+              color: unlocked ? "#FFFFFF" : "#8A9E94",
+              padding: "2px 8px",
+              borderRadius: 999,
+            }}
+          >
+            +{xp} XP
+          </span>
+          <span
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 10,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+              background: unlocked ? "#3DAB6A" : "#E8E0D0",
+              color: unlocked ? "#FFFFFF" : "#8A9E94",
+              padding: "2px 8px",
+              borderRadius: 999,
+            }}
+          >
+            {unlocked ? "Unlocked" : "Locked"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Metric Card ───────────────────────────────────────────────────────────────
+
+function MetricCard({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div
+      style={{
+        background: "#FFFFFF",
+        border: "1px solid #C8BFA8",
+        borderRadius: 12,
+        padding: "14px 16px",
+        flex: 1,
+        minWidth: 0,
+        textAlign: "center",
+      }}
+    >
+      <p
+        style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 10,
+          fontWeight: 600,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "#8A9E94",
+          margin: "0 0 4px",
+        }}
+      >
+        {label}
+      </p>
+      <p
+        style={{
+          fontFamily: "'DM Serif Display', serif",
+          fontSize: 24,
+          color: "#1C3A2E",
+          margin: 0,
+          lineHeight: 1,
+        }}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+// ── Card wrapper ──────────────────────────────────────────────────────────────
+
+const CARD: React.CSSProperties = {
+  background: "#FFFFFF",
+  border: "1px solid #C8BFA8",
+  borderRadius: 16,
+  padding: "20px",
+  boxShadow: "0 2px 12px rgba(44,36,22,0.06)",
+};
+
+// ── Main content ──────────────────────────────────────────────────────────────
+
 function SharedCityContent() {
   const params = useSearchParams();
   const code = params.get("c") ?? "";
   const { cityState: myCity, proportions: myProps, loadFromStorage } = useGameStore();
-  const [fullscreen, setFullscreen] = useState(false);
   const [preset, setPreset] = useState<typeof CAMERA_PRESETS[number] | null>(null);
 
   useEffect(() => { loadFromStorage(); }, [loadFromStorage]);
@@ -53,152 +336,514 @@ function SharedCityContent() {
 
   if (!shared) {
     return (
-      <main className="page-with-nav mx-auto max-w-md px-4 py-16 text-center">
-        <p className="text-4xl mb-4">⚠️</p>
-        <h1 className="text-xl font-bold text-white">Invalid city link</h1>
-        <p className="mt-2 text-sm text-slate-400">This share code is broken or expired.</p>
-        <Link href="/city" className="mt-6 inline-block rounded-2xl bg-sky-500/20 border border-sky-500/30 px-5 py-2.5 text-sm font-semibold text-sky-300">
-          View your city →
-        </Link>
+      <main
+        style={{
+          minHeight: "100vh",
+          background: "#F2EDE3",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          textAlign: "center",
+        }}
+      >
+        <BackButton />
+        <p style={{ fontSize: 48, marginBottom: 12 }}>⚠️</p>
+        <h1
+          style={{
+            fontFamily: "'DM Serif Display', serif",
+            fontSize: 24,
+            color: "#1C3A2E",
+            margin: "0 0 8px",
+          }}
+        >
+          Invalid city link
+        </h1>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#4A6358" }}>
+          This share code is broken or expired.
+        </p>
       </main>
     );
   }
 
   const override = { cityState: { ...shared.city, budgetUsed: 0 }, proportions: shared.props };
-
   const healthDiff = myCity.healthScore - shared.city.healthScore;
+  const theirHealth = shared.city.healthScore;
+
+  // Derive achievements from city state
+  const achievements = [
+    {
+      title: "First Steps",
+      description: "Log your first transaction",
+      xp: 50,
+      unlocked: true,
+    },
+    {
+      title: "Balanced Budget",
+      description: "Achieve the 50/30/20 spending split",
+      xp: 150,
+      unlocked:
+        shared.props.needs >= 0.45 &&
+        shared.props.wants <= 0.32 &&
+        shared.props.investments >= 0.18,
+    },
+    {
+      title: "Investor Mindset",
+      description: "Keep investments above 20%",
+      xp: 200,
+      unlocked: shared.props.investments >= 0.2,
+    },
+    {
+      title: "Clean City",
+      description: "Keep treats below 5% for a month",
+      xp: 100,
+      unlocked: shared.props.treats < 0.05,
+    },
+    {
+      title: "Thriving Metropolis",
+      description: "Reach a health score above 70",
+      xp: 300,
+      unlocked: theirHealth > 70,
+    },
+    {
+      title: "City Builder",
+      description: "Unlock a reward building through a quest",
+      xp: 250,
+      unlocked: false,
+    },
+  ];
+  const unlockedCount = achievements.filter((a) => a.unlocked).length;
 
   return (
     <>
-      <main className="page-with-nav mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
-        <header className="mb-5 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-400">FinQuest · Shared City</p>
-            <h1 className="mt-1 text-2xl font-bold text-white">{shared.name}</h1>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFullscreen(true)}
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-            >
-              ⛶ Fullscreen
-            </button>
-            <Link href="/city" className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10">
-              My City →
-            </Link>
-          </div>
-        </header>
+      <BackButton />
 
-        <div className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr]">
-          {/* Left — canvas */}
-          <div className="flex flex-col gap-4">
-            {/* Camera preset strip */}
-            <div className="flex gap-2 flex-wrap">
+      <main
+        style={{
+          minHeight: "100vh",
+          background: "#F2EDE3",
+          padding: "72px 16px 48px",
+          maxWidth: 960,
+          margin: "0 auto",
+        }}
+      >
+        {/* ── Member header ── */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            marginBottom: 24,
+            flexWrap: "wrap",
+          }}
+        >
+          <h1
+            style={{
+              fontFamily: "'DM Serif Display', serif",
+              fontSize: 26,
+              color: "#1C3A2E",
+              margin: 0,
+              lineHeight: 1.2,
+            }}
+          >
+            Visiting {shared.name}&apos;s City
+          </h1>
+          <span
+            style={{
+              background: healthColor(theirHealth),
+              color: "#FFFFFF",
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 13,
+              fontWeight: 600,
+              padding: "4px 12px",
+              borderRadius: 999,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {theirHealth} · {healthLabel(theirHealth)}
+          </span>
+        </div>
+
+        {/* ── Spending ratio cards ── */}
+        <div
+          style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}
+        >
+          <RatioCard
+            label="Needs Ratio"
+            pct={shared.props.needs * 100}
+            description="Housing & essentials"
+            bg="#EBF2FC"
+            accent="#3B7DD8"
+          />
+          <RatioCard
+            label="Wants Ratio"
+            pct={shared.props.wants * 100}
+            description="Lifestyle & dining"
+            bg="#FDF3E0"
+            accent="#E8A020"
+          />
+          <RatioCard
+            label="Treat Ratio"
+            pct={shared.props.treats * 100}
+            description="Impulse & luxuries"
+            bg="#FCECEA"
+            accent="#D94F3D"
+          />
+          <RatioCard
+            label="Invest Ratio"
+            pct={shared.props.investments * 100}
+            description="Savings & investments"
+            bg="#E8F7EE"
+            accent="#3DAB6A"
+          />
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gap: 16,
+            gridTemplateColumns: "minmax(0, 1.5fr) minmax(0, 1fr)",
+          }}
+        >
+          {/* ── Left column ── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Camera presets */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {CAMERA_PRESETS.map((p) => (
                 <button
                   key={p.label}
                   onClick={() => setPreset(preset?.label === p.label ? null : p)}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold border transition ${
-                    preset?.label === p.label
-                      ? "border-sky-400 bg-sky-500/20 text-sky-200"
-                      : "border-white/10 bg-white/5 text-slate-400 hover:text-white"
-                  }`}
+                  style={{
+                    borderRadius: 10,
+                    padding: "6px 12px",
+                    fontSize: 12,
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: "1px solid",
+                    transition: "all 160ms ease",
+                    background:
+                      preset?.label === p.label ? "#1C3A2E" : "#FFFFFF",
+                    color:
+                      preset?.label === p.label ? "#F2EDE3" : "#4A6358",
+                    borderColor:
+                      preset?.label === p.label ? "#1C3A2E" : "#C8BFA8",
+                  }}
                 >
                   {p.icon} {p.label}
                 </button>
               ))}
             </div>
 
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl h-[46vh] min-h-[280px] sm:h-[480px]">
+            {/* City canvas */}
+            <div
+              style={{
+                overflow: "hidden",
+                borderRadius: 20,
+                border: "1px solid #C8BFA8",
+                boxShadow: "0 4px 20px rgba(28,58,46,0.1)",
+                height: 360,
+              }}
+            >
               <CityCanvas className="w-full h-full" preset={preset} override={override} />
             </div>
 
-            {/* Their stats */}
-            <div className="grid grid-cols-4 gap-2.5">
-              {[
-                { label: "Health", value: shared.city.healthScore },
-                { label: "Weather", value: WEATHER_EMOJI[shared.city.weather] ?? shared.city.weather },
-                { label: "Population", value: `${shared.city.population * 100}k` },
-                { label: "Restaurants", value: String(shared.city.restaurantCount) },
-              ].map(({ label, value }) => (
-                <div key={label} className="glass-card rounded-2xl p-3 text-center">
-                  <p className="text-[11px] text-slate-500">{label}</p>
-                  <p className="mt-0.5 text-base font-bold text-white">{value}</p>
-                </div>
-              ))}
+            {/* Bottom metric cards */}
+            <div style={{ display: "flex", gap: 10 }}>
+              <MetricCard label="Health Score" value={theirHealth} />
+              <MetricCard
+                label="Weather"
+                value={WEATHER_EMOJI[shared.city.weather] ?? shared.city.weather}
+              />
+              <MetricCard
+                label="Population"
+                value={`${shared.city.population * 100}k`}
+              />
+              <MetricCard
+                label="Restaurants"
+                value={shared.city.restaurantCount}
+              />
+            </div>
+
+            {/* Latest Insight card */}
+            <div style={CARD}>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#8A9E94",
+                  margin: "0 0 8px",
+                }}
+              >
+                Latest Insight
+              </p>
+              <h3
+                style={{
+                  fontFamily: "'DM Serif Display', serif",
+                  fontSize: 20,
+                  color: "#1C3A2E",
+                  margin: "0 0 8px",
+                }}
+              >
+                Financial coach summary
+              </h3>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 14,
+                  color: "#4A6358",
+                  lineHeight: 1.6,
+                  margin: 0,
+                }}
+              >
+                {theirHealth > 70
+                  ? `${shared.name} has a well-balanced city. Strong investments at ${Math.round(shared.props.investments * 100)}% are driving growth.`
+                  : theirHealth >= 40
+                  ? `${shared.name}&apos;s city is growing steadily. Boosting investments above 20% would accelerate progress.`
+                  : `${shared.name}&apos;s city needs attention. Reducing treat spending and increasing needs coverage will help.`}
+              </p>
             </div>
           </div>
 
-          {/* Right — comparison */}
-          <div className="flex flex-col gap-4">
-            {/* Head-to-head */}
-            <div className="glass-card rounded-3xl p-5">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Head to Head</p>
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-center">
-                  <p className="text-3xl font-black text-white">{myCity.healthScore}</p>
-                  <p className="text-xs text-sky-400 font-semibold mt-0.5">Your score</p>
+          {/* ── Right column ── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Head-to-head comparison */}
+            <div style={CARD}>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#8A9E94",
+                  margin: "0 0 16px",
+                }}
+              >
+                Head to Head
+              </p>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 16,
+                }}
+              >
+                <div style={{ textAlign: "center" }}>
+                  <p
+                    style={{
+                      fontFamily: "'DM Serif Display', serif",
+                      fontSize: 36,
+                      color: "#1C3A2E",
+                      margin: 0,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {myCity.healthScore}
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#3DAB6A",
+                      margin: "4px 0 0",
+                    }}
+                  >
+                    Your score
+                  </p>
                 </div>
-                <div className="text-center px-4">
-                  <p className={`text-lg font-bold ${healthDiff > 0 ? "text-emerald-400" : healthDiff < 0 ? "text-red-400" : "text-slate-400"}`}>
+
+                <div style={{ textAlign: "center", padding: "0 12px" }}>
+                  <p
+                    style={{
+                      fontFamily: "'DM Serif Display', serif",
+                      fontSize: 20,
+                      color: healthDiff > 0 ? "#3DAB6A" : healthDiff < 0 ? "#D94F3D" : "#8A9E94",
+                      margin: 0,
+                    }}
+                  >
                     {healthDiff > 0 ? `+${healthDiff}` : healthDiff}
                   </p>
-                  <p className="text-[10px] text-slate-500">difference</p>
+                  <p
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: 10,
+                      color: "#8A9E94",
+                      margin: "2px 0 0",
+                    }}
+                  >
+                    difference
+                  </p>
                 </div>
-                <div className="text-center">
-                  <p className="text-3xl font-black text-slate-400">{shared.city.healthScore}</p>
-                  <p className="text-xs text-slate-500 font-semibold mt-0.5">Their score</p>
+
+                <div style={{ textAlign: "center" }}>
+                  <p
+                    style={{
+                      fontFamily: "'DM Serif Display', serif",
+                      fontSize: 36,
+                      color: "#8A9E94",
+                      margin: 0,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {theirHealth}
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#8A9E94",
+                      margin: "4px 0 0",
+                    }}
+                  >
+                    Their score
+                  </p>
                 </div>
               </div>
 
-              <div className="h-px bg-white/8 mb-4" />
+              <hr style={{ border: "none", borderTop: "1px solid #E8E0D0", margin: "0 0 16px" }} />
 
-              {/* Spending comparison bars */}
-              <div className="flex flex-col gap-3">
-                <CompareBar label="🏠 Needs"   mine={myProps.needs}       theirs={shared.props.needs}       color={CAT_COLORS.needs} />
-                <CompareBar label="🍕 Wants"   mine={myProps.wants}       theirs={shared.props.wants}       color={CAT_COLORS.wants} />
-                <CompareBar label="🛍️ Treats"  mine={myProps.treats}      theirs={shared.props.treats}      color={CAT_COLORS.treats} />
-                <CompareBar label="📈 Invest"  mine={myProps.investments} theirs={shared.props.investments} color={CAT_COLORS.investments} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <CompareBar label="🏠 Needs"  mine={myProps.needs}       theirs={shared.props.needs}       accent="#3B7DD8" />
+                <CompareBar label="🍕 Wants"  mine={myProps.wants}       theirs={shared.props.wants}       accent="#E8A020" />
+                <CompareBar label="🛍 Treats" mine={myProps.treats}      theirs={shared.props.treats}      accent="#D94F3D" />
+                <CompareBar label="📈 Invest" mine={myProps.investments} theirs={shared.props.investments} accent="#3DAB6A" />
               </div>
-              <p className="mt-3 text-[10px] text-slate-600 text-center">Solid bar = yours · Faded bar = theirs</p>
+
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 10,
+                  color: "#8A9E94",
+                  textAlign: "center",
+                  margin: "12px 0 0",
+                }}
+              >
+                Solid bar = yours · Faded = theirs
+              </p>
             </div>
 
             {/* Verdict */}
-            <div className={`glass-card rounded-3xl p-4 border ${healthDiff >= 0 ? "border-emerald-500/20" : "border-rose-500/20"}`}>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-slate-400">Verdict</p>
-              {healthDiff > 5 ? (
-                <p className="text-sm text-emerald-300">Your city is healthier! Keep up the discipline.</p>
-              ) : healthDiff < -5 ? (
-                <p className="text-sm text-rose-300">Their city is doing better. Check their spending mix for inspiration.</p>
-              ) : (
-                <p className="text-sm text-slate-300">You&apos;re neck and neck — healthy competition!</p>
-              )}
+            <div
+              style={{
+                ...CARD,
+                borderColor: healthDiff >= 0 ? "#3DAB6A" : "#D94F3D",
+                borderWidth: 1,
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#8A9E94",
+                  margin: "0 0 8px",
+                }}
+              >
+                Verdict
+              </p>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 14,
+                  color: "#4A6358",
+                  lineHeight: 1.5,
+                  margin: 0,
+                }}
+              >
+                {healthDiff > 5
+                  ? "Your city is healthier! Keep up the discipline."
+                  : healthDiff < -5
+                  ? "Their city is doing better. Check their spending mix for inspiration."
+                  : "You're neck and neck — healthy competition!"}
+              </p>
+            </div>
+
+            {/* Achievements */}
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 10,
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "#8A9E94",
+                    margin: 0,
+                  }}
+                >
+                  Achievements
+                </p>
+                <p
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 13,
+                    color: "#1C3A2E",
+                    margin: 0,
+                  }}
+                >
+                  {unlockedCount}/{achievements.length} unlocked
+                </p>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {achievements.map((a) => (
+                  <AchievementCard key={a.title} {...a} />
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </main>
-
-      {fullscreen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black">
-          <div className="absolute top-3 right-3 z-10">
-            <button onClick={() => setFullscreen(false)} className="rounded-xl border border-white/20 bg-black/50 px-3 py-1.5 text-sm font-semibold text-white hover:bg-white/10 transition">
-              ✕ Close
-            </button>
-          </div>
-          <CityCanvas className="flex-1 w-full" preset={null} override={override} />
-        </div>
-      )}
     </>
   );
 }
 
+// ── Page export ───────────────────────────────────────────────────────────────
+
 export default function SharedCityPage() {
   return (
-    <Suspense fallback={
-      <main className="page-with-nav flex items-center justify-center min-h-screen">
-        <p className="text-slate-400 animate-pulse">Loading city…</p>
-      </main>
-    }>
+    <Suspense
+      fallback={
+        <main
+          style={{
+            minHeight: "100vh",
+            background: "#F2EDE3",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <p
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 14,
+              color: "#8A9E94",
+            }}
+          >
+            Loading city…
+          </p>
+        </main>
+      }
+    >
       <SharedCityContent />
     </Suspense>
   );
