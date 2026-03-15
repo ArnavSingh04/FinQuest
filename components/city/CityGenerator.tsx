@@ -305,57 +305,80 @@ function Restaurant({ x, z, idx }: { x: number; z: number; idx: number }) {
   const { cityState } = useActiveCityState();
   const count = cityState.restaurantCount;
   const visible = idx < count;
-  const h = 1.05 + (idx % 3) * 0.35;
+  // Static mesh (no useLerpScale) — body spans 0 → rH exactly.
+  const rH = 1.05 + (idx % 3) * 0.35;
   const pal = REST_PALETTE[idx % REST_PALETTE.length];
   const bW = 1.1; const bD = 0.95;
+  const frontZ = bD / 2;
   const pulseRef = useIdlePulse(0.8, 0.010, idx * 0.6);
 
-  if (!visible) {
-    return null;
-  }
+  if (!visible) return null;
 
   return (
     <group ref={pulseRef} position={[x, 0, z]}>
-      {/* Main block */}
-      <mesh position={[0, h * 0.5, 0]} castShadow receiveShadow>
-        <boxGeometry args={[bW, h, bD]} />
-        <meshStandardMaterial
-          color={pal.wall}
-          emissive={pal.wall}
-          emissiveIntensity={0.08}
-          roughness={0.5}
-          metalness={0.05}
-          transparent={false}
-          opacity={1}
-        />
+      {/* ── Main block ── */}
+      <mesh position={[0, rH * 0.5, 0]} castShadow receiveShadow>
+        <boxGeometry args={[bW, rH, bD]} />
+        <meshStandardMaterial color={pal.wall} emissive={pal.wall} emissiveIntensity={0.08} roughness={0.5} metalness={0.05} />
       </mesh>
-      {/* Shop windows (large lower panes) */}
-      <WindowGrid
-        cols={3}
-        rows={1}
-        width={bW - 0.12}
-        height={h * 0.22}
-        depth={bD / 2}
-        facingZ
-        baseY={0.08}
-        winColor="#FFF3B0"
-        winEmissive="#FFF3B0"
-        winIntensity={0.5}
-      />
-      {/* Awning */}
-      <mesh position={[0, h + 0.06, bD / 2 + 0.04]}>
-        <boxGeometry args={[bW, 0.06, 0.28]} />
-        <meshStandardMaterial color={pal.trim} emissive={pal.trim} emissiveIntensity={0.6} roughness={0.5} />
+
+      {/* ── Shop windows (large lower panes) ── */}
+      <WindowGrid cols={3} rows={1} width={bW - 0.12} height={rH * 0.22} depth={frontZ} facingZ baseY={0.08} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.5} />
+
+      {/* ── 1. Pitched roof — ridge beam + two slopes at rH ── */}
+      <mesh position={[0, rH + 0.03, 0]}>
+        <boxGeometry args={[bW + 0.02, 0.05, 0.06]} />
+        <meshStandardMaterial color="#8B4513" roughness={0.8} />
       </mesh>
-      {/* Sign board */}
-      <mesh position={[0, h - 0.12, bD / 2 + 0.02]}>
-        <boxGeometry args={[bW * 0.7, 0.14, 0.025]} />
-        <meshStandardMaterial color={pal.sign} emissive={pal.sign} emissiveIntensity={1.2} roughness={0.3} />
+      <mesh position={[-bW * 0.25, rH + 0.06, 0]} rotation={[0, 0, 0.4]}>
+        <boxGeometry args={[bW * 0.55, 0.05, bD + 0.08]} />
+        <meshStandardMaterial color="#8B4513" roughness={0.75} metalness={0.05} />
       </mesh>
-      {/* AC unit on side */}
-      <mesh position={[bW / 2 + 0.04, h * 0.7, 0]}>
-        <boxGeometry args={[0.08, 0.12, 0.18]} />
-        <meshStandardMaterial color="#6B6560" roughness={0.9} />
+      <mesh position={[bW * 0.25, rH + 0.06, 0]} rotation={[0, 0, -0.4]}>
+        <boxGeometry args={[bW * 0.55, 0.05, bD + 0.08]} />
+        <meshStandardMaterial color="#8B4513" roughness={0.75} metalness={0.05} />
+      </mesh>
+
+      {/* ── 2. Outdoor seating (in front of building) ── */}
+      {[frontZ + 0.35, frontZ + 0.65].map((tz, ti) => (
+        <group key={`table-${ti}`} position={[0, 0, tz]}>
+          {/* Tabletop */}
+          <mesh position={[0, 0.22, 0]}>
+            <cylinderGeometry args={[0.15, 0.15, 0.04, 8]} />
+            <meshStandardMaterial color="#A0785A" roughness={0.7} />
+          </mesh>
+          {/* Table leg */}
+          <mesh position={[0, 0.11, 0]}>
+            <cylinderGeometry args={[0.03, 0.03, 0.22, 6]} />
+            <meshStandardMaterial color="#8B6B4A" roughness={0.8} />
+          </mesh>
+          {/* 2 chairs flanking table on x axis */}
+          {[-0.28, 0.28].map((cx) => (
+            <mesh key={cx} position={[cx, 0.18, 0]}>
+              <boxGeometry args={[0.1, 0.2, 0.1]} />
+              <meshStandardMaterial color="#6B4226" roughness={0.8} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+
+      {/* ── 3. Chimney — base flush with roof, center at rH + 0.02 + 0.175 ── */}
+      <mesh position={[bW * 0.3, rH + 0.02 + 0.175, 0]}>
+        <boxGeometry args={[0.1, 0.35, 0.1]} />
+        <meshStandardMaterial color="#6B4226" roughness={0.85} />
+      </mesh>
+
+      {/* ── 4. Sign board just below roofline, on front face ── */}
+      <mesh position={[0, rH - 0.1, frontZ + 0.03]}>
+        <boxGeometry args={[bW * 0.7, 0.16, 0.04]} />
+        <meshStandardMaterial color={pal.sign} emissive={pal.sign} emissiveIntensity={1.5} roughness={0.3} />
+      </mesh>
+      <pointLight position={[0, rH - 0.1, frontZ + 0.3]} intensity={0.6} distance={1.5} color="#FFF3B0" />
+
+      {/* ── 5. Awning — lower half of building, tilted forward ── */}
+      <mesh position={[0, rH * 0.55, frontZ + 0.15]} rotation={[0.2, 0, 0]}>
+        <boxGeometry args={[bW * 0.6, 0.05, 0.3]} />
+        <meshStandardMaterial color={pal.trim} emissive={pal.trim} emissiveIntensity={0.5} roughness={0.5} />
       </mesh>
     </group>
   );
@@ -364,58 +387,98 @@ function Restaurant({ x, z, idx }: { x: number; z: number; idx: number }) {
 // ─── Bank Tower ───────────────────────────────────────────────────────────────
 function BankTower({ x, z }: { x: number; z: number }) {
   const { cityState } = useActiveCityState();
-  const height = cityState.bankHeight;
-  const mainRef  = useLerpScale(height, 2);
-  const crownRef = useLerpScale(height * 0.18, 2);
+  // useLerpScale(bkH) on unit box → shaft spans 0 → bkH within its group.
+  const bkH = cityState.bankHeight;
+  // Neoclassical base: platform (h=0.4 centred at 0.2) + columns (h=1.6 centred at 1.2)
+  //   + entablature (h=0.14 centred at 2.07) → total base top = 2.07+0.07 = 2.14 ≈ 2.21.
+  const BASE_Y = 2.21;
+  const mainRef  = useLerpScale(bkH, 2);
   const pulseRef = useIdlePulse(0.3, 0.018, 0);
-
   const bW = 0.95; const bD = 0.95;
-  const towerRows = Math.max(3, Math.floor(height * 1.8));
-  const towerCols = Math.max(2, Math.min(5, Math.floor(height * 0.7) + 2));
+  const towerRows = Math.max(3, Math.floor(bkH * 1.8));
+  const towerCols = Math.max(2, Math.min(5, Math.floor(bkH * 0.7) + 2));
+
+  // 6 columns: front row (z=+0.9) and back row (z=-0.9), 3 columns each
+  const colPositions: [number, number][] = [
+    [-0.7, 0.9], [0, 0.9], [0.7, 0.9],
+    [-0.7, -0.9], [0, -0.9], [0.7, -0.9],
+  ];
 
   return (
     <group ref={pulseRef} position={[x, 0, z]}>
-      {/* Podium base */}
-      <mesh position={[0, 0.3, 0]} castShadow receiveShadow>
-        <boxGeometry args={[1.55, 0.6, 1.55]} />
-        <meshStandardMaterial color="#4A90D9" roughness={0.35} metalness={0.5} />
+      {/* ══ NEOCLASSICAL BASE ══ */}
+
+      {/* 1a. Platform — center y=0.2, spans 0→0.4 */}
+      <mesh position={[0, 0.2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[2.2, 0.4, 2.2]} />
+        <meshStandardMaterial color="#F5F0E8" roughness={0.4} metalness={0.1} />
       </mesh>
-      {/* Podium columns decorative */}
-      {[-0.55, 0.55].map((cx) => (
-        <mesh key={cx} position={[cx, 0.38, 0.78]} castShadow>
-          <cylinderGeometry args={[0.055, 0.065, 0.76, 8]} />
-          <meshStandardMaterial color="#4A90D9" roughness={0.3} metalness={0.6} />
+
+      {/* 1b. 6 columns — base at y=0.4, centre at y=1.2, top at y=2.0 */}
+      {colPositions.map(([cx, cz]) => (
+        <mesh key={`col-${cx}-${cz}`} position={[cx, 1.2, cz]} castShadow>
+          <cylinderGeometry args={[0.07, 0.07, 1.6, 8]} />
+          <meshStandardMaterial color="#E8E0D0" roughness={0.5} metalness={0.05} />
         </mesh>
       ))}
 
-      {/* Main shaft */}
-      <mesh ref={mainRef} position={[0, height * 0.5, 0]} castShadow>
-        <boxGeometry args={[bW, 1, bD]} />
-        <meshStandardMaterial color="#4A90D9" roughness={0.2} metalness={0.65} emissive="#3a7bc8" emissiveIntensity={0.3} />
-      </mesh>
-      {/* Window grids all 4 faces — warm window lights */}
-      <WindowGrid cols={towerCols} rows={towerRows} width={bW - 0.12} height={height - 0.6} depth={bD / 2} facingZ baseY={0.65} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.2} />
-      <WindowGrid cols={towerCols} rows={towerRows} width={bW - 0.12} height={height - 0.6} depth={-bD / 2} facingZ baseY={0.65} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.2} />
-      <WindowGrid cols={towerCols} rows={towerRows} width={bD - 0.12} height={height - 0.6} depth={bW / 2} facingZ={false} baseY={0.65} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.0} />
-      <WindowGrid cols={towerCols} rows={towerRows} width={bD - 0.12} height={height - 0.6} depth={-bW / 2} facingZ={false} baseY={0.65} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.0} />
-
-      {/* Mid setback */}
-      <mesh position={[0, height * 0.72, 0]} castShadow>
-        <boxGeometry args={[bW - 0.16, height * 0.06, bD - 0.16]} />
-        <meshStandardMaterial color="#4A90D9" roughness={0.25} metalness={0.7} emissive="#4A90D9" emissiveIntensity={0.2} />
+      {/* 1c. Entablature beam — centre at y=2.07, spans 2.0→2.14 */}
+      <mesh position={[0, 2.07, 0]} castShadow>
+        <boxGeometry args={[2.0, 0.14, 2.0]} />
+        <meshStandardMaterial color="#E8E0D0" roughness={0.45} metalness={0.05} />
       </mesh>
 
-      {/* Crown */}
-      <mesh ref={crownRef} position={[0, height + height * 0.09, 0]}>
-        <cylinderGeometry args={[0.06, 0.28, 1, 4]} />
-        <meshStandardMaterial color="#6BA3E0" emissive="#4A90D9" emissiveIntensity={0.5} metalness={0.5} />
-      </mesh>
-      {/* Top beacon */}
-      <mesh position={[0, height + height * 0.2, 0]}>
-        <sphereGeometry args={[0.055, 8, 8]} />
-        <meshStandardMaterial color="#FFF3B0" emissive="#FFF3B0" emissiveIntensity={1.5} />
-      </mesh>
-      <pointLight position={[0, height + height * 0.2, 0]} intensity={3} color="#FFF3B0" distance={8} decay={2} />
+      {/* ══ TOWER BODY — all positions relative to BASE_Y ══ */}
+      <group position={[0, BASE_Y, 0]}>
+        {/* Main shaft — unit box, useLerpScale drives scale.y→bkH, pos.y→bkH/2 */}
+        <mesh ref={mainRef} position={[0, bkH * 0.5, 0]} castShadow>
+          <boxGeometry args={[bW, 1, bD]} />
+          <meshStandardMaterial color="#4A90D9" roughness={0.2} metalness={0.65} emissive="#3a7bc8" emissiveIntensity={0.3} />
+        </mesh>
+
+        {/* Window grids — all 4 faces */}
+        <WindowGrid cols={towerCols} rows={towerRows} width={bW - 0.12} height={bkH - 0.6} depth={ bD / 2} facingZ       baseY={0.65} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.2} />
+        <WindowGrid cols={towerCols} rows={towerRows} width={bW - 0.12} height={bkH - 0.6} depth={-bD / 2} facingZ       baseY={0.65} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.2} />
+        <WindowGrid cols={towerCols} rows={towerRows} width={bD - 0.12} height={bkH - 0.6} depth={ bW / 2} facingZ={false} baseY={0.65} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.0} />
+        <WindowGrid cols={towerCols} rows={towerRows} width={bD - 0.12} height={bkH - 0.6} depth={-bW / 2} facingZ={false} baseY={0.65} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={1.0} />
+
+        {/* 3. Rustication lines — every 1.0 unit up the tower */}
+        {Array.from({ length: Math.ceil(bkH) }, (_, i) => {
+          const lineY = i * 1.0;
+          if (lineY >= bkH - 0.2) return null;
+          return (
+            <mesh key={`rust-${i}`} position={[0, lineY, 0]}>
+              <boxGeometry args={[bW + 0.02, 0.04, bD + 0.02]} />
+              <meshStandardMaterial color="#5BA0D0" roughness={0.3} metalness={0.5} />
+            </mesh>
+          );
+        })}
+
+        {/* Mid setback */}
+        <mesh position={[0, bkH * 0.72, 0]} castShadow>
+          <boxGeometry args={[bW - 0.16, bkH * 0.06, bD - 0.16]} />
+          <meshStandardMaterial color="#4A90D9" roughness={0.25} metalness={0.7} emissive="#4A90D9" emissiveIntensity={0.2} />
+        </mesh>
+
+        {/* 4. Gold cupola — half-dome sitting on tower roof at bkH+0.2 */}
+        <mesh position={[0, bkH + 0.2, 0]}>
+          <sphereGeometry args={[0.35, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial color="#C9A84C" metalness={0.8} roughness={0.1} emissive="#C9A84C" emissiveIntensity={0.5} />
+        </mesh>
+
+        {/* 5. Flagpole — centre at bkH+0.85, base at bkH+0.55, tip at bkH+1.15 */}
+        <mesh position={[0, bkH + 0.85, 0]} castShadow>
+          <cylinderGeometry args={[0.015, 0.015, 0.6, 6]} />
+          <meshStandardMaterial color="#94A3B8" metalness={0.8} roughness={0.2} />
+        </mesh>
+        {/* Terracotta flag — x=0.11 so it extends rightward from pole */}
+        <mesh position={[0.11, bkH + 1.1, 0]}>
+          <boxGeometry args={[0.22, 0.12, 0.02]} />
+          <meshStandardMaterial color="#C17B3F" emissive="#C17B3F" emissiveIntensity={0.8} roughness={0.4} />
+        </mesh>
+        {/* Beacon light above cupola */}
+        <pointLight position={[0, bkH + 0.6, 0]} intensity={3} color="#FFD580" distance={8} decay={2} />
+      </group>
     </group>
   );
 }
@@ -799,29 +862,68 @@ function Tree({ x, z, scale = 1 }: { x: number; z: number; scale?: number }) {
 
 // ─── Street Lamp ──────────────────────────────────────────────────────────────
 function StreetLamp({ x, z }: { x: number; z: number }) {
+  // Pole: cylinderGeometry height=2.2, centre at y=1.1 → top at y=2.2.
+  const postH = 2.2;
+  // Derive a double-lamp indicator from position (no idx available at call sites).
+  const isDouble = Math.floor(Math.abs(x * 2.7 + z * 1.3)) % 3 === 0;
+
   return (
     <group position={[x, 0, z]}>
-      {/* Pole */}
+      {/* ── 1. Decorative base collar at ground level ── */}
+      <mesh position={[0, 0.04, 0]}>
+        <cylinderGeometry args={[0.065, 0.085, 0.08, 8]} />
+        <meshStandardMaterial color="#374151" roughness={0.5} metalness={0.6} />
+      </mesh>
+
+      {/* ── Pole (unchanged) ── */}
       <mesh position={[0, 1.1, 0]}>
         <cylinderGeometry args={[0.032, 0.042, 2.2, 8]} />
         <meshStandardMaterial color="#6B6560" metalness={0.8} roughness={0.2} />
       </mesh>
-      {/* Arm */}
-      <mesh position={[0.1, 2.15, 0]} rotation={[0, 0, Math.PI / 12]}>
-        <cylinderGeometry args={[0.018, 0.018, 0.3, 6]} />
-        <meshStandardMaterial color="#6B6560" metalness={0.8} roughness={0.2} />
+
+      {/* ── 2. Bracket arm — two angled box segments near pole top ── */}
+      {/* Segment 1 — rising away from pole */}
+      <mesh position={[0.09, postH - 0.1, 0]} rotation={[0, 0, 0.4]}>
+        <boxGeometry args={[0.18, 0.025, 0.025]} />
+        <meshStandardMaterial color="#374151" roughness={0.4} metalness={0.7} />
       </mesh>
-      {/* Hood */}
-      <mesh position={[0.2, 2.22, 0]}>
-        <cylinderGeometry args={[0.1, 0.06, 0.1, 8]} />
+      {/* Segment 2 — curving down to lamp head */}
+      <mesh position={[0.22, postH + 0.02, 0]} rotation={[0, 0, -0.2]}>
+        <boxGeometry args={[0.12, 0.025, 0.025]} />
+        <meshStandardMaterial color="#374151" roughness={0.4} metalness={0.7} />
+      </mesh>
+
+      {/* ── Hood + bulb + light (primary, right side) ── */}
+      <mesh position={[0.28, postH + 0.06, 0]}>
+        <cylinderGeometry args={[0.09, 0.055, 0.09, 8]} />
         <meshStandardMaterial color="#6B6560" metalness={0.7} roughness={0.3} />
       </mesh>
-      {/* Bulb */}
-      <mesh position={[0.2, 2.16, 0]}>
+      <mesh position={[0.28, postH, 0]}>
         <sphereGeometry args={[0.07, 8, 8]} />
         <meshStandardMaterial color="#fef9c3" emissive="#fef08a" emissiveIntensity={4} />
       </mesh>
-      <pointLight position={[0.2, 2.1, 0]} intensity={3.5} color="#fef08a" distance={5} decay={2} />
+      <pointLight position={[0.28, postH - 0.06, 0]} intensity={3.5} color="#fef08a" distance={5} decay={2} />
+
+      {/* ── 3. Second lamp head — mirrored for double-lamp posts ── */}
+      {isDouble && (
+        <>
+          {/* Mirror bracket arm segments */}
+          <mesh position={[-0.09, postH - 0.1, 0]} rotation={[0, 0, -0.4]}>
+            <boxGeometry args={[0.18, 0.025, 0.025]} />
+            <meshStandardMaterial color="#374151" roughness={0.4} metalness={0.7} />
+          </mesh>
+          <mesh position={[-0.22, postH + 0.02, 0]} rotation={[0, 0, 0.2]}>
+            <boxGeometry args={[0.12, 0.025, 0.025]} />
+            <meshStandardMaterial color="#374151" roughness={0.4} metalness={0.7} />
+          </mesh>
+          {/* Second lamp globe */}
+          <mesh position={[-0.28, postH + 0.1, 0]}>
+            <sphereGeometry args={[0.07, 8, 8]} />
+            <meshStandardMaterial color="#fef9c3" emissive="#fef08a" emissiveIntensity={4} />
+          </mesh>
+          <pointLight position={[-0.28, postH + 0.04, 0]} intensity={3.5} color="#fef08a" distance={5} decay={2} />
+        </>
+      )}
     </group>
   );
 }
@@ -1050,20 +1152,23 @@ function Lightning() {
 // ─── School building (appears when needs ≥ 40%) ──────────────────────────────
 function School({ x, z }: { x: number; z: number }) {
   const { proportions } = useActiveCityState();
-  const visible = Math.round(proportions.needs * 100) >= 40; // needs ≥ 40%
+  const visible = Math.round(proportions.needs * 100) >= 40;
   const target = visible ? 1 : 0.01;
   const bodyRef = useLerpScale(target);
   const towerRef = useLerpScale(target, 1.8);
   const pulseRef = useIdlePulse(0.4, 0.008, 0.5);
+  // Existing cone is at y=1.85 — that is the tower top reference.
+  const towerTopY = 1.85;
 
   return (
     <group ref={pulseRef} position={[x, 0, z]}>
-      {/* Main building body */}
+      {/* ── Main building body ── */}
       <mesh ref={bodyRef} position={[0, 0.55, 0]} castShadow receiveShadow>
         <boxGeometry args={[1.4, 1.1, 1.0]} />
         <meshStandardMaterial color="#5A9E35" roughness={0.6} metalness={0.05} emissive="#6BA03C" emissiveIntensity={0.3} />
       </mesh>
-      {/* Clock tower */}
+
+      {/* ── Clock tower ── */}
       <mesh ref={towerRef} position={[0, 1.4, 0]} castShadow>
         <boxGeometry args={[0.38, 0.8, 0.38]} />
         <meshStandardMaterial color="#6BA03C" roughness={0.55} emissive="#5A9E35" emissiveIntensity={0.4} />
@@ -1073,14 +1178,34 @@ function School({ x, z }: { x: number; z: number }) {
         <cylinderGeometry args={[0.12, 0.12, 0.02, 12]} />
         <meshStandardMaterial color="#fef9c3" emissive="#fef08a" emissiveIntensity={1.5} />
       </mesh>
-      {/* Roof peak */}
-      <mesh position={[0, 1.85, 0]}>
+      {/* Roof cone peak */}
+      <mesh position={[0, towerTopY, 0]}>
         <coneGeometry args={[0.22, 0.35, 4]} />
         <meshStandardMaterial color="#5A9E35" roughness={0.7} />
       </mesh>
-      {/* Windows */}
+
+      {/* ── 1. Bell tower detail — above cone tip ── */}
+      {visible && (
+        <>
+          {/* 4 corner posts of the open bell housing */}
+          {([[-0.12, -0.12], [0.12, -0.12], [-0.12, 0.12], [0.12, 0.12]] as [number, number][]).map(([px, pz], pi) => (
+            <mesh key={`post-${pi}`} position={[px, towerTopY + 0.02 + 0.11, pz]}>
+              <cylinderGeometry args={[0.02, 0.02, 0.22, 6]} />
+              <meshStandardMaterial color="#4A8030" roughness={0.6} metalness={0.1} />
+            </mesh>
+          ))}
+          {/* Bell — lower hemisphere only */}
+          <mesh position={[0, towerTopY + 0.15, 0]} rotation={[Math.PI, 0, 0]}>
+            <sphereGeometry args={[0.07, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            <meshStandardMaterial color="#D4A96A" metalness={0.6} roughness={0.3} emissive="#C9A020" emissiveIntensity={0.3} />
+          </mesh>
+        </>
+      )}
+
+      {/* ── Windows ── */}
       <WindowGrid cols={3} rows={2} width={1.3} height={0.85} depth={0.51} facingZ baseY={0.12} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.8} />
-      {/* Flag pole */}
+
+      {/* ── Flag pole ── */}
       <mesh position={[0.75, 1.6, 0]}>
         <cylinderGeometry args={[0.014, 0.014, 0.9, 5]} />
         <meshStandardMaterial color="#9ca3af" metalness={0.8} roughness={0.2} />
@@ -1089,6 +1214,52 @@ function School({ x, z }: { x: number; z: number }) {
         <boxGeometry args={[0.28, 0.14, 0.02]} />
         <meshStandardMaterial color="#ef4444" emissive="#dc2626" emissiveIntensity={0.8} />
       </mesh>
+
+      {/* ── 2. Covered walkway — along right side (x=0.8) ── */}
+      {visible && (
+        <>
+          {/* 5 arch support columns */}
+          {([-0.3, -0.1, 0.1, 0.3, 0.5] as number[]).map((wz) => (
+            <mesh key={`walk-${wz}`} position={[0.8, 0.35, wz]} castShadow>
+              <cylinderGeometry args={[0.03, 0.03, 0.7, 8]} />
+              <meshStandardMaterial color="#4A8030" roughness={0.6} metalness={0.05} />
+            </mesh>
+          ))}
+          {/* Roof panel connecting columns */}
+          <mesh position={[0.8, 0.72, 0.1]}>
+            <boxGeometry args={[0.4, 0.04, 1.0]} />
+            <meshStandardMaterial color="#4ade80" transparent opacity={0.6} roughness={0.4} />
+          </mesh>
+        </>
+      )}
+
+      {/* ── 3. Sports field — behind school (z = -1.8) ── */}
+      {visible && (
+        <>
+          {/* Field surface */}
+          <mesh position={[0, 0.006, -1.8]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[2.0, 1.2]} />
+            <meshStandardMaterial color="#166534" roughness={0.9} />
+          </mesh>
+          {/* Centre line */}
+          <mesh position={[0, 0.008, -1.8]}>
+            <boxGeometry args={[0.015, 0.01, 1.2]} />
+            <meshStandardMaterial color="#FFFFFF" emissive="#FFFFFF" emissiveIntensity={0.3} />
+          </mesh>
+          {/* Field boundary — 4 edges */}
+          {([
+            [0, 0, -0.595, 2.0, 0.01, 0.015],   // front edge
+            [0, 0, -2.405, 2.0, 0.01, 0.015],   // back edge
+            [-0.985, 0, -1.8, 0.015, 0.01, 1.21], // left edge
+            [ 0.985, 0, -1.8, 0.015, 0.01, 1.21], // right edge
+          ] as [number, number, number, number, number, number][]).map(([bx, by, bz, bW2, bH2, bD2], bi) => (
+            <mesh key={`edge-${bi}`} position={[bx, 0.008 + by, bz]}>
+              <boxGeometry args={[bW2, bH2, bD2]} />
+              <meshStandardMaterial color="#FFFFFF" emissive="#FFFFFF" emissiveIntensity={0.3} />
+            </mesh>
+          ))}
+        </>
+      )}
     </group>
   );
 }
@@ -1096,98 +1267,205 @@ function School({ x, z }: { x: number; z: number }) {
 // ─── Hospital (appears when invest ≥ 15%) ─────────────────────────────────────
 function Hospital({ x, z }: { x: number; z: number }) {
   const { proportions } = useActiveCityState();
-  const visible = Math.round(proportions.investments * 100) >= 15; // invest ≥ 15%
+  const visible = Math.round(proportions.investments * 100) >= 15;
   const target = visible ? 1 : 0.01;
   const bodyRef = useLerpScale(target);
   const pulseRef = useIdlePulse(0.4, 0.008, 0.5);
 
+  // useLerpScale(1) → position.y=0.5. Box height=1.8. Actual top = 0.5+0.9 = 1.4.
+  // Spec uses bodyH=1.8 as the position reference (maintaining existing convention).
   const bodyH = 1.8;
   const bodyW = 1.4;
   const bodyD = 1.1;
+  const frontZ = bodyD / 2; // = 0.55
 
   return (
     <group ref={pulseRef} position={[x, 0, z]}>
+      {/* ── Main body ── */}
       <mesh ref={bodyRef} position={[0, bodyH * 0.5, 0]} castShadow receiveShadow>
         <boxGeometry args={[bodyW, bodyH, bodyD]} />
         <meshStandardMaterial color="#f0f9ff" roughness={0.5} metalness={0.1} emissive="#e0f2fe" emissiveIntensity={0.2} />
       </mesh>
-      {/* Red cross sign */}
-      <mesh position={[0, bodyH * 0.62, bodyD / 2 + 0.02]}>
-        <boxGeometry args={[0.32, 0.09, 0.025]} />
-        <meshStandardMaterial color="#ef4444" emissive="#dc2626" emissiveIntensity={2} />
-      </mesh>
-      <mesh position={[0, bodyH * 0.62, bodyD / 2 + 0.02]}>
-        <boxGeometry args={[0.09, 0.32, 0.025]} />
-        <meshStandardMaterial color="#ef4444" emissive="#dc2626" emissiveIntensity={2} />
-      </mesh>
-      {/* Windows */}
-      <WindowGrid
-        cols={3}
-        rows={4}
-        width={bodyW - 0.2}
-        height={bodyH - 0.45}
-        depth={bodyD / 2}
-        facingZ
-        baseY={0.16}
-        winColor="#e0f2fe"
-        winEmissive="#bae6fd"
-        winIntensity={0.9}
-      />
-      {/* Rooftop helipad */}
-      <mesh position={[0, bodyH + 0.08, 0]}>
-        <cylinderGeometry args={[0.35, 0.35, 0.04, 12]} />
-        <meshStandardMaterial color="#fbbf24" emissive="#d97706" emissiveIntensity={0.6} />
-      </mesh>
-      <mesh position={[0, bodyH + 0.11, 0]}>
-        <cylinderGeometry args={[0.28, 0.28, 0.02, 12]} />
-        <meshStandardMaterial color="#f59e0b" emissive="#f59e0b" emissiveIntensity={1} />
-      </mesh>
-      {/* Entrance canopy */}
-      <mesh position={[0, 0.24, bodyD / 2 + 0.1]}>
-        <boxGeometry args={[0.7, 0.06, 0.3]} />
-        <meshStandardMaterial color="#bae6fd" transparent opacity={0.7} />
-      </mesh>
+
+      {/* ── Windows ── */}
+      <WindowGrid cols={3} rows={4} width={bodyW - 0.2} height={bodyH - 0.45} depth={frontZ} facingZ baseY={0.16} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={0.9} />
+
+      {/* ── 1. Ambulance bay canopy (replaces old entrance canopy) ── */}
+      {visible && (
+        <>
+          <mesh position={[0, 0.55, frontZ + 0.4]}>
+            <boxGeometry args={[1.4, 0.07, 0.9]} />
+            <meshStandardMaterial color="#BFDBFE" transparent opacity={0.65} roughness={0.2} metalness={0.1} />
+          </mesh>
+          {/* 2 support columns — from ground (y=0) to canopy base (y=0.515) */}
+          {([-0.55, 0.55] as number[]).map((cx) => (
+            <mesh key={`col-${cx}`} position={[cx, 0.275, frontZ + 0.4]}>
+              <cylinderGeometry args={[0.04, 0.04, 0.55, 8]} />
+              <meshStandardMaterial color="#94A3B8" roughness={0.5} metalness={0.3} />
+            </mesh>
+          ))}
+        </>
+      )}
+
+      {/* ── 2. Rooftop details (all at bodyH + offset per spec) ── */}
+      {visible && (
+        <>
+          {/* Satellite dish pole */}
+          <mesh position={[0.3, bodyH + 0.04, -0.2]}>
+            <cylinderGeometry args={[0.02, 0.02, 0.1, 6]} />
+            <meshStandardMaterial color="#94A3B8" roughness={0.5} metalness={0.4} />
+          </mesh>
+          {/* Dish (half-sphere opening upward, tilted to face sky) */}
+          <mesh position={[0.3, bodyH + 0.08, -0.2]} rotation={[-0.3, 0, 0]}>
+            <sphereGeometry args={[0.14, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            <meshStandardMaterial color="#94A3B8" roughness={0.4} metalness={0.5} />
+          </mesh>
+
+          {/* 3 AC units */}
+          {([-0.4, 0, 0.4] as number[]).map((ax) => (
+            <mesh key={`ac-${ax}`} position={[ax, bodyH + 0.1, 0.2]}>
+              <boxGeometry args={[0.22, 0.18, 0.16]} />
+              <meshStandardMaterial color="#94A3B8" roughness={0.5} metalness={0.4} />
+            </mesh>
+          ))}
+
+          {/* Water tank legs — 3 at 120° angles, radius 0.12, y=bodyH+0.1 */}
+          {([0, 1, 2] as number[]).map((li) => {
+            const ang = (li / 3) * Math.PI * 2;
+            return (
+              <mesh key={`leg-${li}`} position={[Math.cos(ang) * 0.12, bodyH + 0.1, Math.sin(ang) * 0.12]}>
+                <cylinderGeometry args={[0.02, 0.02, 0.2, 6]} />
+                <meshStandardMaterial color="#6B7280" roughness={0.6} metalness={0.3} />
+              </mesh>
+            );
+          })}
+          {/* Water tank body */}
+          <mesh position={[0, bodyH + 0.25, 0]}>
+            <cylinderGeometry args={[0.18, 0.18, 0.28, 10]} />
+            <meshStandardMaterial color="#6B7280" roughness={0.6} metalness={0.3} />
+          </mesh>
+        </>
+      )}
+
+      {/* ── 3. Illuminated emergency sign (replaces old cross sign) ── */}
+      {visible && (
+        <>
+          {/* Green background panel */}
+          <mesh position={[0, bodyH * 0.72, frontZ + 0.03]}>
+            <boxGeometry args={[0.55, 0.13, 0.04]} />
+            <meshStandardMaterial color="#16A34A" emissive="#16A34A" emissiveIntensity={2.5} roughness={0.3} />
+          </mesh>
+          {/* Red cross — horizontal */}
+          <mesh position={[0, bodyH * 0.72, frontZ + 0.06]}>
+            <boxGeometry args={[0.28, 0.06, 0.05]} />
+            <meshStandardMaterial color="#EF4444" emissive="#DC2626" emissiveIntensity={3.0} roughness={0.2} />
+          </mesh>
+          {/* Red cross — vertical */}
+          <mesh position={[0, bodyH * 0.72, frontZ + 0.06]}>
+            <boxGeometry args={[0.06, 0.28, 0.05]} />
+            <meshStandardMaterial color="#EF4444" emissive="#DC2626" emissiveIntensity={3.0} roughness={0.2} />
+          </mesh>
+          <pointLight position={[0, bodyH * 0.72, frontZ + 0.4]} intensity={1.5} color="#22C55E" distance={2.5} decay={2} />
+        </>
+      )}
     </group>
   );
 }
 
 // ─── Park fountain ────────────────────────────────────────────────────────────
+// Pre-compute static x/z positions for 9 water droplets (3 jets × 3 radii)
+const FOUNTAIN_DROPLETS = Array.from({ length: 3 }, (_, jetIdx) => {
+  const angle = (jetIdx / 3) * Math.PI * 2;
+  return [
+    { x: Math.cos(angle) * 0.15, z: Math.sin(angle) * 0.15, jetIdx, dropIdx: 0 },
+    { x: Math.cos(angle) * 0.28, z: Math.sin(angle) * 0.28, jetIdx, dropIdx: 1 },
+    { x: Math.cos(angle) * 0.38, z: Math.sin(angle) * 0.38, jetIdx, dropIdx: 2 },
+  ];
+}).flat();
+
 function Fountain({ x, z }: { x: number; z: number }) {
-  const ref = useRef<THREE.Mesh>(null);
+  const mainJetRef = useRef<THREE.Mesh>(null);
+  // Flat array of 9 droplet mesh refs
+  const dropletRefs = useRef<(THREE.Mesh | null)[]>(Array(9).fill(null));
+
   useFrame(({ clock }) => {
-    if (ref.current) {
-      (ref.current.material as THREE.MeshStandardMaterial).emissiveIntensity =
+    // Existing central water-jet pulse
+    if (mainJetRef.current) {
+      (mainJetRef.current.material as THREE.MeshStandardMaterial).emissiveIntensity =
         0.8 + Math.sin(clock.elapsedTime * 2) * 0.3;
     }
+    // Animate each of the 9 arc droplets
+    dropletRefs.current.forEach((mesh, i) => {
+      if (!mesh) return;
+      const cfg = FOUNTAIN_DROPLETS[i]!;
+      // Each jet phase-shifted by 0.8 per jet; droplets within a jet offset by 0.15
+      const t = (clock.elapsedTime * 1.2 + cfg.jetIdx * 0.8 + cfg.dropIdx * 0.15) % 1;
+      const sinT = Math.sin(t * Math.PI);
+      const mat = mesh.material as THREE.MeshStandardMaterial;
+      mat.opacity = sinT * 0.75;
+      mesh.position.y = 0.72 + sinT * 0.25;
+      const s = Math.max(0.05, 0.5 + sinT * 0.5);
+      mesh.scale.setScalar(s);
+    });
   });
 
   return (
     <group position={[x, 0, z]}>
-      {/* Basin */}
+      {/* ── Basin ── */}
       <mesh position={[0, 0.06, 0]}>
         <cylinderGeometry args={[0.55, 0.6, 0.12, 12]} />
         <meshStandardMaterial color="#475569" roughness={0.7} />
       </mesh>
-      {/* Inner water */}
+
+      {/* ── 2. Inner basin rim ring ── */}
+      <mesh position={[0, 0.13, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.48, 0.03, 6, 24]} />
+        <meshStandardMaterial color="#64748B" roughness={0.5} metalness={0.5} />
+      </mesh>
+
+      {/* ── Inner water surface ── */}
       <mesh position={[0, 0.1, 0]}>
         <cylinderGeometry args={[0.45, 0.45, 0.04, 12]} />
         <meshStandardMaterial color="#38bdf8" transparent opacity={0.7} emissive="#0ea5e9" emissiveIntensity={0.8} />
       </mesh>
-      {/* Centre pillar */}
+
+      {/* ── Centre pillar ── */}
       <mesh position={[0, 0.3, 0]}>
         <cylinderGeometry args={[0.06, 0.09, 0.44, 8]} />
         <meshStandardMaterial color="#94a3b8" roughness={0.6} metalness={0.4} />
       </mesh>
-      {/* Top tier */}
+
+      {/* ── Top tier ── */}
       <mesh position={[0, 0.55, 0]}>
         <cylinderGeometry args={[0.22, 0.22, 0.06, 10]} />
         <meshStandardMaterial color="#64748b" roughness={0.6} />
       </mesh>
-      {/* Water jet (animated) */}
-      <mesh ref={ref} position={[0, 0.72, 0]}>
+
+      {/* ── Central water jet (animated pulse) ── */}
+      <mesh ref={mainJetRef} position={[0, 0.72, 0]}>
         <sphereGeometry args={[0.06, 8, 8]} />
         <meshStandardMaterial color="#7dd3fc" transparent opacity={0.85} emissive="#38bdf8" emissiveIntensity={0.8} />
       </mesh>
+
+      {/* ── 1. Animated arc droplets — 3 jets × 3 droplets ── */}
+      {FOUNTAIN_DROPLETS.map((cfg, i) => (
+        <mesh
+          key={`drop-${i}`}
+          ref={(el) => { dropletRefs.current[i] = el; }}
+          position={[cfg.x, 0.85, cfg.z]}
+        >
+          <sphereGeometry args={[0.025, 6, 6]} />
+          <meshStandardMaterial
+            color="#7DD3FC"
+            transparent
+            opacity={0.75}
+            emissive="#38BDF8"
+            emissiveIntensity={0.8}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+
       <pointLight position={[0, 0.55, 0]} intensity={2.5} color="#38bdf8" distance={3.5} decay={2} />
     </group>
   );
@@ -1340,31 +1618,91 @@ function BunnyRabbit({ idx }: { idx: number }) {
 // ─── Office Block ─────────────────────────────────────────────────────────────
 function OfficeBlock({ x, z, idx }: { x: number; z: number; idx: number }) {
   const { cityState } = useActiveCityState();
+  // useLerpScale(h) on unit box → shaft spans 0 → h exactly.
   const h = cityState.bankHeight * 0.6 + (idx % 3) * 0.55;
   const mainRef = useLerpScale(h, 2);
   const pulseRef = useIdlePulse(0.4, 0.008, idx * 1.0);
   const bW = 1.0; const bD = 0.85;
   const cols = Math.max(2, Math.min(5, Math.floor(h * 0.8) + 2));
   const rows = Math.max(2, Math.floor(h * 1.4));
+  // Floor spacing for spandrel panels
+  const floorH = h / Math.max(1, Math.floor(h * 1.4));
 
   return (
     <group ref={pulseRef} position={[x, 0, z]}>
-      <mesh position={[0, 0.2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[bW + 0.2, 0.4, bD + 0.2]} />
-        <meshStandardMaterial color="#1e293b" roughness={0.5} metalness={0.3} />
+      {/* ── 2. Ground floor lobby (replaces old podium) ── */}
+      <mesh position={[0, 0.4, 0]} castShadow receiveShadow>
+        <boxGeometry args={[bW + 0.1, 0.8, bD + 0.1]} />
+        <meshStandardMaterial color="#0F172A" roughness={0.4} metalness={0.5} />
       </mesh>
+      {/* Lobby glass panels on front face */}
+      <mesh position={[0, 0.45, bD / 2 + 0.01]}>
+        <boxGeometry args={[bW - 0.2, 0.6, 0.03]} />
+        <meshStandardMaterial color="#BFDBFE" transparent opacity={0.5} roughness={0.1} metalness={0.2} />
+      </mesh>
+
+      {/* ── Main shaft (unit box scaled to h, spans 0 → h) ── */}
       <mesh ref={mainRef} position={[0, h * 0.5, 0]} castShadow>
         <boxGeometry args={[bW, 1, bD]} />
         <meshStandardMaterial color="#334155" roughness={0.22} metalness={0.55} emissive="#1e293b" emissiveIntensity={0.4} />
       </mesh>
-      <WindowGrid cols={cols} rows={rows} width={bW - 0.12} height={Math.max(0.3, h - 0.5)} depth={bD / 2}  facingZ    baseY={0.5}  winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.8} />
-      <WindowGrid cols={cols} rows={rows} width={bW - 0.12} height={Math.max(0.3, h - 0.5)} depth={-bD / 2} facingZ    baseY={0.5}  winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.8} />
-      <WindowGrid cols={cols} rows={rows} width={bD - 0.12} height={Math.max(0.3, h - 0.5)} depth={bW / 2}  facingZ={false} baseY={0.5} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.6} />
-      <WindowGrid cols={cols} rows={rows} width={bD - 0.12} height={Math.max(0.3, h - 0.5)} depth={-bW / 2} facingZ={false} baseY={0.5} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.6} />
-      <mesh position={[0, h + 0.06, 0]}>
-        <boxGeometry args={[bW - 0.2, 0.12, bD - 0.2]} />
-        <meshStandardMaterial color="#475569" metalness={0.6} roughness={0.3} />
+
+      {/* ── 1. Spandrel panels (horizontal floor-line bands) ── */}
+      {Array.from({ length: Math.floor(h * 1.4) }, (_, fi) => {
+        const lineY = 0.5 + fi * floorH;
+        if (lineY >= h - 0.2) return null;
+        return (
+          <mesh key={`sp-${fi}`} position={[0, lineY, 0]}>
+            <boxGeometry args={[bW + 0.02, 0.06, bD + 0.02]} />
+            <meshStandardMaterial color="#1E293B" metalness={0.8} roughness={0.2} />
+          </mesh>
+        );
+      })}
+
+      {/* ── Windows ── */}
+      <WindowGrid cols={cols} rows={rows} width={bW - 0.12} height={Math.max(0.3, h - 0.5)} depth={bD / 2}   facingZ       baseY={0.5} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.8} />
+      <WindowGrid cols={cols} rows={rows} width={bW - 0.12} height={Math.max(0.3, h - 0.5)} depth={-bD / 2}  facingZ       baseY={0.5} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.8} />
+      <WindowGrid cols={cols} rows={rows} width={bD - 0.12} height={Math.max(0.3, h - 0.5)} depth={bW / 2}   facingZ={false} baseY={0.5} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.6} />
+      <WindowGrid cols={cols} rows={rows} width={bD - 0.12} height={Math.max(0.3, h - 0.5)} depth={-bW / 2}  facingZ={false} baseY={0.5} winColor="#bfdbfe" winEmissive="#93c5fd" winIntensity={0.6} />
+
+      {/* ── 3. Mechanical penthouse on roof ── */}
+      <mesh position={[0, h + 0.2, 0]} castShadow>
+        <boxGeometry args={[bW * 0.55, 0.4, bD * 0.55]} />
+        <meshStandardMaterial color="#1E293B" roughness={0.5} metalness={0.4} />
       </mesh>
+      {/* AC units on top of penthouse */}
+      {([-0.2, 0.2] as number[]).map((acx) => (
+        <mesh key={acx} position={[acx, h + 0.42, 0]}>
+          <boxGeometry args={[0.2, 0.12, 0.15]} />
+          <meshStandardMaterial color="#374151" roughness={0.5} metalness={0.5} />
+        </mesh>
+      ))}
+
+      {/* ── 4. Rooftop antenna — base at h+0.40, centre at h+0.65, tip at h+0.90 ── */}
+      <mesh position={[0, h + 0.65, 0]}>
+        <cylinderGeometry args={[0.015, 0.025, 0.5, 6]} />
+        <meshStandardMaterial color="#94A3B8" metalness={0.9} roughness={0.1} />
+      </mesh>
+
+      {/* ── 5. Helipad on every third office (idx % 3 === 0) ── */}
+      {idx % 3 === 0 && (
+        <>
+          <mesh position={[0, h + 0.02, 0]}>
+            <cylinderGeometry args={[0.4, 0.4, 0.03, 16]} />
+            <meshStandardMaterial color="#374151" roughness={0.6} />
+          </mesh>
+          {/* H marking — horizontal bar */}
+          <mesh position={[0, h + 0.04, 0]}>
+            <boxGeometry args={[0.3, 0.01, 0.06]} />
+            <meshStandardMaterial color="#FFFFFF" emissive="#FFFFFF" emissiveIntensity={0.5} />
+          </mesh>
+          {/* H marking — vertical bar */}
+          <mesh position={[0, h + 0.04, 0]}>
+            <boxGeometry args={[0.06, 0.01, 0.3]} />
+            <meshStandardMaterial color="#FFFFFF" emissive="#FFFFFF" emissiveIntensity={0.5} />
+          </mesh>
+        </>
+      )}
     </group>
   );
 }
@@ -1374,34 +1712,65 @@ function ShoppingMall({ x, z }: { x: number; z: number }) {
   const { proportions } = useActiveCityState();
   const visible = Math.round(proportions.wants * 100) >= 15;
   const bodyRef = useLerpScale(visible ? 1 : 0.01);
+  // useLerpScale(1) → scale.y=1, position.y=0.5. Box height=1.8.
+  // Actual body top = 0.5 + 1.8/2 = 1.4. Front face z = 2.2/2 = 1.1.
+  const mallTop = 0.5 + 1.8 / 2; // = 1.4
+  const frontZ  = 2.2 / 2;       // = 1.1
 
   return (
     <group position={[x, 0, z]}>
+      {/* ── Main body ── */}
       <mesh ref={bodyRef} position={[0, 0.9, 0]} castShadow receiveShadow>
         <boxGeometry args={[3.8, 1.8, 2.2]} />
         <meshStandardMaterial color="#92400e" roughness={0.5} metalness={0.05} emissive="#7c2d12" emissiveIntensity={0.15} />
       </mesh>
+
+      {/* ── Windows ── */}
+      {visible && <WindowGrid cols={5} rows={2} width={3.6}  height={1.4} depth={ frontZ}  facingZ       baseY={0.14} winColor="#f8fafc" winEmissive="#e2e8f0" winIntensity={0.3} />}
+      {visible && <WindowGrid cols={2} rows={2} width={2.05} height={1.4} depth={ 1.92}    facingZ={false} baseY={0.14} winColor="#f8fafc" winEmissive="#e2e8f0" winIntensity={0.25} />}
+      {visible && <WindowGrid cols={2} rows={2} width={2.05} height={1.4} depth={-1.92}    facingZ={false} baseY={0.14} winColor="#f8fafc" winEmissive="#e2e8f0" winIntensity={0.25} />}
+
+      {/* ── 1. Dome skylight — half-sphere sitting on roof ── */}
       {visible && (
-        <mesh position={[0, 1.22, 1.12]}>
-          <boxGeometry args={[2.2, 0.08, 0.6]} />
-          <meshStandardMaterial color="#d97706" emissive="#92400e" emissiveIntensity={0.5} />
+        <mesh position={[0, mallTop + 0.3, 0]}>
+          <sphereGeometry args={[0.75, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial color="#BFDBFE" transparent opacity={0.35} emissive="#E0F2FE" emissiveIntensity={0.3} roughness={0.1} metalness={0.1} />
         </mesh>
       )}
-      {visible && <WindowGrid cols={5} rows={2} width={3.6}  height={1.4} depth={1.12}  facingZ       baseY={0.14} winColor="#f8fafc" winEmissive="#e2e8f0" winIntensity={0.3} />}
-      {visible && <WindowGrid cols={2} rows={2} width={2.05} height={1.4} depth={1.92}  facingZ={false} baseY={0.14} winColor="#f8fafc" winEmissive="#e2e8f0" winIntensity={0.25} />}
-      {visible && <WindowGrid cols={2} rows={2} width={2.05} height={1.4} depth={-1.92} facingZ={false} baseY={0.14} winColor="#f8fafc" winEmissive="#e2e8f0" winIntensity={0.25} />}
+
+      {/* ── 2. Rooftop HVAC units — 2×2 grid on roof surface ── */}
+      {visible && ([-0.8, 0.8] as number[]).map((ux) =>
+        ([-0.5, 0.5] as number[]).map((uz) => (
+          <mesh key={`hvac-${ux}-${uz}`} position={[ux, mallTop + 0.1, uz]}>
+            <boxGeometry args={[0.4, 0.2, 0.3]} />
+            <meshStandardMaterial color="#374151" roughness={0.5} metalness={0.4} />
+          </mesh>
+        ))
+      )}
+
+      {/* ── 3. Entrance canopy with support columns ── */}
       {visible && (
-        <mesh position={[0, 1.95, 1.12]}>
-          <boxGeometry args={[2.8, 0.22, 0.04]} />
-          <meshStandardMaterial color="#f59e0b" emissive="#d97706" emissiveIntensity={1.5} />
+        <>
+          <mesh position={[0, 0.5, frontZ + 0.25]}>
+            <boxGeometry args={[1.8, 0.07, 0.6]} />
+            <meshStandardMaterial color="#D97706" transparent opacity={0.85} roughness={0.4} />
+          </mesh>
+          {([-0.7, 0.7] as number[]).map((cx) => (
+            <mesh key={cx} position={[cx, 0.25, frontZ + 0.25]}>
+              <cylinderGeometry args={[0.04, 0.04, 0.5, 8]} />
+              <meshStandardMaterial color="#92400E" roughness={0.6} />
+            </mesh>
+          ))}
+        </>
+      )}
+
+      {/* ── 4. Loading dock (rear of building) ── */}
+      {visible && (
+        <mesh position={[0, 0.3, -frontZ - 0.15]}>
+          <boxGeometry args={[1.0, 0.6, 0.3]} />
+          <meshStandardMaterial color="#374151" roughness={0.7} metalness={0.3} />
         </mesh>
       )}
-      {[[-1.2, 0], [0, 0], [1.2, 0]].map(([rx, rz], i) => (
-        <mesh key={i} position={[rx, 1.88, rz as number]}>
-          <boxGeometry args={[0.4, 0.14, 0.35]} />
-          <meshStandardMaterial color="#6B6560" roughness={0.9} />
-        </mesh>
-      ))}
     </group>
   );
 }
@@ -1418,48 +1787,137 @@ const MKT_PALETTE = [
 
 function Market({ x, z, idx }: { x: number; z: number; idx: number }) {
   const pal = MKT_PALETTE[idx % MKT_PALETTE.length];
-  const h = 0.85 + (idx % 3) * 0.12;
+  // Static mesh — body spans 0 → mH exactly.
+  const mH = 0.85 + (idx % 3) * 0.12;
+  const mW = 1.3; const mD = 1.0;
+  const frontZ = mD / 2; // = 0.5
+
   return (
     <group position={[x, 0, z]}>
-      <mesh position={[0, h * 0.5, 0]} castShadow receiveShadow>
-        <boxGeometry args={[1.3, h, 1.0]} />
+      {/* ── Main body ── */}
+      <mesh position={[0, mH * 0.5, 0]} castShadow receiveShadow>
+        <boxGeometry args={[mW, mH, mD]} />
         <meshStandardMaterial color={pal.wall} roughness={0.5} metalness={0.05} />
       </mesh>
-      <mesh position={[0, h + 0.04, 0.54]}>
-        <boxGeometry args={[1.3, 0.05, 0.35]} />
-        <meshStandardMaterial color={pal.awning} emissive={pal.awning} emissiveIntensity={0.5} />
+
+      {/* ── Windows ── */}
+      <WindowGrid cols={2} rows={1} width={1.1} height={mH * 0.35} depth={frontZ} facingZ baseY={0.12} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.5} />
+
+      {/* ── 1. Awning — sits on top of walls, tilted forward ── */}
+      <mesh position={[0, mH + 0.04, frontZ + 0.18]} rotation={[0.15, 0, 0]}>
+        <boxGeometry args={[mW, 0.05, 0.4]} />
+        <meshStandardMaterial color={pal.awning} emissive={pal.awning} emissiveIntensity={0.5} roughness={0.5} />
       </mesh>
-      <mesh position={[0, h - 0.08, 0.52]}>
-        <boxGeometry args={[0.9, 0.12, 0.025]} />
-        <meshStandardMaterial color={pal.sign} emissive={pal.sign} emissiveIntensity={1.2} />
+
+      {/* ── 2. Sign near top of front wall ── */}
+      <mesh position={[0, mH - 0.08, frontZ + 0.03]}>
+        <boxGeometry args={[mW * 0.8, 0.14, 0.03]} />
+        <meshStandardMaterial color={pal.sign} emissive={pal.sign} emissiveIntensity={1.2} roughness={0.3} />
       </mesh>
-      <WindowGrid cols={2} rows={1} width={1.1} height={h * 0.35} depth={0.51} facingZ baseY={0.12} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.5} />
-      <mesh position={[0.5, 0.22, 0.6]}>
-        <boxGeometry args={[0.45, 0.38, 0.08]} />
-        <meshStandardMaterial color={pal.sign} roughness={0.8} />
-      </mesh>
+
+      {/* ── 3. Display crates outside (stacked) ── */}
+      {([-0.38, 0.05, 0.42] as number[]).map((cx, ci) => (
+        <group key={`crate-${ci}`} position={[cx, 0, frontZ + 0.2]}>
+          <mesh position={[0, 0.075, 0]}>
+            <boxGeometry args={[0.2, 0.15, 0.2]} />
+            <meshStandardMaterial color="#8B6914" roughness={0.85} />
+          </mesh>
+          {ci < 2 && (
+            <mesh position={[0, 0.235, 0]}>
+              <boxGeometry args={[0.18, 0.14, 0.18]} />
+              <meshStandardMaterial color="#8B6914" roughness={0.85} />
+            </mesh>
+          )}
+        </group>
+      ))}
+
+      {/* ── 4. Hanging lights string above awning ── */}
+      {([-0.45, -0.15, 0.15, 0.45] as number[]).map((lx, li) => (
+        <mesh key={`light-${li}`} position={[lx, mH + 0.12, frontZ + 0.05]}>
+          <sphereGeometry args={[0.03, 6, 6]} />
+          <meshStandardMaterial color="#FFF3B0" emissive="#FFD700" emissiveIntensity={2.0} />
+        </mesh>
+      ))}
     </group>
   );
 }
 
 // ─── Warehouse ────────────────────────────────────────────────────────────────
 function Warehouse({ x, z }: { x: number; z: number }) {
+  // Static mesh — body spans 0 → warehouseH exactly.
+  const warehouseH = 1.5;
+  const wW = 3.0; const wD = 2.0;
+  const frontZ = wD / 2; // = 1.0
+
   return (
     <group position={[x, 0, z]}>
-      <mesh position={[0, 0.75, 0]} castShadow receiveShadow>
-        <boxGeometry args={[3.0, 1.5, 2.0]} />
+      {/* ── Main body ── */}
+      <mesh position={[0, warehouseH * 0.5, 0]} castShadow receiveShadow>
+        <boxGeometry args={[wW, warehouseH, wD]} />
         <meshStandardMaterial color="#6B6560" roughness={0.8} metalness={0.3} />
       </mesh>
-      <mesh position={[0, 1.62, 0]}>
-        <boxGeometry args={[3.0, 0.24, 0.4]} />
-        <meshStandardMaterial color="#6B6560" roughness={0.9} />
-      </mesh>
-      <mesh position={[0, 0.22, 1.06]}>
-        <boxGeometry args={[1.4, 0.44, 0.12]} />
-        <meshStandardMaterial color="#6B6560" roughness={0.85} />
-      </mesh>
-      <WindowGrid cols={3} rows={1} width={2.8} height={0.35} depth={1.02} facingZ baseY={0.95} winColor="#FFF3B0" winEmissive="#FFF3B0" winIntensity={0.4} />
-      <WindowGrid cols={2} rows={1} width={1.85} height={0.35} depth={1.02} facingZ={false} baseY={0.95} winColor="#cbd5e1" winEmissive="#94a3b8" winIntensity={0.3} />
+
+      {/* ── Side windows ── */}
+      <WindowGrid cols={2} rows={1} width={1.85} height={0.35} depth={ frontZ} facingZ={false} baseY={0.95} winColor="#cbd5e1" winEmissive="#94a3b8" winIntensity={0.3} />
+      <WindowGrid cols={2} rows={1} width={1.85} height={0.35} depth={-frontZ} facingZ={false} baseY={0.95} winColor="#cbd5e1" winEmissive="#94a3b8" winIntensity={0.3} />
+
+      {/* ── 1. Sawtooth roof — 3 sections ── */}
+      {([0, 1, 2] as number[]).map((i) => {
+        const xOff = (i - 1) * 0.9;
+        return (
+          <group key={`saw-${i}`}>
+            {/* Vertical face (clerestory) */}
+            <mesh position={[xOff - 0.45, warehouseH + 0.2, 0]}>
+              <boxGeometry args={[0.06, 0.4, wD]} />
+              <meshStandardMaterial color="#4B5563" roughness={0.8} metalness={0.1} />
+            </mesh>
+            {/* Sloped face */}
+            <mesh position={[xOff, warehouseH + 0.1, 0]} rotation={[0, 0, -0.5]}>
+              <boxGeometry args={[0.85, 0.06, wD]} />
+              <meshStandardMaterial color="#374151" roughness={0.75} metalness={0.15} />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* ── 2. Loading bay doors on front face ── */}
+      {([-0.9, 0, 0.9] as number[]).map((dx) => (
+        <group key={`door-${dx}`} position={[dx, 0, frontZ]}>
+          {/* Door panel */}
+          <mesh position={[0, 0.45, 0.02]}>
+            <boxGeometry args={[0.65, 0.9, 0.04]} />
+            <meshStandardMaterial color="#1F2937" roughness={0.7} metalness={0.2} />
+          </mesh>
+          {/* Door frame — top */}
+          <mesh position={[0, 0.92, 0.02]}>
+            <boxGeometry args={[0.71, 0.04, 0.045]} />
+            <meshStandardMaterial color="#4B5563" roughness={0.7} />
+          </mesh>
+          {/* Door frame — sides */}
+          {([-0.345, 0.345] as number[]).map((fx) => (
+            <mesh key={fx} position={[fx, 0.45, 0.02]}>
+              <boxGeometry args={[0.04, 0.9, 0.045]} />
+              <meshStandardMaterial color="#4B5563" roughness={0.7} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+
+      {/* ── 3. Ventilation units on roof + pipes ── */}
+      {([-1.0, -0.3, 0.3, 1.0] as number[]).map((vx) => (
+        <group key={`vent-${vx}`} position={[vx, 0, 0]}>
+          {/* Unit body */}
+          <mesh position={[0, warehouseH + 0.07, 0]}>
+            <boxGeometry args={[0.22, 0.14, 0.18]} />
+            <meshStandardMaterial color="#6B7280" roughness={0.6} metalness={0.5} />
+          </mesh>
+          {/* Exhaust pipe */}
+          <mesh position={[0, warehouseH + 0.25, 0]}>
+            <cylinderGeometry args={[0.03, 0.03, 0.2, 6]} />
+            <meshStandardMaterial color="#4B5563" roughness={0.7} metalness={0.4} />
+          </mesh>
+        </group>
+      ))}
     </group>
   );
 }
