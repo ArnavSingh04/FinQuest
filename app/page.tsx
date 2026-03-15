@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 import { CityLayout } from "@/components/layout/CityLayout";
@@ -61,17 +62,35 @@ const loopSteps = [
   },
 ];
 
+function LoadingShell() {
+  return (
+    <main className="flex min-h-screen w-full items-center justify-center px-5" style={{ background: "#F2EDE3" }}>
+      <div
+        className="rounded-2xl border p-6"
+        style={{ background: "#FFFFFF", borderColor: "#C8BFA8", color: "#4A6358" }}
+        suppressHydrationWarning
+      >
+        Loading FinQuest...
+      </div>
+    </main>
+  );
+}
+
 export default function HomePage() {
+  const [mounted, setMounted] = useState(false);
   const { user, loading } = useAuth();
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Same output on server and first client paint to avoid hydration mismatch (auth + extensions).
+  if (!mounted) {
+    return <LoadingShell />;
+  }
+
   if (loading) {
-    return (
-      <main className="flex min-h-screen w-full items-center justify-center px-5" style={{ background: "#F2EDE3" }}>
-        <div className="rounded-2xl border p-6" style={{ background: "#FFFFFF", borderColor: "#C8BFA8", color: "#4A6358" }}>
-          Loading FinQuest...
-        </div>
-      </main>
-    );
+    return <LoadingShell />;
   }
 
   if (user) {
