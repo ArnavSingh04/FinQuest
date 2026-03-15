@@ -75,6 +75,17 @@ export function generateCityMetrics(input: {
   };
 }
 
+export function getGoldTowerCount(investPct: number): number {
+  if (investPct < 5)  return 0;
+  if (investPct < 10) return 1;
+  if (investPct < 15) return 2;
+  if (investPct < 20) return 3;
+  if (investPct < 25) return 4;
+  if (investPct < 30) return 5;
+  if (investPct < 35) return 6;
+  return 7;
+}
+
 export function generateCityState(proportions: Proportions, monthlyIncome = 0, totalSpend = 0): CityState {
   const needsPct    = proportions.needs * 100;
   const wantsPct    = proportions.wants * 100;
@@ -91,6 +102,7 @@ export function generateCityState(proportions: Proportions, monthlyIncome = 0, t
     population:      Math.floor(healthScore / 10),
     healthScore:     Math.round(healthScore),
     budgetUsed,
+    goldTowerCount:  getGoldTowerCount(investPct),
   };
 }
 
@@ -103,4 +115,5 @@ export const defaultCityState: CityState = {
   population: 5,
   healthScore: 50,
   budgetUsed: 0,
+  goldTowerCount: 0,
 };

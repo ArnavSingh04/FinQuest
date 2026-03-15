@@ -46,6 +46,32 @@ function useLerpScale(target: number, speed = 2.5) {
   return ref;
 }
 
+// ─── Idle breathing pulse hook (scale.y only — vertical life) ─────────────────
+const IDLE_PULSE_MOBILE = typeof window !== "undefined" && window.innerWidth < 768;
+
+function useIdlePulse(speed = 1.0, amount = 0.012, offset = 0) {
+  const ref = useRef<THREE.Group>(null);
+  const pulseAmount = IDLE_PULSE_MOBILE ? amount * 0.5 : amount;
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    ref.current.scale.y = 1 + Math.sin(clock.elapsedTime * speed + offset) * pulseAmount;
+  });
+  return ref;
+}
+
+// ─── Idle sway hook (scale.x + scale.z — for trees) ─────────────────────────
+function useIdleSway(speed = 1.2, amount = 0.015, offset = 0) {
+  const ref = useRef<THREE.Group>(null);
+  const swayAmount = IDLE_PULSE_MOBILE ? amount * 0.5 : amount;
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    const s = 1 + Math.sin(clock.elapsedTime * speed + offset) * swayAmount;
+    ref.current.scale.x = s;
+    ref.current.scale.z = s;
+  });
+  return ref;
+}
+
 // ─── Window grid helper ───────────────────────────────────────────────────────
 // Creates a grid of small emissive rectangles across a building face
 interface WindowGridProps {
@@ -120,42 +146,148 @@ function Apartment({ x, z, idx }: { x: number; z: number; idx: number }) {
   const visible = idx < count;
   const baseH = 1.9 + (idx % 4) * 0.7;
   const topH  = baseH * 0.5;
-  const baseWindowRows = Math.max(1, Math.floor(baseH * 0.9)); // ~50% fewer than before
-  const baseWindowBandHeight = Math.max(0.35, baseH * 0.35);   // keep windows near the bottom
+  const baseWindowRows = Math.max(1, Math.floor(baseH * 0.9));
+  const baseWindowBandHeight = Math.max(0.35, baseH * 0.35);
   const target = visible ? 1 : 0.01;
   const color = APT_COLORS[idx % APT_COLORS.length];
 
   const baseRef  = useLerpScale(target);
   const upperRef = useLerpScale(target, 2.2);
+  const pulseRef = useIdlePulse(0.6, 0.010, idx * 0.8);
 
   const bW = 0.88; const bD = 0.88;
   const tW = 0.58; const tD = 0.58;
 
+  // useLerpScale(1) drives scale.y → 1 and position.y → 0.5 each frame.
+  // Main body is BoxGeometry of height baseH, so its top in group space is:
+  //   position.y + (scale.y * baseH / 2) = 0.5 + baseH / 2
+  const aptTop = 0.5 + baseH / 2;
+
+  // WindowGrid places row r at: baseY + r * rowStep  (r = 1..rows)
+  const winRowStep = baseWindowBandHeight / (baseWindowRows + 1);
+
+  // Balconies at fractional heights, filtered to stay within body
+  const balconyYs = [0.25, 0.45, 0.65, 0.85]
+    .map((f) => f * baseH)
+    .filter((y) => y > 0.3 && y < aptTop - 0.2);
+
   return (
-    <group position={[x, 0, z]}>
-      {/* Base block */}
+    <group ref={pulseRef} position={[x, 0, z]}>
+      {/* ── Wider base podium (ground floor) ── */}
+      <mesh position={[0, 0.25, 0]} castShadow receiveShadow>
+        <boxGeometry args={[bW + 0.15, 0.5, bD + 0.15]} />
+        <meshStandardMaterial color="#C49558" roughness={0.6} metalness={0.1} />
+      </mesh>
+
+      {/* ── Main body ── */}
       <mesh ref={baseRef} position={[0, baseH * 0.5, 0]} castShadow receiveShadow>
         <boxGeometry args={[bW, baseH, bD]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.18} roughness={0.55} metalness={0.12} />
       </mesh>
-      {/* Window grids on all 4 faces — only when building is visible */}
+
+      {/* ── Window grids on all 4 faces ── */}
       {visible && <WindowGrid cols={2} rows={baseWindowRows} width={bW - 0.1} height={baseWindowBandHeight} depth={bD / 2} facingZ baseY={0.04} />}
       {visible && <WindowGrid cols={2} rows={baseWindowRows} width={bW - 0.1} height={baseWindowBandHeight} depth={-bD / 2} facingZ baseY={0.04} />}
       {visible && <WindowGrid cols={2} rows={baseWindowRows} width={bD - 0.1} height={baseWindowBandHeight} depth={bW / 2} facingZ={false} baseY={0.04} winIntensity={1.2} />}
       {visible && <WindowGrid cols={2} rows={baseWindowRows} width={bD - 0.1} height={baseWindowBandHeight} depth={-bW / 2} facingZ={false} baseY={0.04} winIntensity={1.2} />}
 
-      {/* Upper setback */}
+      {/* ── Window sill bands — aligned with WindowGrid row centres ── */}
+      {visible && Array.from({ length: baseWindowRows }, (_, si) => {
+        // WindowGrid row (si+1) is centred at: 0.04 + (si+1) * winRowStep
+        const sillY = 0.04 + (si + 1) * winRowStep - winRowStep * 0.3;
+        return (
+          <mesh key={`sill-${si}`} position={[0, sillY, bD / 2 + 0.002]}>
+            <boxGeometry args={[bW - 0.1, 0.04, 0.06]} />
+            <meshStandardMaterial color="#BF8C4A" roughness={0.7} metalness={0.05} />
+          </mesh>
+        );
+      })}
+
+      {/* ── Balconies on front face — clamped within building body ── */}
+      {visible && balconyYs.map((by, bi) => (
+        <group key={`bal-${bi}`}>
+          {/* Slab */}
+          <mesh position={[0, by, bD / 2 + 0.1]} castShadow>
+            <boxGeometry args={[bW - 0.2, 0.06, 0.2]} />
+            <meshStandardMaterial color="#BF8C4A" roughness={0.6} metalness={0.1} />
+          </mesh>
+          {/* Railing */}
+          <mesh position={[0, by + 0.1, bD / 2 + 0.2]}>
+            <boxGeometry args={[bW - 0.22, 0.06, 0.018]} />
+            <meshStandardMaterial color="#A07840" roughness={0.5} metalness={0.2} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* ── Upper setback (narrower penthouse section) ── */}
       <mesh ref={upperRef} position={[0, baseH + topH * 0.5, 0]} castShadow>
         <boxGeometry args={[tW, topH, tD]} />
         <meshStandardMaterial color={color} roughness={0.5} metalness={0.16} emissive={color} emissiveIntensity={0.2} />
       </mesh>
-      {/* Keep apartment windows in the lower/base section only */}
 
-      {/* Entrance canopy */}
-      <mesh position={[0, 0.22, bD / 2 + 0.14]}>
-        <boxGeometry args={[0.5, 0.05, 0.28]} />
-        <meshStandardMaterial color="#1e293b" roughness={0.7} metalness={0.3} />
-      </mesh>
+      {/* ── Roof parapet — sits flush on top of main body ── */}
+      {visible && (
+        <>
+          <mesh position={[0, aptTop + 0.06, bD / 2]}>
+            <boxGeometry args={[bW, 0.12, 0.08]} />
+            <meshStandardMaterial color="#C49558" roughness={0.65} />
+          </mesh>
+          <mesh position={[0, aptTop + 0.06, -bD / 2]}>
+            <boxGeometry args={[bW, 0.12, 0.08]} />
+            <meshStandardMaterial color="#C49558" roughness={0.65} />
+          </mesh>
+          <mesh position={[bW / 2, aptTop + 0.06, 0]}>
+            <boxGeometry args={[0.08, 0.12, bD]} />
+            <meshStandardMaterial color="#C49558" roughness={0.65} />
+          </mesh>
+          <mesh position={[-bW / 2, aptTop + 0.06, 0]}>
+            <boxGeometry args={[0.08, 0.12, bD]} />
+            <meshStandardMaterial color="#C49558" roughness={0.65} />
+          </mesh>
+        </>
+      )}
+
+      {/* ── Rooftop water tower — group origin at roof surface ── */}
+      {visible && idx % 3 === 0 && (
+        <group position={[0.2, aptTop, 0.1]}>
+          {/* Three legs — local y 0 to 0.25 */}
+          {[[-0.065, -0.065], [0.065, -0.065], [0, 0.075]].map(([lx, lz], li) => (
+            <mesh key={li} position={[lx, 0.125, lz as number]}>
+              <cylinderGeometry args={[0.006, 0.006, 0.25, 4]} />
+              <meshStandardMaterial color="#8B7355" roughness={0.9} />
+            </mesh>
+          ))}
+          {/* Tank — sits on top of legs */}
+          <mesh position={[0, 0.38, 0]}>
+            <cylinderGeometry args={[0.1, 0.12, 0.3, 8]} />
+            <meshStandardMaterial color="#8B7355" roughness={0.8} metalness={0.1} />
+          </mesh>
+          {/* Cone roof */}
+          <mesh position={[0, 0.59, 0]}>
+            <coneGeometry args={[0.11, 0.12, 8]} />
+            <meshStandardMaterial color="#6B5840" roughness={0.9} />
+          </mesh>
+        </group>
+      )}
+
+      {/* ── Entrance canopy — ground-level, flush with front face ── */}
+      {visible && (
+        <>
+          <mesh position={[0, 0.55, bD / 2 + 0.11]} castShadow>
+            <boxGeometry args={[0.35, 0.05, 0.2]} />
+            <meshStandardMaterial color="#A0785A" roughness={0.7} metalness={0.1} />
+          </mesh>
+          {/* Pillar — height 0.3 centred at 0.38, spans 0.23–0.53 */}
+          <mesh position={[-0.13, 0.38, bD / 2 + 0.19]}>
+            <boxGeometry args={[0.04, 0.3, 0.04]} />
+            <meshStandardMaterial color="#8B6B4A" roughness={0.75} />
+          </mesh>
+          <mesh position={[0.13, 0.38, bD / 2 + 0.19]}>
+            <boxGeometry args={[0.04, 0.3, 0.04]} />
+            <meshStandardMaterial color="#8B6B4A" roughness={0.75} />
+          </mesh>
+        </>
+      )}
     </group>
   );
 }
@@ -176,13 +308,14 @@ function Restaurant({ x, z, idx }: { x: number; z: number; idx: number }) {
   const h = 1.05 + (idx % 3) * 0.35;
   const pal = REST_PALETTE[idx % REST_PALETTE.length];
   const bW = 1.1; const bD = 0.95;
+  const pulseRef = useIdlePulse(0.8, 0.010, idx * 0.6);
 
   if (!visible) {
     return null;
   }
 
   return (
-    <group position={[x, 0, z]}>
+    <group ref={pulseRef} position={[x, 0, z]}>
       {/* Main block */}
       <mesh position={[0, h * 0.5, 0]} castShadow receiveShadow>
         <boxGeometry args={[bW, h, bD]} />
@@ -234,13 +367,14 @@ function BankTower({ x, z }: { x: number; z: number }) {
   const height = cityState.bankHeight;
   const mainRef  = useLerpScale(height, 2);
   const crownRef = useLerpScale(height * 0.18, 2);
+  const pulseRef = useIdlePulse(0.3, 0.018, 0);
 
   const bW = 0.95; const bD = 0.95;
   const towerRows = Math.max(3, Math.floor(height * 1.8));
   const towerCols = Math.max(2, Math.min(5, Math.floor(height * 0.7) + 2));
 
   return (
-    <group position={[x, 0, z]}>
+    <group ref={pulseRef} position={[x, 0, z]}>
       {/* Podium base */}
       <mesh position={[0, 0.3, 0]} castShadow receiveShadow>
         <boxGeometry args={[1.55, 0.6, 1.55]} />
@@ -292,11 +426,12 @@ function InvestmentTower({ x, z }: { x: number; z: number }) {
   const h = cityState.towerHeight;
   const mainRef  = useLerpScale(h, 2);
   const tipRef   = useLerpScale(h * 0.25, 2);
+  const pulseRef = useIdlePulse(0.3, 0.018, 1.5);
   const windowRows = Math.max(3, Math.floor(h * 2.4));
   const windowBandHeight = Math.max(0.12, Math.min(0.22, (h * 0.72) / windowRows * 0.55));
 
   return (
-    <group position={[x, 0, z]}>
+    <group ref={pulseRef} position={[x, 0, z]}>
       {/* Base ring */}
       <mesh position={[0, 0.14, 0]}>
         <cylinderGeometry args={[0.75, 0.75, 0.28, 6]} />
@@ -361,25 +496,303 @@ function InvestmentTower({ x, z }: { x: number; z: number }) {
   );
 }
 
-// ─── Tree ─────────────────────────────────────────────────────────────────────
-function Tree({ x, z, scale = 1 }: { x: number; z: number; scale?: number }) {
+// ─── Gold Tower (Art Deco — unlocks as investment spending rises) ─────────────
+// ─── Gold particle burst (8 spheres fired outward on tower unlock) ───────────
+const PARTICLE_ANGLES = Array.from({ length: 8 }, (_, i) => (i / 8) * Math.PI * 2);
+
+function GoldParticleBurst({ active }: { active: boolean }) {
+  const refs = useRef<(THREE.Mesh | null)[]>([]);
+  const startRef = useRef(0);
+  const speeds = useRef(PARTICLE_ANGLES.map(() => 0.8 + Math.random() * 0.4));
+
+  useEffect(() => {
+    if (active) startRef.current = performance.now();
+  }, [active]);
+
+  useFrame(() => {
+    if (!active) return;
+    const elapsed = (performance.now() - startRef.current) / 1000;
+    refs.current.forEach((mesh, i) => {
+      if (!mesh) return;
+      const angle = PARTICLE_ANGLES[i]!;
+      const spd   = speeds.current[i]!;
+      const t     = Math.min(elapsed / 1.5, 1);
+      const r     = spd * t * 2.5;
+      const grav  = -4 * t * t;
+      mesh.position.set(
+        Math.cos(angle) * r,
+        Math.max(0, 0.5 - t * 0.5 + grav * 0.4),
+        Math.sin(angle) * r,
+      );
+      const mat = mesh.material as THREE.MeshStandardMaterial;
+      mat.opacity = 1 - t;
+    });
+  });
+
+  if (!active) return null;
   return (
-    <group position={[x, 0, z]} scale={[scale, scale, scale]}>
-      <mesh position={[0, 0.35, 0]} castShadow>
-        <cylinderGeometry args={[0.06, 0.1, 0.7, 7]} />
-        <meshStandardMaterial color="#713f12" roughness={0.95} />
-      </mesh>
-      {[
-        { y: 0.9, r: 0.46, h: 0.76 },
-        { y: 1.38, r: 0.34, h: 0.62 },
-        { y: 1.74, r: 0.22, h: 0.5 },
-        { y: 2.04, r: 0.12, h: 0.38 },
-      ].map(({ y, r, h }, i) => (
-        <mesh key={i} position={[0, y, 0]} castShadow>
-          <coneGeometry args={[r, h, 8]} />
-          <meshStandardMaterial color={i % 2 === 0 ? "#6BA03C" : "#5A9E35"} roughness={0.8} />
+    <>
+      {PARTICLE_ANGLES.map((_, i) => (
+        <mesh
+          key={i}
+          ref={(el) => { refs.current[i] = el; }}
+          position={[0, 0.3, 0]}
+        >
+          <sphereGeometry args={[0.04, 6, 6]} />
+          <meshStandardMaterial
+            color="#FFD700"
+            emissive="#FFD700"
+            emissiveIntensity={2}
+            transparent
+            opacity={1}
+          />
         </mesh>
       ))}
+    </>
+  );
+}
+
+function GoldTower({
+  x,
+  z,
+  idx,
+  heightMultiplier = 1,
+  isNew = false,
+}: {
+  x: number;
+  z: number;
+  idx: number;
+  heightMultiplier?: number;
+  isNew?: boolean;
+}) {
+  // ─── Entrance animation state ────────────────────────────────────────────────
+  const hasAnimated  = useRef(false);
+  const animStart    = useRef(0);
+  const [showParticles, setShowParticles] = useState(false);
+
+  useEffect(() => {
+    if (isNew && !hasAnimated.current) {
+      hasAnimated.current = true;
+      animStart.current = performance.now();
+      setShowParticles(true);
+      // Particles only live for 1.5s
+      const t = setTimeout(() => setShowParticles(false), 1500);
+      return () => clearTimeout(t);
+    }
+  }, [isNew]);
+
+  // ─── Refs for animated parts ─────────────────────────────────────────────────
+  const outerRef     = useRef<THREE.Group>(null);        // rise + idle pulse target
+  const pulseRef     = useIdlePulse(0.35, 0.018, idx * 1.4);  // idle after entrance
+  const beaconRef    = useRef<THREE.Mesh>(null);
+  const burstLightRef = useRef<THREE.PointLight>(null);
+
+  // ─── Computed section positions ───────────────────────────────────────────────
+  const lowerBodyH  = heightMultiplier * 2.5;
+  const lowerBodyY  = heightMultiplier * 1.25 + 0.3;
+  const middleBaseY = 0.3 + lowerBodyH;
+  const middleH     = heightMultiplier * 2.0;
+  const middleBodyY = middleBaseY + middleH * 0.5;
+  const upperBaseY  = middleBaseY + middleH;
+  const upperH      = heightMultiplier * 1.5;
+  const upperBodyY  = upperBaseY + upperH * 0.5;
+  const spireBaseY  = upperBaseY + upperH;
+  const spireH      = heightMultiplier * 0.8;
+  const spireY      = spireBaseY + spireH * 0.5;
+  const beaconY     = spireBaseY + spireH + 0.06;
+
+  const lowerRows  = Math.max(3, Math.floor(lowerBodyH * 1.8));
+  const middleRows = Math.max(2, Math.floor(middleH * 1.8));
+
+  const cornerOffsets: [number, number][] = [
+    [0.78, 0.78], [0.78, -0.78], [-0.78, 0.78], [-0.78, -0.78],
+  ];
+
+  // ─── Main useFrame: entrance anim → idle pulse ───────────────────────────────
+  useFrame(({ clock }) => {
+    const group = outerRef.current;
+    if (!group) return;
+
+    // Beacon idle pulse (always)
+    if (beaconRef.current) {
+      const mat = beaconRef.current.material as THREE.MeshStandardMaterial;
+      mat.emissiveIntensity = 2.5 + Math.sin(clock.elapsedTime * 2 + idx) * 1.0;
+    }
+
+    if (!hasAnimated.current) {
+      // No entrance needed — apply idle pulse directly
+      group.scale.y = 1 + Math.sin(clock.elapsedTime * 0.35 + idx * 1.4) * (IDLE_PULSE_MOBILE ? 0.009 : 0.018);
+      return;
+    }
+
+    const elapsed = (performance.now() - animStart.current) / 1000;
+
+    if (elapsed < 1.2) {
+      // Phase 1 — rise from ground
+      const t = elapsed / 1.2;
+      const scaleY = -(Math.cos(Math.PI * t) - 1) / 2;          // ease-in-out [0→1]
+      group.scale.y = scaleY;
+
+      // Beacon burst fires at the peak of the rise (t ≈ 1)
+      if (burstLightRef.current) {
+        const burstT = Math.max(0, (t - 0.85) / 0.15);           // 0→1 over last 15%
+        burstLightRef.current.intensity = 1.5 + burstT * 6.5;    // spike to 8
+      }
+    } else if (elapsed < 2.5) {
+      // Phase 2 — shimmer: flash gold emissive rapidly
+      group.scale.y = 1;
+      if (burstLightRef.current) {
+        // Decay burst light back to 1.5 over 0.8s after rise completes
+        const decayT = Math.min(1, (elapsed - 1.2) / 0.8);
+        burstLightRef.current.intensity = THREE.MathUtils.lerp(8, 1.5, decayT);
+      }
+      // Shimmer all gold materials via the beacon ref as proxy (enough visual impact)
+      if (beaconRef.current) {
+        const mat = beaconRef.current.material as THREE.MeshStandardMaterial;
+        mat.emissiveIntensity = 0.4 + Math.sin(elapsed * 15) * 0.3 + 2.5;
+      }
+    } else {
+      // Phase 3 — settle: hand off to idle pulse
+      if (burstLightRef.current) burstLightRef.current.intensity = 1.5;
+      const idleScale = 1 + Math.sin(clock.elapsedTime * 0.35 + idx * 1.4) * (IDLE_PULSE_MOBILE ? 0.009 : 0.018);
+      group.scale.y = idleScale;
+    }
+  });
+
+  return (
+    <group position={[x, 0, z]}>
+      {/* Particle burst on unlock */}
+      <GoldParticleBurst active={showParticles} />
+
+      {/* Everything that participates in the rise animation */}
+      <group ref={outerRef}>
+        {/* 1 — Base plinth */}
+        <mesh position={[0, 0.15, 0]} castShadow receiveShadow>
+          <boxGeometry args={[1.8, 0.3, 1.8]} />
+          <meshStandardMaterial color="#8B6914" metalness={0.8} roughness={0.2} />
+        </mesh>
+
+        {/* 2 — Lower body */}
+        <mesh position={[0, lowerBodyY, 0]} castShadow receiveShadow>
+          <boxGeometry args={[1.5, lowerBodyH, 1.5]} />
+          <meshStandardMaterial
+            color="#C9A84C"
+            metalness={0.7}
+            roughness={0.15}
+            emissive="#C9A84C"
+            emissiveIntensity={0.3}
+          />
+        </mesh>
+
+        {/* Art Deco corner fins */}
+        {cornerOffsets.map(([cx, cz], fi) => (
+          <mesh key={`fin-${fi}`} position={[cx, lowerBodyY, cz]} castShadow>
+            <boxGeometry args={[0.06, lowerBodyH, 0.06]} />
+            <meshStandardMaterial
+              color="#FFD700"
+              metalness={0.9}
+              roughness={0.05}
+              emissive="#FFD700"
+              emissiveIntensity={0.6}
+            />
+          </mesh>
+        ))}
+
+        {/* Windows — lower body, all 4 faces */}
+        <WindowGrid cols={3} rows={lowerRows} width={1.35} height={lowerBodyH - 0.3} depth={ 0.76} facingZ       baseY={0.6} winColor="#FEF3C7" winEmissive="#F59E0B" winIntensity={1.2} />
+        <WindowGrid cols={3} rows={lowerRows} width={1.35} height={lowerBodyH - 0.3} depth={-0.76} facingZ       baseY={0.6} winColor="#FEF3C7" winEmissive="#F59E0B" winIntensity={1.2} />
+        <WindowGrid cols={3} rows={lowerRows} width={1.35} height={lowerBodyH - 0.3} depth={ 0.76} facingZ={false} baseY={0.6} winColor="#FEF3C7" winEmissive="#F59E0B" winIntensity={1.0} />
+        <WindowGrid cols={3} rows={lowerRows} width={1.35} height={lowerBodyH - 0.3} depth={-0.76} facingZ={false} baseY={0.6} winColor="#FEF3C7" winEmissive="#F59E0B" winIntensity={1.0} />
+
+        {/* 3 — Middle setback */}
+        <mesh position={[0, middleBodyY, 0]} castShadow>
+          <boxGeometry args={[1.1, middleH, 1.1]} />
+          <meshStandardMaterial
+            color="#D4A843"
+            metalness={0.75}
+            roughness={0.1}
+            emissive="#C9A84C"
+            emissiveIntensity={0.35}
+          />
+        </mesh>
+
+        {/* Windows — middle setback, all 4 faces */}
+        <WindowGrid cols={2} rows={middleRows} width={0.92} height={middleH - 0.2} depth={ 0.56} facingZ       baseY={middleBaseY + 0.1} winColor="#FEF3C7" winEmissive="#F59E0B" winIntensity={1.2} />
+        <WindowGrid cols={2} rows={middleRows} width={0.92} height={middleH - 0.2} depth={-0.56} facingZ       baseY={middleBaseY + 0.1} winColor="#FEF3C7" winEmissive="#F59E0B" winIntensity={1.2} />
+        <WindowGrid cols={2} rows={middleRows} width={0.92} height={middleH - 0.2} depth={ 0.56} facingZ={false} baseY={middleBaseY + 0.1} winColor="#FEF3C7" winEmissive="#F59E0B" winIntensity={1.0} />
+        <WindowGrid cols={2} rows={middleRows} width={0.92} height={middleH - 0.2} depth={-0.56} facingZ={false} baseY={middleBaseY + 0.1} winColor="#FEF3C7" winEmissive="#F59E0B" winIntensity={1.0} />
+
+        {/* 4 — Upper setback */}
+        <mesh position={[0, upperBodyY, 0]} castShadow>
+          <boxGeometry args={[0.75, upperH, 0.75]} />
+          <meshStandardMaterial
+            color="#E8B84B"
+            metalness={0.8}
+            roughness={0.08}
+            emissive="#FFD700"
+            emissiveIntensity={0.4}
+          />
+        </mesh>
+
+        {/* 5 — Crown spire */}
+        <mesh position={[0, spireY, 0]} castShadow>
+          <cylinderGeometry args={[0.08, 0.25, spireH, 8]} />
+          <meshStandardMaterial
+            color="#FFD700"
+            metalness={0.9}
+            roughness={0.05}
+            emissive="#FFD700"
+            emissiveIntensity={0.8}
+          />
+        </mesh>
+
+        {/* 6 — Pulsing beacon */}
+        <mesh ref={beaconRef} position={[0, beaconY, 0]}>
+          <sphereGeometry args={[0.08, 8, 8]} />
+          <meshStandardMaterial
+            color="#FFFFFF"
+            emissive="#FFD700"
+            emissiveIntensity={2.5}
+          />
+        </mesh>
+
+        {/* Burst point light (intensity driven by useFrame during entrance) */}
+        <pointLight
+          ref={burstLightRef}
+          position={[0, beaconY, 0]}
+          intensity={1.5}
+          color="#FFD700"
+          distance={4}
+          decay={2}
+        />
+      </group>
+    </group>
+  );
+}
+
+// ─── Tree ─────────────────────────────────────────────────────────────────────
+function Tree({ x, z, scale = 1 }: { x: number; z: number; scale?: number }) {
+  const swayRef = useIdleSway(1.2, 0.015, (Math.abs(x) + Math.abs(z)) * 0.3);
+  return (
+    <group position={[x, 0, z]} scale={[scale, scale, scale]}>
+      {/* Inner group receives the sway animation (X/Z only) */}
+      <group ref={swayRef}>
+        <mesh position={[0, 0.35, 0]} castShadow>
+          <cylinderGeometry args={[0.06, 0.1, 0.7, 7]} />
+          <meshStandardMaterial color="#713f12" roughness={0.95} />
+        </mesh>
+        {[
+          { y: 0.9, r: 0.46, h: 0.76 },
+          { y: 1.38, r: 0.34, h: 0.62 },
+          { y: 1.74, r: 0.22, h: 0.5 },
+          { y: 2.04, r: 0.12, h: 0.38 },
+        ].map(({ y, r, h }, i) => (
+          <mesh key={i} position={[0, y, 0]} castShadow>
+            <coneGeometry args={[r, h, 8]} />
+            <meshStandardMaterial color={i % 2 === 0 ? "#6BA03C" : "#5A9E35"} roughness={0.8} />
+          </mesh>
+        ))}
+      </group>
     </group>
   );
 }
@@ -641,9 +1054,10 @@ function School({ x, z }: { x: number; z: number }) {
   const target = visible ? 1 : 0.01;
   const bodyRef = useLerpScale(target);
   const towerRef = useLerpScale(target, 1.8);
+  const pulseRef = useIdlePulse(0.4, 0.008, 0.5);
 
   return (
-    <group position={[x, 0, z]}>
+    <group ref={pulseRef} position={[x, 0, z]}>
       {/* Main building body */}
       <mesh ref={bodyRef} position={[0, 0.55, 0]} castShadow receiveShadow>
         <boxGeometry args={[1.4, 1.1, 1.0]} />
@@ -685,13 +1099,14 @@ function Hospital({ x, z }: { x: number; z: number }) {
   const visible = Math.round(proportions.investments * 100) >= 15; // invest ≥ 15%
   const target = visible ? 1 : 0.01;
   const bodyRef = useLerpScale(target);
+  const pulseRef = useIdlePulse(0.4, 0.008, 0.5);
 
   const bodyH = 1.8;
   const bodyW = 1.4;
   const bodyD = 1.1;
 
   return (
-    <group position={[x, 0, z]}>
+    <group ref={pulseRef} position={[x, 0, z]}>
       <mesh ref={bodyRef} position={[0, bodyH * 0.5, 0]} castShadow receiveShadow>
         <boxGeometry args={[bodyW, bodyH, bodyD]} />
         <meshStandardMaterial color="#f0f9ff" roughness={0.5} metalness={0.1} emissive="#e0f2fe" emissiveIntensity={0.2} />
@@ -927,12 +1342,13 @@ function OfficeBlock({ x, z, idx }: { x: number; z: number; idx: number }) {
   const { cityState } = useActiveCityState();
   const h = cityState.bankHeight * 0.6 + (idx % 3) * 0.55;
   const mainRef = useLerpScale(h, 2);
+  const pulseRef = useIdlePulse(0.4, 0.008, idx * 1.0);
   const bW = 1.0; const bD = 0.85;
   const cols = Math.max(2, Math.min(5, Math.floor(h * 0.8) + 2));
   const rows = Math.max(2, Math.floor(h * 1.4));
 
   return (
-    <group position={[x, 0, z]}>
+    <group ref={pulseRef} position={[x, 0, z]}>
       <mesh position={[0, 0.2, 0]} castShadow receiveShadow>
         <boxGeometry args={[bW + 0.2, 0.4, bD + 0.2]} />
         <meshStandardMaterial color="#1e293b" roughness={0.5} metalness={0.3} />
@@ -1054,31 +1470,112 @@ const CONDO_COLORS = ["#0c4a6e", "#164e63", "#0e7490", "#075985"] as const;
 function CondoTower({ x, z, idx }: { x: number; z: number; idx: number }) {
   const { cityState } = useActiveCityState();
   const count = cityState.apartmentCount;
-  const visible = idx < Math.floor(count / 3); // one condo per 3 apartments
+  const visible = idx < Math.floor(count / 3);
   const h = 3.2 + (idx % 3) * 1.1;
   const target = visible ? 1 : 0.01;
+  // useLerpScale(h) → scale.y → h, position.y → h/2.
+  // Unit box (height 1) scaled to h spans: h/2 - h/2 = 0 to h/2 + h/2 = h.
   const mainRef = useLerpScale(target * h, 2);
+  const pulseRef = useIdlePulse(0.5, 0.015, idx * 1.2);
   const color = CONDO_COLORS[idx % CONDO_COLORS.length];
   const cols = 3; const rows = Math.max(3, Math.floor(h * 1.5));
 
+  const bW = 0.9; const bD = 0.9;
+
+  // Art Deco setbacks: y = bottom edge, centre = bottom + height/2
+  const sb1H = h * 0.35; const sb1W = bW * 0.85; const sb1D = bD * 0.85;
+  const sb2H = h * 0.20; const sb2W = bW * 0.70; const sb2D = bD * 0.70;
+  const sb1Y  = h * 0.55 + sb1H * 0.5;   // centre at h*0.55 + h*0.175 = h*0.725
+  const sb2Y  = h * 0.80 + sb2H * 0.5;   // centre at h*0.80 + h*0.10  = h*0.90
+
+  // Corner fin positions: just outside the shaft faces
+  const finOffset = bW / 2 + 0.02;
+
   return (
-    <group position={[x, 0, z]}>
+    <group ref={pulseRef} position={[x, 0, z]}>
+      {/* ── Street-level podium ── */}
       <mesh position={[0, 0.18, 0]} castShadow receiveShadow>
         <boxGeometry args={[1.15, 0.36, 1.15]} />
         <meshStandardMaterial color="#1e293b" roughness={0.4} metalness={0.4} />
       </mesh>
+
+      {/* ── Main shaft — unit box scaled to h, spans y=0 to y=h ── */}
       <mesh ref={mainRef} position={[0, h * 0.5, 0]} castShadow>
-        <boxGeometry args={[0.9, 1, 0.9]} />
+        <boxGeometry args={[bW, 1, bD]} />
         <meshStandardMaterial color={color} roughness={0.2} metalness={0.55} emissive={color} emissiveIntensity={0.25} />
       </mesh>
-      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={0.46}  facingZ       baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={1.0} />}
+
+      {/* ── Horizontal floor-line bands — every 0.8 units from 0.8 to h-0.2 ── */}
+      {visible && Array.from(
+        { length: Math.floor(h / 0.8) },
+        (_, fi) => {
+          const lineY = (fi + 1) * 0.8;
+          if (lineY >= h - 0.2) return null;
+          return (
+            <mesh key={`floor-${fi}`} position={[0, lineY, 0]}>
+              <boxGeometry args={[bW + 0.05, 0.04, bD + 0.05]} />
+              <meshStandardMaterial color="#1a4a6a" roughness={0.3} metalness={0.4} />
+            </mesh>
+          );
+        }
+      )}
+
+      {/* ── Corner fins — exterior, full tower height, centred at h/2 ── */}
+      {visible && [
+        [ finOffset,  finOffset],
+        [-finOffset,  finOffset],
+        [ finOffset, -finOffset],
+        [-finOffset, -finOffset],
+      ].map(([cx, cz], fi) => (
+        <mesh key={`fin-${fi}`} position={[cx, h * 0.5, cz]} castShadow>
+          <boxGeometry args={[0.04, h, 0.04]} />
+          <meshStandardMaterial color="#1a6090" roughness={0.25} metalness={0.5} />
+        </mesh>
+      ))}
+
+      {/* ── Windows ── */}
+      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={ 0.46} facingZ       baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={1.0} />}
       {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={-0.46} facingZ       baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={1.0} />}
-      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={0.46}  facingZ={false} baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={0.8} />}
+      {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={ 0.46} facingZ={false} baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={0.8} />}
       {visible && <WindowGrid cols={cols} rows={rows} width={0.78} height={h - 0.5} depth={-0.46} facingZ={false} baseY={0.45} winColor="#e0f2fe" winEmissive="#bae6fd" winIntensity={0.8} />}
+
+      {/* ── Art Deco setback 1 — bottom at h*0.55, top at h*0.90 ── */}
       {visible && (
-        <mesh position={[0, h + 0.12, 0]}>
+        <mesh position={[0, sb1Y, 0]} castShadow>
+          <boxGeometry args={[sb1W, sb1H, sb1D]} />
+          <meshStandardMaterial color={color} roughness={0.22} metalness={0.55} emissive={color} emissiveIntensity={0.3} />
+        </mesh>
+      )}
+
+      {/* ── Art Deco setback 2 — bottom at h*0.80, top at h*1.00 ── */}
+      {visible && (
+        <mesh position={[0, sb2Y, 0]} castShadow>
+          <boxGeometry args={[sb2W, sb2H, sb2D]} />
+          <meshStandardMaterial color={color} roughness={0.2} metalness={0.6} emissive={color} emissiveIntensity={0.35} />
+        </mesh>
+      )}
+
+      {/* ── Mechanical penthouse floor — sits on tower top ── */}
+      {visible && (
+        <mesh position={[0, h + 0.15, 0]} castShadow>
+          <boxGeometry args={[0.5, 0.3, 0.5]} />
+          <meshStandardMaterial color="#0b3a5a" roughness={0.4} metalness={0.6} />
+        </mesh>
+      )}
+
+      {/* ── Rooftop crown glow — flush with tower top ── */}
+      {visible && (
+        <mesh position={[0, h + 0.125, 0]}>
           <boxGeometry args={[0.6, 0.25, 0.6]} />
           <meshStandardMaterial color={color} roughness={0.15} metalness={0.7} emissive={color} emissiveIntensity={0.6} />
+        </mesh>
+      )}
+
+      {/* ── Antenna / spire — base at h+0.30, tip at h+0.90 ── */}
+      {visible && (
+        <mesh position={[0, h + 0.6, 0]} castShadow>
+          <cylinderGeometry args={[0.015, 0.03, 0.6, 6]} />
+          <meshStandardMaterial color="#94A3B8" metalness={0.9} roughness={0.1} />
         </mesh>
       )}
     </group>
@@ -1512,6 +2009,19 @@ export function CityGenerator() {
     [-13.5,-3.2], [-13.5,-1.8], [-13.5,-9.5], [4.5,-3.2],
   ];
 
+  // Gold Tower positions — "Financial Crown" district, NE cluster (up to 7)
+  const goldTowerPositions: [number, number, number][] = [
+    // x, z, heightMultiplier — centre landmark is tallest
+    [6.5, -4.5, 2.2],
+    [4.8, -3.2, 1.6],
+    [8.2, -3.2, 1.4],
+    [4.8, -5.8, 1.5],
+    [8.2, -5.8, 1.3],
+    [6.5, -2.0, 1.2],
+    [6.5, -7.0, 1.1],
+  ];
+  const goldCount = cityState.goldTowerCount ?? 0;
+
   // 6 market positions — commercial strips
   const marketPositions: [number, number][] = [
     [-8.5, 2.2], [-10.0, 2.2],
@@ -1668,6 +2178,74 @@ export function CityGenerator() {
         <group {...hoverProps("Investment Tower", `Investments: ${investPct}%`, investState, "Higher investment % makes this tower taller and more impressive.", [5.3, 3.2, -2.1])} {...buildingTapProps("Investment Tower", "Invest", investState, "Aim for 20%+ investment to grow this tower.", [5.3, 3.2, -2.1])}>
           <InvestmentTower x={5.3} z={-2.1} />
         </group>
+
+        {/* ── Financial Crown district — golden plaza floor ── */}
+        {goldCount >= 3 && (
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[6.5, 0.008, -4.5]} receiveShadow>
+            <circleGeometry args={[3.5, 32]} />
+            <meshStandardMaterial
+              color="#C9A84C"
+              transparent
+              opacity={0.15}
+              roughness={0.8}
+              metalness={0.3}
+            />
+          </mesh>
+        )}
+
+        {/* ── "FINANCIAL CROWN" district label ── */}
+        {goldCount >= 1 && (
+          <Html position={[6.5, 0.1, -1.5]} center>
+            <div
+              style={{
+                color: "#C9A84C",
+                fontSize: 9,
+                fontFamily: "DM Sans, sans-serif",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                background: "rgba(0,0,0,0.3)",
+                padding: "2px 6px",
+                borderRadius: 4,
+                whiteSpace: "nowrap",
+                pointerEvents: "none",
+              }}
+            >
+              Financial Crown
+            </div>
+          </Html>
+        )}
+
+        {/* ── Gold Towers (tiered: 5% → 1 tower … 35%+ → 7 towers) ── */}
+        {goldTowerPositions.slice(0, goldCount).map(([gx, gz, hm], i) => (
+          <group
+            key={`gold-${i}`}
+            {...hoverProps(
+              "Gold Tower",
+              `Investments: ${investPct}%`,
+              investState,
+              i === 0
+                ? "Your landmark tower — keep investing to grow the Financial Crown!"
+                : "Investment towers rise as you save and invest more.",
+              [gx, 4, gz],
+            )}
+            {...buildingTapProps(
+              "Gold Tower",
+              "Invest",
+              investState,
+              "Keep investing to unlock more Gold Towers in the Financial Crown district.",
+              [gx, 4, gz],
+            )}
+          >
+            <GoldTower
+              x={gx}
+              z={gz}
+              idx={i}
+              heightMultiplier={hm}
+              isNew={i === goldCount - 1}
+            />
+          </group>
+        ))}
       </ScaleGroup>
 
       {/* ── Community buildings ── */}

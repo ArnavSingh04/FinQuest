@@ -66,6 +66,7 @@ export interface CityState {
   population: number;
   healthScore: number;
   budgetUsed: number;
+  goldTowerCount: number;
 }
 
 export type RewardBuildingType =
